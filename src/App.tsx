@@ -7,6 +7,8 @@ import Navbar from "./components/Navbar/Navbar";
 import Project from "./pages/Project/Project";
 
 const App = () => {
+  console.log("Test 1");
+
   return (
     <div className={styles["app-container"]}>
       <Sidebar />
@@ -25,3 +27,4 @@ const App = () => {
 };
 
 export default App;
+// Test
