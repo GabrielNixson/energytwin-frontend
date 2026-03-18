@@ -1,0 +1,100 @@
+.app-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  // flex-direction: column;
+  background: #0f0f0f;
+
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  box-shadow: 0px 4px 4px 0px #e5e7eb40;
+  color: var(--text-primary);
+  padding: 11px 14px;
+
+  h1 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  p,
+  a {
+    opacity: 0.8;
+    color: var(--text-secondary);
+  }
+
+  nav {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+}
+
+.content {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+.content-container {
+  height: calc(100% - 72px);
+  overflow: auto;
+}
+
+.card {
+  height: 100%;
+  background: var(--background);
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+
+  h2,
+  p {
+    color: var(--text-primary);
+    margin-top: 0;
+  }
+}
+
+.errorText {
+  color: red;
+  margin-top: 1rem;
+}
+
+.infoContainer {
+  margin-top: 20px;
+  text-align: left;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.infoTitle {
+  margin-top: 0;
+}
+
+.endpointsSection {
+  margin-top: 20px;
+}
+
+.endpointsTitle {
+  margin-bottom: 10px;
+}
+
+
+
+.featuresSection {
+  margin-top: 10px;
+}
+
+.featuresList {
+  margin: 5px 0 0 20px;
+  padding: 0;
+}
+
+.featureItem {
+  margin-bottom: 4px;
+}

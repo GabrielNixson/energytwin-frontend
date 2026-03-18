@@ -1,0 +1,35 @@
+.header {
+    width: 100%;
+    padding: 30px 40px 0 40px;
+    margin-bottom: 0;
+
+    .header-content {
+        padding-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    h1 {
+        font-size: 1.75rem;
+        color: #fff;
+        margin-bottom: 4px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+
+    p {
+        color: #64748b;
+        font-size: 0.95rem;
+    }
+}
+
+.no-charts {
+    grid-column: 1 / -1;
+    padding: 60px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    color: #64748b;
+    font-size: 1.1rem;
+    margin-top: 20px;
+}

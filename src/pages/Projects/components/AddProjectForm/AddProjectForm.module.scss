@@ -1,0 +1,78 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    input,
+    textarea,
+    select {
+        padding: 0.625rem 0.875rem;
+        border-radius: 8px;
+        font-size: 1rem;
+
+        &::placeholder {
+            color: var(--text-muted, #9ca3af);
+        }
+    }
+
+    textarea {
+        resize: vertical;
+    }
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+
+    button {
+        padding: 0.625rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s, opacity 0.2s;
+
+        &:hover {
+            opacity: 0.9;
+        }
+
+        &:active {
+            transform: translateY(1px);
+        }
+    }
+
+    .cancelButton {
+        background: none;
+        border: 1px solid #c02e2e;
+
+        color: #c02e2e;
+
+        &:hover {
+            background-color: var(--bg-hover, #f9fafb);
+        }
+    }
+
+    .submitButton {
+        background-color: #917efc;
+        border: none;
+        color: white;
+
+        &:hover {
+            background-color: #816ff5;
+        }
+    }
+}
