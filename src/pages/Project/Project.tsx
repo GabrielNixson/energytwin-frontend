@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react"
 import {
     DndContext,
     DragOverlay,
@@ -22,8 +22,11 @@ import ChartConfigSidebar from '@/components/ChartConfigSidebar/ChartConfigSideb
 import { useUIStore } from "@/store/useUIStore"
 import { useProjectStore } from "@/store/useProjectStore"
 import { useParams } from "react-router-dom"
-
+import DxfParser from 'dxf-parser';
+import { motion, AnimatePresence } from "framer-motion"
 import { ChartData, ChartConfig } from "@/types/chart.types"
+
+import Project3D from "./Project3D.tsx"
 
 const DEFAULT_CHART_CONFIG: ChartConfig = {
     showTooltips: true,
@@ -39,7 +42,6 @@ const DraggableChart = ({
     onResizeStart,
     onDelete,
     onClick,
-    displayOnly = false,
     disabled = false,
     isResizing = false,
     isSelected = false
@@ -49,7 +51,6 @@ const DraggableChart = ({
     onResizeStart: (id: string, e: React.MouseEvent) => void,
     onDelete: (id: string) => void,
     onClick?: (id: string) => void,
-    displayOnly?: boolean,
     disabled?: boolean,
     isGhost?: boolean;
     isHidden?: boolean;
@@ -131,7 +132,32 @@ const DroppableChartContainer = ({ children, isEditMode, onClick }: { children: 
 const Project = () => {
     const { projectID } = useParams<{ projectID: string }>();
     const { projects, updateProjectCharts } = useProjectStore();
-    const { isEditMode, setIsEditMode } = useUIStore();
+    const { isEditMode, setIsEditMode, is3DMode, setIs3DMode, setDxfData } = useUIStore();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const contents = event.target?.result;
+            if (typeof contents === 'string') {
+                try {
+                    const parser = new DxfParser();
+                    const dxf = parser.parseSync(contents);
+                    console.log('Parsed DXF:', dxf);
+                    setDxfData(dxf);
+                } catch (err) {
+                    console.error('Error parsing DXF:', err);
+                    alert("Failed to parse DXF file.");
+                } finally {
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                }
+            }
+        };
+        reader.readAsText(file);
+    };
 
     // Find the current project
     const currentProject = projects.find(p => p.id === projectID);
@@ -199,7 +225,7 @@ const Project = () => {
 
         const result: ChartData[] = [];
         const isAreaOccupied = (x: number, y: number, w: number, h: number, items: ChartData[]) => {
-            return items.some(item => 
+            return items.some(item =>
                 x < item.x + item.w &&
                 x + w > item.x &&
                 y < item.y + item.h &&
@@ -219,7 +245,7 @@ const Project = () => {
             }
             result.push({ ...item, y: newY });
         }
-        
+
         return result.sort((a, b) => (a.y * 12 + a.x) - (b.y * 12 + b.x));
     }, []);
 
@@ -507,6 +533,14 @@ const Project = () => {
         const colWidth = (rect.width - 2 * padding - 11 * 20) / 12;
         const rowHeight = 100 + 20;
 
+        // Auto-scroll logic during resizing
+        const scrollThreshold = 80;
+        if (e.clientY > rect.bottom - scrollThreshold) {
+            container.scrollBy({ top: 15, behavior: 'auto' });
+        } else if (e.clientY < rect.top + scrollThreshold && container.scrollTop > 0) {
+            container.scrollBy({ top: -15, behavior: 'auto' });
+        }
+
         const dx = e.clientX - initialResizeData.current.mousePos.x;
         const dy = e.clientY - initialResizeData.current.mousePos.y;
 
@@ -579,9 +613,14 @@ const Project = () => {
     }, []);
 
     const onChartClick = (id: string) => {
-        if (isResizingDoneRef.current || resizingChartId) return;
+        if (!isEditMode || isResizingDoneRef.current || resizingChartId) return;
         setSelectedChartId(id);
     };
+
+    const maxGridRow = useMemo(() => {
+        const lowestPoint = previewCharts.reduce((max, c) => Math.max(max, c.y + c.h), 0);
+        return isEditMode ? Math.max(lowestPoint + 20, 40) : lowestPoint + 2;
+    }, [previewCharts, isEditMode]);
 
     return (
         <DndContext
@@ -591,30 +630,63 @@ const Project = () => {
             onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
+            autoScroll={{
+                acceleration: 10,
+                threshold: { x: 100, y: 100 }
+            }}
         >
             <div className={styles["project-container"]}>
                 <div className={styles["tools-container"]}>
+                    {!is3DMode &&
+                        <>
+                            <button
+                                className={`${styles["btn"]} ${isEditMode ? styles.active : ""}`}
+                                onClick={() => setIsEditMode(!isEditMode)}
+                            >
+                                {isEditMode ? "✓ Finish Editing" : "✎ Edit Layout"}
+                            </button>
+                            <button
+                                className={`${styles["btn"]} ${isAutoAlign ? styles.active : ""}`}
+                                onClick={() => {
+                                    setIsAutoAlign(!isAutoAlign);
+                                    if (!isAutoAlign) {
+                                        saveCharts(compactLayout(charts));
+                                    }
+                                }}
+                            >
+                                Auto Align: {isAutoAlign ? "ON" : "OFF"}
+                            </button>
+                        </>
+                    }
+
+                    {is3DMode && (
+                        <>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                style={{ display: "none" }}
+                                accept=".dxf"
+                                onChange={handleFileChange}
+                            />
+                            <button
+                                className={`${styles["btn"]} ${is3DMode ? styles.active : ""}`}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                Upload DXF
+                            </button>
+
+                        </>
+                    )}
                     <button
-                        className={`${styles["btn"]} ${isEditMode ? styles.active : ""}`}
-                        onClick={() => setIsEditMode(!isEditMode)}
+                        className={`${styles["btn"]} ${is3DMode ? styles.active : ""}`}
+                        onClick={() => setIs3DMode(!is3DMode)}
                     >
-                        {isEditMode ? "✓ Finish Editing" : "✎ Edit Layout"}
-                    </button>
-                    <button
-                        className={`${styles["btn"]} ${isAutoAlign ? styles.active : ""}`}
-                        onClick={() => {
-                            setIsAutoAlign(!isAutoAlign);
-                            if (!isAutoAlign) {
-                                saveCharts(compactLayout(charts));
-                            }
-                        }}
-                    >
-                        Auto Align: {isAutoAlign ? "ON" : "OFF"}
+                        {is3DMode ? "Switch to 2D" : "Switch to 3D"}
                     </button>
                 </div>
                 <ChartListSidebar isOpen={!selectedChartId} />
 
-                {selectedChartId && (
+                {isEditMode && selectedChartId && (
                     <ChartConfigSidebar
                         chart={charts.find(c => c.id === selectedChartId)!}
                         onClose={() => setSelectedChartId(null)}
@@ -622,22 +694,49 @@ const Project = () => {
                     />
                 )}
 
-                <DroppableChartContainer isEditMode={isEditMode} onClick={() => setSelectedChartId(null)}>
-                    {previewCharts.map((chart) => (
-                        <DraggableChart
-                            key={chart.id}
-                            chart={chart}
-                            isEditMode={isEditMode}
-                            onResizeStart={handleResizeStart}
-                            onDelete={handleRemoveChart}
-                            onClick={onChartClick}
-                            isSelected={selectedChartId === chart.id}
-                            displayOnly={activeId !== null && chart.id !== 'preview-ghost' && chart.id !== activeId}
-                            disabled={resizingChartId !== null && chart.id !== resizingChartId}
-                            isResizing={resizingChartId === chart.id}
-                        />
-                    ))}
-                </DroppableChartContainer>
+                <AnimatePresence mode="wait">
+                    {!is3DMode ? (
+                        <motion.div
+                            key="2d-view"
+                            initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+                            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                            exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
+                            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                            style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}
+                        >
+                            <DroppableChartContainer isEditMode={isEditMode} onClick={() => setSelectedChartId(null)}>
+                                {previewCharts.map((chart) => (
+                                    <DraggableChart
+                                        key={chart.id}
+                                        chart={chart}
+                                        isEditMode={isEditMode}
+                                        onResizeStart={handleResizeStart}
+                                        onDelete={handleRemoveChart}
+                                        onClick={onChartClick}
+                                        isSelected={selectedChartId === chart.id}
+                                        disabled={resizingChartId !== null && chart.id !== resizingChartId}
+                                        isResizing={resizingChartId === chart.id}
+                                    />
+                                ))}
+                                {/* Spacer to provide infinite scroll buffer */}
+                                <div style={{ gridRowStart: maxGridRow, gridColumn: '1 / span 12', height: '1px', pointerEvents: 'none' }} />
+                            </DroppableChartContainer>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="3d-view"
+                            initial={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
+                            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                            exit={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+                            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                            className={styles["three-container"]}
+                        >
+                            <Suspense fallback={<div style={{ color: 'white' }}>Loading 3D Scene...</div>}>
+                                <Project3D />
+                            </Suspense>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             <DragOverlay modifiers={activeId?.startsWith('sidebar-') ? [snapCenterToCursor] : []}>

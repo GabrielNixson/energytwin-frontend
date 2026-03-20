@@ -291,7 +291,7 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
             <div className={styles['chart-content']}>
                 {renderChart()}
             </div>
-            {isEditMode && type !== 'progressBar' && (
+            {isEditMode && (
                 <div
                     className={styles['resize-handle']}
                     onPointerDown={handleResizePointerDown}

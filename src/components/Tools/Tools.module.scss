@@ -1,0 +1,223 @@
+.tools-container {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000; // Increased z-index
+    padding: 6px;
+
+    background: rgba(10, 10, 10, 0.95); // More opaque
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15); // Higher contrast border
+    border-radius: 20px;
+    box-shadow: 
+        0 4px 6px -1px rgba(0, 0, 0, 0.2),
+        0 20px 50px -10px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+
+    .tools-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .tool-item-group {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .tool-button {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            background: transparent;
+            border-radius: 14px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            cursor: pointer;
+            padding: 0;
+
+            .icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: transform 0.2s ease;
+            }
+
+            .chevron {
+                position: absolute;
+                bottom: 2px;
+                right: 2px;
+                color: #475569;
+                font-size: 8px;
+                transition: transform 0.2s ease, color 0.2s ease;
+
+                &.open {
+                    transform: rotate(180deg);
+                    color: #917efc;
+                }
+            }
+
+            .label {
+                position: absolute;
+                top: calc(100% + 12px); 
+                left: 50%;
+                transform: translate(-50%, 0);
+                padding: 6px 12px;
+                border-radius: 8px;
+                background: #1a1a1a;
+                color: #f8fafc;
+                font-size: 0.75rem;
+                font-weight: 600;
+                white-space: nowrap;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                pointer-events: none;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+                z-index: 10001;
+
+                &::after {
+                    content: "";
+                    position: absolute;
+                    bottom: 100%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    border-left: 6px solid transparent;
+                    border-right: 6px solid transparent;
+                    border-bottom: 6px solid #1a1a1a;
+                }
+            }
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.08);
+                color: #f8fafc;
+                
+                .icon {
+                    transform: scale(1.05);
+                }
+
+                &:not(.active) .label {
+                    opacity: 1;
+                    visibility: visible;
+                    transform: translate(-50%, 10px);
+                }
+            }
+
+            &.active {
+                background: rgba(145, 126, 252, 0.15);
+                color: #917efc;
+            }
+
+            &:active {
+                transform: scale(0.95);
+            }
+        }
+    }
+
+    .sub-menu {
+        position: absolute;
+        bottom: calc(100% + 12px);
+        margin-bottom: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 6px;
+        background: rgba(15, 15, 15, 0.9);
+        backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.6);
+        animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 10005;
+
+        &::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid rgba(255, 255, 255, 0.15);
+            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+            pointer-events: none;
+        }
+
+        .sub-tool-button {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            background: transparent;
+            border-radius: 12px;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+
+            .icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.08);
+                color: #f8fafc;
+
+                .label {
+                    opacity: 1;
+                    visibility: visible;
+                    transform: translate(12px, -50%);
+                }
+            }
+
+            &.active {
+                background: rgba(145, 126, 252, 0.25);
+                color: #917efc;
+            }
+
+            .label {
+                position: absolute;
+                left: 100%;
+                top: 50%;
+                transform: translate(0, -50%);
+                padding: 6px 12px;
+                border-radius: 8px;
+                background: #1a1a1a;
+                color: #f8fafc;
+                font-size: 0.75rem;
+                font-weight: 600;
+                white-space: nowrap;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.2s;
+                pointer-events: none;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                margin-left: 0;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+            }
+        }
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

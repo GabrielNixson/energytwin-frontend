@@ -31,6 +31,12 @@ export default defineConfig(({ mode }) => ({
           requiredVersion: "^6.20.0",
           eager: true,
         },
+        three: {
+          singleton: true,
+        },
+        "framer-motion": {
+          singleton: true,
+        },
       },
     }),
   ],
@@ -42,7 +48,7 @@ export default defineConfig(({ mode }) => ({
   },
 
   server: {
-    host: true,
+    host: false,
     port: 5003,
     strictPort: true,
     cors: true,

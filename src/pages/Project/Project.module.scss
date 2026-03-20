@@ -8,6 +8,7 @@
 
     .chart-container {
         flex: 1;
+        min-width: 0;
         height: 100%;
         padding: 80px 40px 40px 40px;
         display: grid;
@@ -24,23 +25,26 @@
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: calc((100% - 80px + 20px) / 12) 120px; // matches (rect.width - 2 * padding + gap) / 12 and rowHeight
+
+            .chart-item {
+                cursor: grab;
+
+                &:hover:not(.ghost) {
+                    transform: translateY(-2px) scale(1.005);
+                    z-index: 10;
+                }
+
+                &:active {
+                    cursor: grabbing;
+                }
+            }
         }
     }
 
     .chart-item {
-        cursor: grab;
         // min-height: 100px;
         transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease;
         position: relative;
-
-        &:hover:not(.ghost) {
-            transform: translateY(-2px) scale(1.005);
-            z-index: 10;
-        }
-
-        &:active {
-            cursor: grabbing;
-        }
 
         &.ghost {
             z-index: 0;
@@ -107,4 +111,13 @@
     pointer-events: none;
     z-index: 1000;
     transition: transform 0.1s ease;
+}
+
+.three-container {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    position: relative;
+    background: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
+    overflow: hidden;
 }
