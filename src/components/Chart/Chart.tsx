@@ -62,10 +62,14 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
         xAxisLabel: 'Time',
         yAxisLabel: 'Value',
         showGrid: true,
+        gaugeStart: 100,
+        gaugeMin: 500,
+        gaugeMax: 600,
+        gaugeEnd: 1000,
     };
 
     const themeColor = effectiveConfig.color || '#a855f7';
-    
+
     const data = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
         datasets: [
@@ -149,22 +153,22 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                 return <BarChart data={commonData} options={options} />;
             case 'horizontalBar':
                 return (
-                    <BarChart 
-                        data={commonData} 
-                        options={{ 
-                            ...options, 
+                    <BarChart
+                        data={commonData}
+                        options={{
+                            ...options,
                             indexAxis: 'y' as const,
                             scales: {
                                 ...options.scales,
                                 x: { ...options.scales?.y },
                                 y: { ...options.scales?.x },
                             }
-                        }} 
+                        }}
                     />
                 );
             case 'stackedBar':
                 return (
-                    <BarChart 
+                    <BarChart
                         data={{
                             ...commonData,
                             datasets: [
@@ -177,15 +181,15 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                                     borderWidth: 1,
                                 }
                             ]
-                        }} 
-                        options={{ 
-                            ...options, 
+                        }}
+                        options={{
+                            ...options,
                             scales: {
                                 ...options.scales,
                                 x: { ...options.scales?.x, stacked: true },
                                 y: { ...options.scales?.y, stacked: true },
                             }
-                        }} 
+                        }}
                     />
                 );
             case 'line':
@@ -196,7 +200,7 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                 return <PieChart data={commonData} options={options} />;
             case 'radar':
                 return (
-                    <RadarChart 
+                    <RadarChart
                         data={{
                             labels: ['Efficiency', 'Reliability', 'Availability', 'Performance', 'Cost', 'Safety'],
                             datasets: [{
@@ -224,7 +228,7 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                 );
             case 'scatter':
                 return (
-                    <ScatterChart 
+                    <ScatterChart
                         data={{
                             datasets: [{
                                 label: 'Power vs Temp',
@@ -239,17 +243,15 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                     />
                 );
             case 'gauge':
+                const gaugeVal = data.datasets[0].data[data.datasets[0].data.length - 1];
                 return (
                     <GaugeChart
-                        data={{
-                            ...data,
-                            datasets: [{ ...data.datasets[0], data: [70, 30] }],
-                        }}
-                        options={{
-                            ...options,
-                            circumference: 180,
-                            rotation: -90,
-                        }}
+                        value={200}
+                        start={effectiveConfig.gaugeStart ?? 0}
+                        min={effectiveConfig.gaugeMin ?? 0}
+                        max={effectiveConfig.gaugeMax ?? 100}
+                        end={effectiveConfig.gaugeEnd ?? 1000}
+                        color={themeColor}
                     />
                 );
             case 'progressBar':

@@ -8,6 +8,10 @@ export interface ChartConfig {
     colorScheme?: string;
     showGrid: boolean;
     color?: string;
+    gaugeStart?: number;
+    gaugeMin?: number;
+    gaugeMax?: number;
+    gaugeEnd?: number;
 }
 
 export interface ChartData {

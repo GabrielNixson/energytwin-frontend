@@ -137,30 +137,102 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                 )}
 
                 {activeTab === 'advanced' && (
-                    <div className={styles.section}>
-                        <h4>Data Stream Configuration</h4>
-                        <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '16px' }}>
-                            Advanced binding for live IIoT data streams.
-                        </p>
-                        <div className={styles["input-group"]}>
-                            <label>Sensor / Topic</label>
-                            <select>
-                                <option>Main Transformer - Load</option>
-                                <option>Solar Inverter - Output</option>
-                                <option>Cooling System - Temp</option>
-                                <option>Custom MQTT Topic</option>
-                            </select>
+                    <>
+                        <div className={styles.section}>
+                            <h4>Data Stream Configuration</h4>
+                            <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '16px' }}>
+                                Advanced binding for live IIoT data streams.
+                            </p>
+                            <div className={styles["input-group"]}>
+                                <label>Sensor / Topic</label>
+                                <select>
+                                    <option>Main Transformer - Load</option>
+                                    <option>Solar Inverter - Output</option>
+                                    <option>Cooling System - Temp</option>
+                                    <option>Custom MQTT Topic</option>
+                                </select>
+                            </div>
+                            <div className={styles["input-group"]}>
+                                <label>Aggregation</label>
+                                <select>
+                                    <option>None (Real-time)</option>
+                                    <option>Average (1m)</option>
+                                    <option>Sum (Hourly)</option>
+                                    <option>Percentile (95th)</option>
+                                </select>
+                            </div>
                         </div>
-                        <div className={styles["input-group"]}>
-                            <label>Aggregation</label>
-                            <select>
-                                <option>None (Real-time)</option>
-                                <option>Average (1m)</option>
-                                <option>Sum (Hourly)</option>
-                                <option>Percentile (95th)</option>
-                            </select>
-                        </div>
-                    </div>
+
+                        {chart.type === 'gauge' && (
+                            <div className={styles.section}>
+                                <h4>Gauge Scale & Thresholds</h4>
+                                
+                                <div className={styles["range-group"]}>
+                                    <div className={styles["range-header"]}>
+                                        <label>Start Value</label>
+                                        <span className={styles["range-value"]}>{effectiveConfig.gaugeStart ?? 0}</span>
+                                    </div>
+                                    <input 
+                                        type="range" 
+                                        min="0" 
+                                        max="1000" 
+                                        step="10"
+                                        value={effectiveConfig.gaugeStart ?? 0} 
+                                        onChange={(e) => updateConfig({ gaugeStart: parseFloat(e.target.value) })}
+                                    />
+                                </div>
+
+                                <div className={styles["range-group"]}>
+                                    <div className={styles["range-header"]}>
+                                        <label>End Value (Scale Max)</label>
+                                        <span className={styles["range-value"]}>{effectiveConfig.gaugeEnd ?? 1000}</span>
+                                    </div>
+                                    <input 
+                                        type="range" 
+                                        min="0" 
+                                        max="2000" 
+                                        step="10"
+                                        value={effectiveConfig.gaugeEnd ?? 1000} 
+                                        onChange={(e) => updateConfig({ gaugeEnd: parseFloat(e.target.value) })}
+                                    />
+                                </div>
+
+                                <div className={styles["range-group"]}>
+                                    <div className={styles["range-header"]}>
+                                        <label>Warning (Min Threshold)</label>
+                                        <span className={styles["range-value"]}>{effectiveConfig.gaugeMin ?? 0}</span>
+                                    </div>
+                                    <input 
+                                        type="range" 
+                                        min="0" 
+                                        max="2000" 
+                                        step="10"
+                                        value={effectiveConfig.gaugeMin ?? 0} 
+                                        onChange={(e) => updateConfig({ gaugeMin: parseFloat(e.target.value) })}
+                                    />
+                                </div>
+
+                                <div className={styles["range-group"]}>
+                                    <div className={styles["range-header"]}>
+                                        <label>Danger (Max Threshold)</label>
+                                        <span className={styles["range-value"]}>{effectiveConfig.gaugeMax ?? 100}</span>
+                                    </div>
+                                    <input 
+                                        type="range" 
+                                        min="0" 
+                                        max="2000" 
+                                        step="10"
+                                        value={effectiveConfig.gaugeMax ?? 100} 
+                                        onChange={(e) => updateConfig({ gaugeMax: parseFloat(e.target.value) })}
+                                    />
+                                </div>
+
+                                <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '-8px' }}>
+                                    Warning triggers below Min or near Danger. Danger triggers above Max.
+                                </p>
+                            </div>
+                        )}
+                    </>
                 )}
 
                 {activeTab === 'settings' && (
