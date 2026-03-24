@@ -7,6 +7,7 @@ export interface ChartConfig {
     xAxisMax?: number;
     colorScheme?: string;
     showGrid: boolean;
+    color?: string;
 }
 
 export interface ChartData {

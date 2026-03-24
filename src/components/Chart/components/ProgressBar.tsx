@@ -3,20 +3,33 @@ import styles from './ProgressBar.module.scss';
 
 interface ProgressBarProps {
     value: number; // 0 to 100
+    label?: string;
+    color?: string;
 }
 
-const ProgressBar: React.FC<ProgressBarProps> = ({ value = 65 }) => {
+const ProgressBar: React.FC<ProgressBarProps> = ({ value = 65, label = "Progress", color = "#a855f7" }) => {
+    const safeValue = Math.min(100, Math.max(0, value));
+
     return (
         <div className={styles.container}>
             <div className={styles.track}>
                 <div 
                     className={styles.fill} 
-                    style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+                    style={{ 
+                        width: `${safeValue}%`,
+                        background: color,
+                        boxShadow: `0 0 20px ${color}66, 0 0 30px ${color}33`
+                    }}
                 />
             </div>
+
             <div className={styles.markers}>
                 {[0, 25, 50, 75, 100].map(v => (
-                    <div key={v} className={styles.marker} style={{ left: `${v}%` }} />
+                    <div
+                        key={v}
+                        className={`${styles.marker} ${safeValue >= v ? styles.active : ''}`}
+                        style={{ left: `${v}%` }}
+                    />
                 ))}
             </div>
         </div>

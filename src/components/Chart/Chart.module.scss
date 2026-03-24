@@ -55,9 +55,9 @@
             .delete-btn {
                 background: none;
                 border: none;
-                color: #475569;
+                color: #fc1010;
                 cursor: pointer;
-                font-size: 0.8rem;
+                font-size: 1rem;
                 padding: 4px;
                 border-radius: 4px;
                 display: flex;
@@ -65,6 +65,7 @@
                 justify-content: center;
                 transition: all 0.2s;
                 opacity: 0.5;
+                font-weight: 700;
 
                 &:hover {
                     background: rgba(239, 68, 68, 0.1);

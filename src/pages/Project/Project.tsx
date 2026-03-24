@@ -333,7 +333,8 @@ const Project = () => {
                     config: DEFAULT_CHART_CONFIG
                 };
                 workingCharts = [...workingCharts, movedItem] as ChartData[];
-                workingCharts = resolveCollisions(movedItem, workingCharts);
+                // Don't resolve collisions during sidebar drag to prevent confusing movement
+                // workingCharts = resolveCollisions(movedItem, workingCharts);
             } else {
                 // Sorting items
                 const originalChart = charts.find(c => c.id === activeId);
@@ -473,19 +474,39 @@ const Project = () => {
         if (over && over.id === 'chart-container' && dragPosition) {
             const isFromSidebar = active.id.toString().startsWith('sidebar-');
 
-            // Finalize layout based on current preview, merging ghost back to original ID
-            const finalLayout = previewCharts
-                .filter(c => !c.isHidden) // Remove the invisible original
-                .map(c => {
+            // Get the charts from preview and filter out the hidden original (if sorting)
+            const chartsForDrop = previewCharts.filter(c => !c.isHidden);
+            let finalLayout: ChartData[];
+
+            if (isFromSidebar) {
+                // For sidebar drag, we resolve collisions only on drop
+                const ghost = chartsForDrop.find(c => c.id === 'preview-ghost');
+                if (ghost) {
+                    const newChart = {
+                        ...ghost,
+                        id: `chart-${Date.now()}`,
+                        isGhost: false
+                    };
+                    const withNewChart = chartsForDrop.map(c => c.id === 'preview-ghost' ? newChart : c);
+                    // Resolve collisions now that the item is dropped
+                    finalLayout = resolveCollisions(newChart, withNewChart);
+                } else {
+                    finalLayout = chartsForDrop.map(c => ({ ...c, isGhost: false }));
+                }
+            } else {
+                // For sorting, previewCharts already resolved collisions.
+                // Just map the ghost to the actual ID.
+                finalLayout = chartsForDrop.map(c => {
                     if (c.id === 'preview-ghost') {
                         return {
                             ...c,
-                            id: isFromSidebar ? `chart-${Date.now()}` : active.id.toString(),
+                            id: active.id.toString(),
                             isGhost: false
                         };
                     }
                     return { ...c, isGhost: false };
                 });
+            }
 
             saveCharts(finalLayout);
         }

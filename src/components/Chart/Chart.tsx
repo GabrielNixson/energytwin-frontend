@@ -64,17 +64,19 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
         showGrid: true,
     };
 
+    const themeColor = effectiveConfig.color || '#a855f7';
+    
     const data = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
         datasets: [
             {
                 label: effectiveConfig.yAxisLabel || 'Energy Consumption',
                 data: [65, 59, 80, 81, 56, 55],
-                backgroundColor: 'rgba(168, 85, 247, 0.5)',
-                borderColor: '#a855f7',
+                backgroundColor: `${themeColor}80`, // 50% opacity hex
+                borderColor: themeColor,
                 borderWidth: 2,
                 tension: 0.4,
-                pointBackgroundColor: '#a855f7',
+                pointBackgroundColor: themeColor,
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
                 pointRadius: 4,
@@ -200,10 +202,11 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                             datasets: [{
                                 label: 'Metrics',
                                 data: [80, 70, 90, 85, 60, 75],
-                                backgroundColor: 'rgba(168, 85, 247, 0.2)',
-                                borderColor: '#a855f7',
+                                backgroundColor: `${themeColor}33`, // 20% opacity
+                                borderColor: themeColor,
                                 borderWidth: 2,
-                                pointBackgroundColor: '#a855f7',
+                                pointBackgroundColor: themeColor,
+                                pointBorderColor: '#fff',
                             }]
                         }}
                         options={{
@@ -229,7 +232,7 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                                     { x: 10, y: 20 }, { x: 15, y: 10 }, { x: 20, y: 25 },
                                     { x: 25, y: 18 }, { x: 30, y: 30 }, { x: 35, y: 22 }
                                 ],
-                                backgroundColor: '#ec4899',
+                                backgroundColor: themeColor,
                             }]
                         }}
                         options={options}
@@ -251,10 +254,10 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                 );
             case 'progressBar':
                 const lastVal = data.datasets[0].data[data.datasets[0].data.length - 1];
-                return <ProgressBar value={lastVal} />;
+                return <ProgressBar value={lastVal} color={themeColor} />;
             case 'circularProgress':
                 const circleVal = data.datasets[0].data[data.datasets[0].data.length - 1];
-                return <CircularProgress value={circleVal} />;
+                return <CircularProgress value={circleVal} color={themeColor} />;
             default:
                 return null;
         }
@@ -282,9 +285,6 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                         >
                             ✕
                         </button>
-                        <div className={styles['drag-handle-visual']}>
-                            ⋮⋮
-                        </div>
                     </div>
                 )}
             </div>

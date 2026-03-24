@@ -14,8 +14,13 @@
 }
 
 @keyframes slideIn {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 .header {
@@ -80,7 +85,8 @@
     margin-bottom: 8px;
   }
 
-  input, select {
+  input,
+  select {
     width: 100%;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -94,6 +100,42 @@
       outline: none;
       border-color: #917efc;
       background: rgba(145, 126, 252, 0.1);
+    }
+  }
+
+  .color-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 8px 12px;
+
+    input[type="color"] {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: none;
+      background: none;
+      cursor: pointer;
+      border-radius: 4px;
+      overflow: hidden;
+
+      &::-webkit-color-swatch-wrapper {
+        padding: 0;
+      }
+
+      &::-webkit-color-swatch {
+        border: none;
+        border-radius: 4px;
+      }
+    }
+
+    span {
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: #94a3b8;
     }
   }
 }
@@ -133,6 +175,7 @@
 
 .tabs {
   display: flex;
+  align-items: center;
   padding: 0 10px;
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -148,10 +191,11 @@
     cursor: pointer;
     position: relative;
     transition: color 0.2s ease;
+    text-align: center;
 
     &.active {
       color: #917efc;
-      
+
       &::after {
         content: '';
         position: absolute;
@@ -195,7 +239,10 @@
     .slider {
       position: absolute;
       cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background-color: rgba(255, 255, 255, 0.1);
       transition: .4s;
       border-radius: 20px;
@@ -213,11 +260,11 @@
       }
     }
 
-    input:checked + .slider {
+    input:checked+.slider {
       background-color: #917efc;
     }
 
-    input:checked + .slider::before {
+    input:checked+.slider::before {
       transform: translateX(16px);
       background-color: #fff;
     }

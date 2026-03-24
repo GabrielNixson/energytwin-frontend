@@ -9,7 +9,7 @@ interface ChartConfigSidebarProps {
 }
 
 const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose, onUpdate }) => {
-    const [activeTab, setActiveTab] = useState<'style' | 'data' | 'settings'>('style');
+    const [activeTab, setActiveTab] = useState<'style' | 'advanced' | 'settings'>('style');
 
     const isProgressType = ['progressBar', 'circularProgress'].includes(chart.type);
     const supportsAxes = !['progressBar', 'circularProgress', 'pie', 'gauge', 'radar'].includes(chart.type);
@@ -54,7 +54,6 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                 <h3>Configuration</h3>
                 <button className={styles["close-btn"]} onClick={onClose}>✕</button>
             </div>
-            
             <div className={styles.tabs}>
                 <button 
                     className={activeTab === 'style' ? styles.active : ''} 
@@ -63,16 +62,16 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                     Style
                 </button>
                 <button 
-                    className={activeTab === 'data' ? styles.active : ''} 
-                    onClick={() => setActiveTab('data')}
-                >
-                    Data
-                </button>
-                <button 
                     className={activeTab === 'settings' ? styles.active : ''} 
                     onClick={() => setActiveTab('settings')}
                 >
                     Settings
+                </button>
+                <button 
+                    className={activeTab === 'advanced' ? styles.active : ''} 
+                    onClick={() => setActiveTab('advanced')}
+                >
+                    Advanced
                 </button>
             </div>
 
@@ -81,6 +80,17 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                     <>
                         <div className={styles.section}>
                             <h4>Visuals</h4>
+                            <div className={styles["input-group"]}>
+                                <label>Theme Color</label>
+                                <div className={styles["color-input-wrapper"]}>
+                                    <input 
+                                        type="color" 
+                                        value={effectiveConfig.color || '#a855f7'} 
+                                        onChange={(e) => updateConfig({ color: e.target.value })}
+                                    />
+                                    <span>{effectiveConfig.color || '#a855f7'}</span>
+                                </div>
+                            </div>
                             {supportsTooltips && renderToggle('Show Tooltips', effectiveConfig.showTooltips, (v) => updateConfig({ showTooltips: v }))}
                             {supportsLegend && renderToggle('Show Legend', effectiveConfig.showLegend, (v) => updateConfig({ showLegend: v }))}
                             {supportsGrid && renderToggle('Show Grid Lines', effectiveConfig.showGrid, (v) => updateConfig({ showGrid: v }))}
@@ -126,11 +136,11 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                     </>
                 )}
 
-                {activeTab === 'data' && (
+                {activeTab === 'advanced' && (
                     <div className={styles.section}>
-                        <h4>Data Source</h4>
+                        <h4>Data Stream Configuration</h4>
                         <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '16px' }}>
-                            Bind this chart to a live IIoT data stream.
+                            Advanced binding for live IIoT data streams.
                         </p>
                         <div className={styles["input-group"]}>
                             <label>Sensor / Topic</label>
@@ -166,8 +176,23 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                                 />
                             </div>
                             <div className={styles["input-group"]}>
-                                <label>Internal ID</label>
-                                <input type="text" value={chart.id} disabled style={{ opacity: 0.5 }} />
+                                <label>Chart Type</label>
+                                <select 
+                                    value={chart.type} 
+                                    onChange={(e) => onUpdate(chart.id, { type: e.target.value })}
+                                >
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="horizontalBar">Horizontal Bar</option>
+                                    <option value="stackedBar">Stacked Bar</option>
+                                    <option value="line">Line Chart</option>
+                                    <option value="area">Area Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="radar">Radar Chart</option>
+                                    <option value="scatter">Scatter Chart</option>
+                                    <option value="gauge">Gauge Chart</option>
+                                    <option value="progressBar">Progress Bar</option>
+                                    <option value="circularProgress">Circular Progress</option>
+                                </select>
                             </div>
                         </div>
 
