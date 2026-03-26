@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { motion } from 'framer-motion';
 import styles from './GaugeChart.module.scss';
@@ -20,16 +20,6 @@ const GaugeChart: React.FC<GaugeChartProps> = ({
     end = 100, 
     color = '#a855f7' 
 }) => {
-    const [prevValue, setPrevValue] = useState(value);
-    const [trend, setTrend] = useState<'up' | 'down' | 'stable'>('stable');
-
-    useEffect(() => {
-        if (value > prevValue) setTrend('up');
-        else if (value < prevValue) setTrend('down');
-        else setTrend('stable');
-        setPrevValue(value);
-    }, [value]);
-
     // Threshold calculation
     const warningHighThreshold = max * 0.9;
     const status = useMemo(() => {
@@ -57,10 +47,10 @@ const GaugeChart: React.FC<GaugeChartProps> = ({
                     ((end - max) / range) * 100               // Danger high zone
                 ],
                 backgroundColor: [
-                    'rgba(250, 204, 21, 0.1)', // Warning Low
-                    'rgba(255, 255, 255, 0.03)', // Normal
-                    'rgba(250, 204, 21, 0.15)', // Warning High (slightly more visible)
-                    'rgba(239, 68, 68, 0.15)'   // Danger
+                    'rgba(250, 204, 21, 0.25)', // Warning Low (Vibrant Yellow)
+                    'rgba(255, 255, 255, 0.08)', // Normal (Clearer White)
+                    'rgba(250, 204, 21, 0.35)', // Warning High (Stronger Yellow)
+                    'rgba(239, 68, 68, 0.35)'   // Danger (Stronger Red)
                 ],
                 borderWidth: 0,
                 circumference: 180,
@@ -103,37 +93,32 @@ const GaugeChart: React.FC<GaugeChartProps> = ({
                     
                     {/* Animated Needle */}
                     <motion.g 
+                        initial={false}
                         animate={{ rotate: rotationAngle }}
-                        transition={{ type: "spring", stiffness: 60, damping: 15 }}
-                        style={{ originX: "100px", originY: "110px" }}
+                        transition={{ type: "spring", stiffness: 60, damping: 12 }}
+                        style={{ originX: '100px', originY: '110px' }}
                     >
                         <path 
-                            d="M98 110 L100 25 L102 110 Z" 
+                            d="M97 110 L100 20 L103 110 Z" 
                             className={styles.needle}
                             fill={status.color}
                         />
-                        <circle cx="100" cy="110" r="5" fill="#1e293b" stroke={status.color} strokeWidth="1.5" />
-                        <circle cx="100" cy="110" r="2" fill="#fff" />
+                        <circle cx="100" cy="110" r="4" fill="#1e293b" stroke={status.color} strokeWidth="1" />
                     </motion.g>
                 </svg>
 
                 <div className={styles.overlay}>
                     <div className={styles.valueRow}>
-                        {trend !== 'stable' && (
-                            <span className={`${styles.trend} ${styles[trend]}`}>
-                                {trend === 'up' ? '▲' : '▼'}
-                            </span>
-                        )}
                         <span className={styles.value}>{value.toFixed(0)}</span>
                         <span className={styles.unit}>%</span>
                     </div>
-                    <span className={`${styles.status} ${styles[status.label.toLowerCase()]}`}>
-                        {status.label}
-                    </span>
                 </div>
             </div>
             
             <div className={styles.footer}>
+                <div className={`${styles["status-badge"]} ${styles[status.label.toLowerCase()]}`}>
+                    {status.label}
+                </div>
                 <div className={styles.limitItem}>
                     <span className={styles.limitLabel}>START</span>
                     <span className={styles.limitValue}>{start}</span>

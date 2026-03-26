@@ -13,7 +13,7 @@
         padding: 80px 40px 40px 40px;
         display: grid;
         grid-template-columns: repeat(12, 1fr);
-        grid-auto-rows: 100px;
+        grid-auto-rows: 150px;
         gap: 20px;
         overflow-y: auto;
         transition: padding 0.3s ease;
@@ -24,7 +24,7 @@
             background-image:
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: calc((100% - 80px + 20px) / 12) 120px; // matches (rect.width - 2 * padding + gap) / 12 and rowHeight
+            background-size: calc((100% - 80px + 20px) / 12) 170px; // matches (rect.width - 2 * padding + gap) / 12 and rowHeight (150 + 20)
 
             .chart-item {
                 cursor: grab;
@@ -81,7 +81,7 @@
             font-size: 0.85rem;
             padding: 8px 20px;
             border-radius: 12px;
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: rgba(255, 255, 255, 0.1);
             color: #898989;
             border: 1px solid rgba(255, 255, 255, 0.1);
             cursor: pointer;
@@ -120,4 +120,98 @@
     position: relative;
     background: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
     overflow: hidden;
+}
+
+.tab-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-right: 12px;
+
+    .tab-item {
+        padding: 6px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #898989;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid transparent;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        &.active {
+            background: rgba(145, 126, 252, 0.1);
+            color: #917efc;
+            border-color: rgba(145, 126, 252, 0.2);
+        }
+
+        .tab-name {
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .remove-tab-btn {
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            background: transparent;
+            border: none;
+            color: #475569;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+
+            &:hover {
+                background: rgba(244, 63, 94, 0.1);
+                color: #f43f5e;
+            }
+        }
+    }
+
+    .add-tab-btn {
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: transparent;
+        border: 1px dashed rgba(255, 255, 255, 0.1);
+        color: #898989;
+        cursor: pointer;
+        transition: all 0.2s;
+        padding: 0 12px;
+        gap: 6px;
+        margin-left: 4px;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #917efc;
+            color: #917efc;
+        }
+
+        .icon {
+            font-size: 1.1rem;
+        }
+
+        .text {
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+    }
 }

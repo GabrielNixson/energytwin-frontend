@@ -22,6 +22,7 @@ import RadarChart from './components/RadarChart';
 import ScatterChart from './components/ScatterChart';
 import ProgressBar from './components/ProgressBar';
 import CircularProgress from './components/CircularProgress';
+import BillingWidget from './components/BillingWidget';
 
 ChartJS.register(
     CategoryScale,
@@ -49,6 +50,8 @@ interface ChartProps {
 }
 
 const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDelete, isEditMode = false }) => {
+    const [isExpanded, setIsExpanded] = React.useState(false);
+
     const handleResizePointerDown = useCallback((e: React.PointerEvent) => {
         e.stopPropagation();
         if (onResizeStart) {
@@ -76,7 +79,7 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
             {
                 label: effectiveConfig.yAxisLabel || 'Energy Consumption',
                 data: [65, 59, 80, 81, 56, 55],
-                backgroundColor: `${themeColor}80`, // 50% opacity hex
+                backgroundColor: `${themeColor}80`,
                 borderColor: themeColor,
                 borderWidth: 2,
                 tension: 0.4,
@@ -206,7 +209,7 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                             datasets: [{
                                 label: 'Metrics',
                                 data: [80, 70, 90, 85, 60, 75],
-                                backgroundColor: `${themeColor}33`, // 20% opacity
+                                backgroundColor: `${themeColor}33`,
                                 borderColor: themeColor,
                                 borderWidth: 2,
                                 pointBackgroundColor: themeColor,
@@ -242,11 +245,11 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                         options={options}
                     />
                 );
-            case 'gauge':
+            case 'gauge': {
                 const gaugeVal = data.datasets[0].data[data.datasets[0].data.length - 1];
                 return (
                     <GaugeChart
-                        value={200}
+                        value={gaugeVal}
                         start={effectiveConfig.gaugeStart ?? 0}
                         min={effectiveConfig.gaugeMin ?? 0}
                         max={effectiveConfig.gaugeMax ?? 100}
@@ -254,19 +257,47 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                         color={themeColor}
                     />
                 );
-            case 'progressBar':
+            }
+            case 'progressBar': {
                 const lastVal = data.datasets[0].data[data.datasets[0].data.length - 1];
                 return <ProgressBar value={lastVal} color={themeColor} />;
-            case 'circularProgress':
+            }
+            case 'circularProgress': {
                 const circleVal = data.datasets[0].data[data.datasets[0].data.length - 1];
                 return <CircularProgress value={circleVal} color={themeColor} />;
+            }
+            case 'billing':
+                return (
+                    <BillingWidget
+                        totalAmount={200000}
+                        isExpanded={isExpanded}
+                        onToggle={() => setIsExpanded(!isExpanded)}
+                    />
+                );
             default:
                 return null;
         }
     };
 
+    const isBilling = type === 'billing';
+    const isCompact = ['progressBar', 'circularProgress', 'billing'].includes(type);
+
     return (
-        <div className={`${styles['chart-wrapper']} ${['progressBar', 'circularProgress'].includes(type) ? styles.compact : ''}`}>
+        <div
+            className={[
+                styles['chart-wrapper'],
+                isCompact ? styles.compact : '',
+                isBilling ? styles['pop-over'] : '',
+                isExpanded ? styles.expanded : '',
+            ].filter(Boolean).join(' ')}
+            // ↓ KEY FIX: lift z-index AND set overflow visible when billing dropdown is open
+            style={{
+                zIndex: isExpanded ? 50 : 1,
+                // overflow must be visible so the absolutely-positioned dropdown
+                // isn't clipped by the card boundary
+                overflow: isBilling ? 'visible' : undefined,
+            }}
+        >
             <div className={styles['chart-header']}>
                 <div className={styles['title-group']}>
                     <span className={styles['chart-title']}>{title}</span>
@@ -290,9 +321,15 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                     </div>
                 )}
             </div>
-            <div className={styles['chart-content']}>
+
+            {/* ↓ KEY FIX: chart-content must also be overflow:visible for billing */}
+            <div
+                className={styles['chart-content']}
+                style={isBilling ? { overflow: 'visible' } : undefined}
+            >
                 {renderChart()}
             </div>
+
             {isEditMode && (
                 <div
                     className={styles['resize-handle']}

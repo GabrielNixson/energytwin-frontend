@@ -7,7 +7,7 @@ interface ProgressBarProps {
     color?: string;
 }
 
-const ProgressBar: React.FC<ProgressBarProps> = ({ value = 65, label = "Progress", color = "#a855f7" }) => {
+const ProgressBar: React.FC<ProgressBarProps> = ({ value = 65, color = "#a855f7" }) => {
     const safeValue = Math.min(100, Math.max(0, value));
 
     return (
@@ -18,7 +18,8 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value = 65, label = "Progress
                     style={{ 
                         width: `${safeValue}%`,
                         background: color,
-                        boxShadow: `0 0 20px ${color}66, 0 0 30px ${color}33`
+                        boxShadow: `0 0 20px ${color}44`,
+                        borderRadius: safeValue > 98 ? 'inherit' : '999px 0 0 999px'
                     }}
                 />
             </div>

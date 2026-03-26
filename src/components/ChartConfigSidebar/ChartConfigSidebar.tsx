@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styles from './ChartConfigSidebar.module.scss';
 import { ChartData, ChartConfig } from '@/types/chart.types';
+import CustomDropdown from '../CustomDropdown/CustomDropdown';
 
 interface ChartConfigSidebarProps {
     chart: ChartData;
@@ -38,10 +39,10 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
         <div className={styles["toggle-group"]}>
             <label>{label}</label>
             <label className={styles.switch}>
-                <input 
-                    type="checkbox" 
-                    checked={value} 
-                    onChange={(e) => onChange(e.target.checked)} 
+                <input
+                    type="checkbox"
+                    checked={value}
+                    onChange={(e) => onChange(e.target.checked)}
                 />
                 <span className={styles.slider}></span>
             </label>
@@ -55,20 +56,20 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                 <button className={styles["close-btn"]} onClick={onClose}>✕</button>
             </div>
             <div className={styles.tabs}>
-                <button 
-                    className={activeTab === 'style' ? styles.active : ''} 
+                <button
+                    className={activeTab === 'style' ? styles.active : ''}
                     onClick={() => setActiveTab('style')}
                 >
                     Style
                 </button>
-                <button 
-                    className={activeTab === 'settings' ? styles.active : ''} 
+                <button
+                    className={activeTab === 'settings' ? styles.active : ''}
                     onClick={() => setActiveTab('settings')}
                 >
                     Settings
                 </button>
-                <button 
-                    className={activeTab === 'advanced' ? styles.active : ''} 
+                <button
+                    className={activeTab === 'advanced' ? styles.active : ''}
                     onClick={() => setActiveTab('advanced')}
                 >
                     Advanced
@@ -83,9 +84,9 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                             <div className={styles["input-group"]}>
                                 <label>Theme Color</label>
                                 <div className={styles["color-input-wrapper"]}>
-                                    <input 
-                                        type="color" 
-                                        value={effectiveConfig.color || '#a855f7'} 
+                                    <input
+                                        type="color"
+                                        value={effectiveConfig.color || '#a855f7'}
                                         onChange={(e) => updateConfig({ color: e.target.value })}
                                     />
                                     <span>{effectiveConfig.color || '#a855f7'}</span>
@@ -106,27 +107,27 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                                 <h4>Axes Configuration</h4>
                                 <div className={styles["input-group"]}>
                                     <label>Y-Axis Label</label>
-                                    <input 
-                                        type="text" 
-                                        value={effectiveConfig.yAxisLabel} 
+                                    <input
+                                        type="text"
+                                        value={effectiveConfig.yAxisLabel}
                                         onChange={(e) => updateConfig({ yAxisLabel: e.target.value })}
                                         placeholder="e.g. Energy (kWh)"
                                     />
                                 </div>
                                 <div className={styles["input-group"]}>
                                     <label>Y-Axis Max Value</label>
-                                    <input 
-                                        type="number" 
-                                        value={effectiveConfig.yAxisMax || ''} 
+                                    <input
+                                        type="number"
+                                        value={effectiveConfig.yAxisMax || ''}
                                         onChange={(e) => updateConfig({ yAxisMax: parseInt(e.target.value) || undefined })}
                                         placeholder="Auto"
                                     />
                                 </div>
                                 <div className={styles["input-group"]}>
                                     <label>X-Axis Label</label>
-                                    <input 
-                                        type="text" 
-                                        value={effectiveConfig.xAxisLabel} 
+                                    <input
+                                        type="text"
+                                        value={effectiveConfig.xAxisLabel}
                                         onChange={(e) => updateConfig({ xAxisLabel: e.target.value })}
                                         placeholder="e.g. Time"
                                     />
@@ -145,39 +146,47 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                             </p>
                             <div className={styles["input-group"]}>
                                 <label>Sensor / Topic</label>
-                                <select>
-                                    <option>Main Transformer - Load</option>
-                                    <option>Solar Inverter - Output</option>
-                                    <option>Cooling System - Temp</option>
-                                    <option>Custom MQTT Topic</option>
-                                </select>
+                                <CustomDropdown
+                                    options={[
+                                        { id: 'trans1', label: 'Main Transformer - Load' },
+                                        { id: 'inv1', label: 'Solar Inverter - Output' },
+                                        { id: 'cool1', label: 'Cooling System - Temp' },
+                                        { id: 'mqtt1', label: 'Custom MQTT Topic' }
+                                    ]}
+                                    value="trans1"
+                                    onChange={() => { }}
+                                />
                             </div>
                             <div className={styles["input-group"]}>
                                 <label>Aggregation</label>
-                                <select>
-                                    <option>None (Real-time)</option>
-                                    <option>Average (1m)</option>
-                                    <option>Sum (Hourly)</option>
-                                    <option>Percentile (95th)</option>
-                                </select>
+                                <CustomDropdown
+                                    options={[
+                                        { id: 'none', label: 'None (Real-time)' },
+                                        { id: 'avg', label: 'Average (1m)' },
+                                        { id: 'sum', label: 'Sum (Hourly)' },
+                                        { id: 'perc', label: 'Percentile (95th)' }
+                                    ]}
+                                    value="none"
+                                    onChange={() => { }}
+                                />
                             </div>
                         </div>
 
                         {chart.type === 'gauge' && (
                             <div className={styles.section}>
                                 <h4>Gauge Scale & Thresholds</h4>
-                                
+
                                 <div className={styles["range-group"]}>
                                     <div className={styles["range-header"]}>
                                         <label>Start Value</label>
                                         <span className={styles["range-value"]}>{effectiveConfig.gaugeStart ?? 0}</span>
                                     </div>
-                                    <input 
-                                        type="range" 
-                                        min="0" 
-                                        max="1000" 
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1000"
                                         step="10"
-                                        value={effectiveConfig.gaugeStart ?? 0} 
+                                        value={effectiveConfig.gaugeStart ?? 0}
                                         onChange={(e) => updateConfig({ gaugeStart: parseFloat(e.target.value) })}
                                     />
                                 </div>
@@ -187,12 +196,12 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                                         <label>End Value (Scale Max)</label>
                                         <span className={styles["range-value"]}>{effectiveConfig.gaugeEnd ?? 1000}</span>
                                     </div>
-                                    <input 
-                                        type="range" 
-                                        min="0" 
-                                        max="2000" 
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="2000"
                                         step="10"
-                                        value={effectiveConfig.gaugeEnd ?? 1000} 
+                                        value={effectiveConfig.gaugeEnd ?? 1000}
                                         onChange={(e) => updateConfig({ gaugeEnd: parseFloat(e.target.value) })}
                                     />
                                 </div>
@@ -202,12 +211,12 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                                         <label>Warning (Min Threshold)</label>
                                         <span className={styles["range-value"]}>{effectiveConfig.gaugeMin ?? 0}</span>
                                     </div>
-                                    <input 
-                                        type="range" 
-                                        min="0" 
-                                        max="2000" 
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="2000"
                                         step="10"
-                                        value={effectiveConfig.gaugeMin ?? 0} 
+                                        value={effectiveConfig.gaugeMin ?? 0}
                                         onChange={(e) => updateConfig({ gaugeMin: parseFloat(e.target.value) })}
                                     />
                                 </div>
@@ -217,12 +226,12 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                                         <label>Danger (Max Threshold)</label>
                                         <span className={styles["range-value"]}>{effectiveConfig.gaugeMax ?? 100}</span>
                                     </div>
-                                    <input 
-                                        type="range" 
-                                        min="0" 
-                                        max="2000" 
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="2000"
                                         step="10"
-                                        value={effectiveConfig.gaugeMax ?? 100} 
+                                        value={effectiveConfig.gaugeMax ?? 100}
                                         onChange={(e) => updateConfig({ gaugeMax: parseFloat(e.target.value) })}
                                     />
                                 </div>
@@ -241,50 +250,52 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                             <h4>Identity</h4>
                             <div className={styles["input-group"]}>
                                 <label>Display Name</label>
-                                <input 
-                                    type="text" 
-                                    value={chart.title} 
+                                <input
+                                    type="text"
+                                    value={chart.title}
                                     onChange={(e) => onUpdate(chart.id, { title: e.target.value })}
                                 />
                             </div>
                             <div className={styles["input-group"]}>
                                 <label>Chart Type</label>
-                                <select 
-                                    value={chart.type} 
-                                    onChange={(e) => onUpdate(chart.id, { type: e.target.value })}
-                                >
-                                    <option value="bar">Bar Chart</option>
-                                    <option value="horizontalBar">Horizontal Bar</option>
-                                    <option value="stackedBar">Stacked Bar</option>
-                                    <option value="line">Line Chart</option>
-                                    <option value="area">Area Chart</option>
-                                    <option value="pie">Pie Chart</option>
-                                    <option value="radar">Radar Chart</option>
-                                    <option value="scatter">Scatter Chart</option>
-                                    <option value="gauge">Gauge Chart</option>
-                                    <option value="progressBar">Progress Bar</option>
-                                    <option value="circularProgress">Circular Progress</option>
-                                </select>
+                                <CustomDropdown
+                                    options={[
+                                        { id: 'bar', label: 'Bar Chart' },
+                                        { id: 'horizontalBar', label: 'Horizontal Bar' },
+                                        { id: 'stackedBar', label: 'Stacked Bar' },
+                                        { id: 'line', label: 'Line Chart' },
+                                        { id: 'area', label: 'Area Chart' },
+                                        { id: 'pie', label: 'Pie Chart' },
+                                        { id: 'radar', label: 'Radar Chart' },
+                                        { id: 'scatter', label: 'Scatter Chart' },
+                                        { id: 'gauge', label: 'Gauge Chart' },
+                                        { id: 'progressBar', label: 'Progress Bar' },
+                                        { id: 'circularProgress', label: 'Circular Progress' },
+                                    ]}
+                                    value={chart.type}
+                                    onChange={(val: string) => onUpdate(chart.id, { type: val })}
+                                />
                             </div>
                         </div>
+
 
                         <div className={styles.section}>
                             <h4>Layout</h4>
                             <div className={styles["style-grid"]}>
                                 <div className={styles["input-group"]}>
                                     <label>Columns (W)</label>
-                                    <input 
-                                        type="number" 
-                                        value={chart.w} 
+                                    <input
+                                        type="number"
+                                        value={chart.w}
                                         onChange={(e) => onUpdate(chart.id, { w: parseInt(e.target.value) || 1 })}
                                         min="1" max="12"
                                     />
                                 </div>
                                 <div className={styles["input-group"]}>
                                     <label>Rows (H)</label>
-                                    <input 
-                                        type="number" 
-                                        value={chart.h} 
+                                    <input
+                                        type="number"
+                                        value={chart.h}
                                         onChange={(e) => onUpdate(chart.id, { h: parseInt(e.target.value) || 1 })}
                                         min="1"
                                     />

@@ -13,6 +13,7 @@ import { DropIcon } from "../../assets/svg/Misc";
 import { useNavigate, useLocation } from "react-router-dom";
 import type { OptionsType } from "./sidebar.types";
 import { useUIStore } from "../../store/useUIStore";
+import { BillingIcon } from "@/assets/svg/SidebarSvg";
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const Sidebar = () => {
   const options: OptionsType = [
     { label: "overview", route: "/", icon: OverviewIcon },
     { label: "projects", route: "projects", icon: ServicesIcon },
+    { label: "Billing", route: "billing", icon: BillingIcon },
   ];
 
   useEffect(() => {

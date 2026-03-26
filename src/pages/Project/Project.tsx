@@ -27,6 +27,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ChartData, ChartConfig } from "@/types/chart.types"
 
 import Project3D from "./Project3D.tsx"
+import AddTabModal from "./components/AddTabModal/AddTabModal.tsx"
 
 const DEFAULT_CHART_CONFIG: ChartConfig = {
     showTooltips: true,
@@ -131,9 +132,21 @@ const DroppableChartContainer = ({ children, isEditMode, onClick }: { children: 
 
 const Project = () => {
     const { projectID } = useParams<{ projectID: string }>();
-    const { projects, updateProjectCharts } = useProjectStore();
+    const { projects, updateProjectCharts, addTab, removeTab, updateTabName } = useProjectStore();
     const { isEditMode, setIsEditMode, is3DMode, setIs3DMode, setDxfData } = useUIStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [activeTabId, setActiveTabId] = useState<string>('default');
+    const [isTabModalOpen, setIsTabModalOpen] = useState(false);
+    const [tabModalMode, setTabModalMode] = useState<{ type: 'add' | 'rename', tabId?: string, initialName?: string }>({ type: 'add' });
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 5,
+            },
+        })
+    );
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -164,28 +177,35 @@ const Project = () => {
 
     const [charts, setCharts] = useState<ChartData[]>([]);
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 5,
-            },
-        })
-    );
-
-    // Initialize charts from store
+    // Ensure activeTabId is valid
     useEffect(() => {
-        if (currentProject?.charts) {
-            setCharts(currentProject.charts);
+        if (currentProject) {
+            if (!currentProject.tabs.find(t => t.id === activeTabId)) {
+                setActiveTabId(currentProject.tabs[0]?.id || 'default');
+            }
         }
-    }, [currentProject]);
+    }, [currentProject, activeTabId]);
+
+    const activeTab = useMemo(() => {
+        return currentProject?.tabs.find(t => t.id === activeTabId);
+    }, [currentProject, activeTabId]);
+
+    // Initialize charts from store based on active tab
+    useEffect(() => {
+        if (activeTab?.charts) {
+            setCharts(activeTab.charts);
+        } else {
+            setCharts([]);
+        }
+    }, [activeTab]);
 
     // Helper to update local and store
     const saveCharts = useCallback((newCharts: ChartData[]) => {
         setCharts(newCharts);
-        if (projectID) {
-            updateProjectCharts(projectID, newCharts);
+        if (projectID && activeTabId) {
+            updateProjectCharts(projectID, activeTabId, newCharts);
         }
-    }, [projectID, updateProjectCharts]);
+    }, [projectID, activeTabId, updateProjectCharts]);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [activeChart, setActiveChart] = useState<Partial<ChartData> | null>(null);
 
@@ -366,7 +386,7 @@ const Project = () => {
         const padding = 40;
         const availableWidth = rect.width - (2 * padding);
         const colWidth = (availableWidth - (11 * 20)) / 12;
-        const rowHeight = 100 + 20;
+        const rowHeight = 150 + 20;
         setGridMetrics({ colWidth, rowHeight });
     }, []);
 
@@ -401,7 +421,7 @@ const Project = () => {
                 type: chartType,
                 title: active.data.current.label,
                 w: 4,
-                h: chartType === 'progressBar' ? 1 : (chartType === 'circularProgress' ? 2 : 3)
+                h: ['progressBar', 'billing'].includes(chartType) ? 1 : (chartType === 'circularProgress' ? 2 : 3)
             });
         } else {
             const chart = charts.find(c => c.id === active.id);
@@ -552,7 +572,7 @@ const Project = () => {
         const rect = container.getBoundingClientRect();
         const padding = 40;
         const colWidth = (rect.width - 2 * padding - 11 * 20) / 12;
-        const rowHeight = 100 + 20;
+        const rowHeight = 150 + 20;
 
         // Auto-scroll logic during resizing
         const scrollThreshold = 80;
@@ -638,6 +658,34 @@ const Project = () => {
         setSelectedChartId(id);
     };
 
+    const handleAddTab = () => {
+        setTabModalMode({ type: 'add' });
+        setIsTabModalOpen(true);
+    };
+
+    const handleTabModalSubmit = (name: string) => {
+        if (tabModalMode.type === 'add' && projectID) {
+            const newTabId = Math.random().toString(36).substring(2, 9);
+            addTab(projectID, name, newTabId);
+            setActiveTabId(newTabId); // Switch to the new tab!
+        } else if (tabModalMode.type === 'rename' && projectID && tabModalMode.tabId) {
+            updateTabName(projectID, tabModalMode.tabId, name);
+        }
+        setIsTabModalOpen(false);
+    };
+
+    const handleRemoveTab = (e: React.MouseEvent, tabId: string) => {
+        e.stopPropagation();
+        if (window.confirm("Are you sure you want to remove this tab?") && projectID) {
+            removeTab(projectID, tabId);
+        }
+    };
+
+    const handleRenameTab = (tabId: string, currentName: string) => {
+        setTabModalMode({ type: 'rename', tabId, initialName: currentName });
+        setIsTabModalOpen(true);
+    };
+
     const maxGridRow = useMemo(() => {
         const lowestPoint = previewCharts.reduce((max, c) => Math.max(max, c.y + c.h), 0);
         return isEditMode ? Math.max(lowestPoint + 20, 40) : lowestPoint + 2;
@@ -660,6 +708,34 @@ const Project = () => {
                 <div className={styles["tools-container"]}>
                     {!is3DMode &&
                         <>
+                            <div className={styles["tab-bar"]}>
+                                {currentProject?.tabs.map(tab => (
+                                    <div
+                                        key={tab.id}
+                                        className={`${styles["tab-item"]} ${activeTabId === tab.id ? styles.active : ""}`}
+                                        onClick={() => setActiveTabId(tab.id)}
+                                        onDoubleClick={() => isEditMode && handleRenameTab(tab.id, tab.name)}
+                                    >
+                                        <span className={styles["tab-name"]}>{tab.name}</span>
+                                        {isEditMode && currentProject?.tabs.length > 1 && (
+                                            <button
+                                                className={styles["remove-tab-btn"]}
+                                                onClick={(e) => handleRemoveTab(e, tab.id)}
+                                            >
+                                                ×
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                                <button
+                                    className={styles["add-tab-btn"]}
+                                    onClick={handleAddTab}
+                                    title="Add New Tab"
+                                >
+                                    <span className={styles["icon"]}>+</span>
+                                    <span className={styles["text"]}>Add Tab</span>
+                                </button>
+                            </div>
                             <button
                                 className={`${styles["btn"]} ${isEditMode ? styles.active : ""}`}
                                 onClick={() => setIsEditMode(!isEditMode)}
@@ -770,7 +846,7 @@ const Project = () => {
                                 : `${activeChart?.w ? (activeChart.w * gridMetrics.colWidth + (activeChart.w - 1) * 20) : 300}px`,
                             height: activeId.startsWith('sidebar-') || !gridMetrics
                                 ? '200px'
-                                : `${(activeChart?.h ?? 3) * 120 - 20}px`
+                                : `${(activeChart?.h ?? 3) * 170 - 20}px`
                         }}
                     >
                         {activeChart && activeChart.type && activeChart.title ? (
@@ -785,6 +861,13 @@ const Project = () => {
                     </div>
                 ) : null}
             </DragOverlay>
+            <AddTabModal
+                isOpen={isTabModalOpen}
+                onClose={() => setIsTabModalOpen(false)}
+                onSubmit={handleTabModalSubmit}
+                initialValue={tabModalMode.initialName}
+                title={tabModalMode.type === 'add' ? "Add New Tab" : "Rename Tab"}
+            />
         </DndContext>
     );
 };

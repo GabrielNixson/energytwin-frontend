@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard/Dashboard";
 import Projects from "./pages/Projects/Projects";
 import Navbar from "./components/Navbar/Navbar";
 import Project from "./pages/Project/Project";
+import Billing from "./pages/Billing/Billing";
 
 const App = () => {
   console.log("Test 1");
@@ -19,6 +20,7 @@ const App = () => {
             <Route index element={<Dashboard />} />
             <Route path="projects" element={<Projects />} />
             <Route path="project/:projectID" element={<Project />} />
+            <Route path="billing" element={<Billing />} />
           </Routes>
         </div>
       </div>

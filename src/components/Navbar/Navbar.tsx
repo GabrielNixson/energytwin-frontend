@@ -9,7 +9,7 @@ const Navbar = () => {
     const { projects } = useProjectStore();
 
     const currentProject = projects.find(p => p.id === projectID);
-    
+
     const getPageTitle = () => {
         if (location.pathname === "/") return "Overview";
         if (location.pathname === "/projects") return "Projects Library";

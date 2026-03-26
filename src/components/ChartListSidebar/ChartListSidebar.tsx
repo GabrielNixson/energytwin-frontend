@@ -13,7 +13,8 @@ import {
     StackBarIcon, 
     HorizontalBarIcon, 
     CircularProgressIcon, 
-    ProgressBarIcon 
+    ProgressBarIcon,
+    BillingIcon 
 } from "./ChartListSidebarIcons";
 import { useUIStore } from "@/store/useUIStore";
 
@@ -74,6 +75,7 @@ const ChartListSidebar = ({ isOpen = true }: ChartListSidebarProps) => {
         { label: "Gauge Chart", type: "gauge", icon: <GaugeIcon /> },
         { label: "Progress Bar", type: "progressBar", icon: <ProgressBarIcon /> },
         { label: "Circular Progress", type: "circularProgress", icon: <CircularProgressIcon /> },
+        { label: "Billing Details", type: "billing", icon: <BillingIcon /> },
     ]
 
     const filteredCharts = chartList.filter(chart =>

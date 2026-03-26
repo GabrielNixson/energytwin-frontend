@@ -1,0 +1,120 @@
+// outerWrapper gives the dropdown an overflow-visible stacking context
+// so it escapes any overflow:hidden on parent chart-content / chart-wrapper.
+.outerWrapper {
+    width: 100%;
+    overflow: visible; // ← KEY FIX: allows dropdown to paint outside bounds
+    position: relative;
+    z-index: 1;
+}
+
+.container {
+    width: 100%;
+    color: #fff;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 2px 2px 12px 2px;
+    position: relative;
+    overflow: visible;
+}
+
+.summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+}
+
+.amountLabel {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #94a3b8;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+
+    .amountValue {
+        font-size: 1.25rem;
+        color: #fff;
+        font-weight: 700;
+    }
+}
+
+.expandIcon {
+    color: #fc1010;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+// Dropdown panel — absolutely positioned so it floats OVER sibling chart cards
+.detailsContainer {
+    position: absolute; // ← stays absolute
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 1000; // ← above everything else on the dashboard
+    background: #0f172a;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        0 20px 25px -5px rgba(0, 0, 0, 0.6),
+        0 10px 10px -5px rgba(0, 0, 0, 0.5);
+    overflow: hidden; // clips inner content to rounded corners only
+}
+
+.divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.07);
+    margin: 0 12px;
+}
+
+.tableWrapper {
+    padding: 8px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+
+    tr {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+    }
+
+    .labelCell {
+        padding: 10px 12px;
+        color: #64748b;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        width: 40%;
+        white-space: nowrap;
+    }
+
+    .valueCell {
+        padding: 10px 12px;
+        color: #e2e8f0;
+        font-weight: 500;
+        text-align: right;
+    }
+}
