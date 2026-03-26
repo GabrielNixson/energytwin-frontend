@@ -338,7 +338,7 @@ const Project = () => {
         if (activeId && dragPosition) {
             const isFromSidebar = activeId.startsWith('sidebar-');
             const w = activeChart?.w ?? 4;
-            const h = activeChart?.h ?? 3;
+            const h = activeChart?.h ?? 2;
             // Clamp X to stay within 12 columns
             const x = Math.max(0, Math.min(12 - w, dragPosition.x));
             const y = dragPosition.y;
@@ -384,10 +384,18 @@ const Project = () => {
         if (!container) return;
         const rect = container.getBoundingClientRect();
         const padding = 40;
+        const gap = 20;
         const availableWidth = rect.width - (2 * padding);
-        const colWidth = (availableWidth - (11 * 20)) / 12;
-        const rowHeight = 150 + 20;
-        setGridMetrics({ colWidth, rowHeight });
+        const colWidth = (availableWidth - (11 * gap)) / 12;
+        
+        // Calculate proportional rowHeight based on colWidth, capped at 140px and flooring at 120px
+        const calculatedRowHeight = Math.max(Math.min(colWidth * 1.5, 140), 120); 
+        
+        // Set CSS variable for the grid
+        container.style.setProperty('--row-height', `${calculatedRowHeight}px`);
+        
+        // Update metrics for dragging/resizing logic (include gap in rowHeight for snap logic)
+        setGridMetrics({ colWidth, rowHeight: calculatedRowHeight + gap });
     }, []);
 
     useEffect(() => {
@@ -421,7 +429,7 @@ const Project = () => {
                 type: chartType,
                 title: active.data.current.label,
                 w: 4,
-                h: ['progressBar', 'billing'].includes(chartType) ? 1 : (chartType === 'circularProgress' ? 2 : 3)
+                h: ['progressBar', 'billing'].includes(chartType) ? 1 : (chartType === 'circularProgress' ? 2 : 2)
             });
         } else {
             const chart = charts.find(c => c.id === active.id);
@@ -470,7 +478,7 @@ const Project = () => {
         const rowHeight = gridMetrics.rowHeight;
 
         const chartW = activeChart?.w ?? 4;
-        const chartH = activeChart?.h ?? 3;
+        const chartH = activeChart?.h ?? 2;
 
         // Snap based on relativistic center
         const targetX = Math.round(((relCenterX - padding) / colWidth) - (chartW / 2));
@@ -564,15 +572,14 @@ const Project = () => {
     };
 
     const handlePointerMove = useCallback((e: PointerEvent) => {
-        if (!resizingChartId || !initialResizeData.current) return;
+        if (!resizingChartId || !initialResizeData.current || !gridMetrics) return;
 
         const container = document.getElementById('chart-container');
         if (!container) return;
 
         const rect = container.getBoundingClientRect();
-        const padding = 40;
-        const colWidth = (rect.width - 2 * padding - 11 * 20) / 12;
-        const rowHeight = 150 + 20;
+        const colWidth = gridMetrics.colWidth;
+        const rowHeight = gridMetrics.rowHeight;
 
         // Auto-scroll logic during resizing
         const scrollThreshold = 80;
@@ -592,7 +599,9 @@ const Project = () => {
             const chart = prev.find(c => c.id === resizingChartId);
             if (!chart) return prev;
 
-            let newW = Math.min(12, Math.max(1, initialResizeData.current!.span.w + dw));
+            // Enforce minimum width of 300px
+            const minW = Math.ceil(300 / (colWidth + 20));
+            let newW = Math.min(12, Math.max(minW, initialResizeData.current!.span.w + dw));
             let newH = Math.max(1, initialResizeData.current!.span.h + dh);
 
             if (chart.x + newW > 12) newW = 12 - chart.x;
@@ -607,7 +616,7 @@ const Project = () => {
             saveCharts(finalCharts);
             return finalCharts;
         });
-    }, [resizingChartId, resolveCollisions, saveCharts]);
+    }, [resizingChartId, resolveCollisions, saveCharts, gridMetrics]);
 
     const isResizingDoneRef = useRef(false);
 

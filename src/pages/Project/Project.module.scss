@@ -13,18 +13,18 @@
         padding: 80px 40px 40px 40px;
         display: grid;
         grid-template-columns: repeat(12, 1fr);
-        grid-auto-rows: 150px;
+        grid-auto-rows: var(--row-height, 150px);
         gap: 20px;
         overflow-y: auto;
         transition: padding 0.3s ease;
         align-content: start;
         position: relative;
-
+        transition: all 0.5s linear;
         &.edit-mode {
             background-image:
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: calc((100% - 80px + 20px) / 12) 170px; // matches (rect.width - 2 * padding + gap) / 12 and rowHeight (150 + 20)
+            background-size: calc((100% - 80px + 20px) / 12) calc(var(--row-height, 150px) + 20px); // matches (rect.width - 2 * padding + gap) / 12 and rowHeight (grid-auto-rows + gap)
 
             .chart-item {
                 cursor: grab;
@@ -42,7 +42,7 @@
     }
 
     .chart-item {
-        // min-height: 100px;
+        min-width: 300px;
         transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease;
         position: relative;
 

@@ -5,10 +5,6 @@
     position: relative;
     z-index: 1001; // Above the chart container but respect sidebars if any
 
-    .header-content {
-        max-width: 1600px;
-        margin: 0 auto;
-    }
 
     .top-row {
         display: flex;
