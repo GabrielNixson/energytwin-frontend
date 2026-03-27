@@ -6,7 +6,7 @@ import projectStyles from "../Project/Project.module.scss"
 import { motion, AnimatePresence } from "framer-motion"
 
 const Dashboard = () => {
-    const { projects } = useProjectStore();
+    const { projects, getProject } = useProjectStore();
 
     // Choose active project
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -18,6 +18,12 @@ const Dashboard = () => {
             setSelectedProjectId(defaultProj.id);
         }
     }, [projects, selectedProjectId]);
+ 
+    useEffect(() => {
+        if (selectedProjectId) {
+            getProject(selectedProjectId);
+        }
+    }, [selectedProjectId, getProject]);
 
     const currentProject = useMemo(() =>
         projects.find(p => p.id === selectedProjectId),
