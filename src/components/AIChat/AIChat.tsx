@@ -10,14 +10,29 @@ const AIChat = () => {
         { role: 'ai', content: "Hello! I'm your AI Energy Assistant. How can I help you today?" }
     ]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const isFirstRender = useRef(true);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+        messagesEndRef.current?.scrollIntoView({ behavior });
     };
 
     useEffect(() => {
         if (isOpen) {
-            scrollToBottom();
+            if (isFirstRender.current) {
+                // Initial scroll when opening - make it instant to avoid "fast scroll" look
+                // Use a tiny timeout to ensure the DOM has updated and element is visible
+                const timer = setTimeout(() => {
+                    scrollToBottom("auto");
+                    isFirstRender.current = false;
+                }, 100);
+                return () => clearTimeout(timer);
+            } else {
+                // Subsequent scrolls (new messages) - keep them smooth
+                scrollToBottom("smooth");
+            }
+        } else {
+            // Reset when closed so next time it's "first render" again
+            isFirstRender.current = true;
         }
     }, [chatHistory, isOpen]);
 
