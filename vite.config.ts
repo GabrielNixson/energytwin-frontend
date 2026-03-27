@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
     federation({
       name: "energymodule",
       filename: "remoteEntry.js",
-      
+
       exposes: {
         "./App": "./src/App.tsx",
       },
@@ -52,6 +52,7 @@ export default defineConfig(({ mode }) => ({
     port: 5003,
     strictPort: true,
     cors: true,
+    open: true
   },
 
   css: {

@@ -5,7 +5,6 @@ export interface ChartConfig {
     yAxisLabel: string;
     yAxisMax?: number;
     xAxisMax?: number;
-    colorScheme?: string;
     showGrid: boolean;
     color?: string;
     gaugeStart?: number;

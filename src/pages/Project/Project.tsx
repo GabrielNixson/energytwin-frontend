@@ -28,6 +28,7 @@ import { ChartData, ChartConfig } from "@/types/chart.types"
 
 import Project3D from "./Project3D.tsx"
 import AddTabModal from "./components/AddTabModal/AddTabModal.tsx"
+import AIChat from "@/components/AIChat/AIChat.tsx"
 
 const DEFAULT_CHART_CONFIG: ChartConfig = {
     showTooltips: true,
@@ -387,13 +388,13 @@ const Project = () => {
         const gap = 20;
         const availableWidth = rect.width - (2 * padding);
         const colWidth = (availableWidth - (11 * gap)) / 12;
-        
+
         // Calculate proportional rowHeight based on colWidth, capped at 140px and flooring at 120px
-        const calculatedRowHeight = Math.max(Math.min(colWidth * 1.5, 140), 120); 
-        
+        const calculatedRowHeight = Math.max(Math.min(colWidth * 1.5, 140), 120);
+
         // Set CSS variable for the grid
         container.style.setProperty('--row-height', `${calculatedRowHeight}px`);
-        
+
         // Update metrics for dragging/resizing logic (include gap in rowHeight for snap logic)
         setGridMetrics({ colWidth, rowHeight: calculatedRowHeight + gap });
     }, []);
@@ -877,6 +878,8 @@ const Project = () => {
                 initialValue={tabModalMode.initialName}
                 title={tabModalMode.type === 'add' ? "Add New Tab" : "Rename Tab"}
             />
+
+            <AIChat />
         </DndContext>
     );
 };
