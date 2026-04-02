@@ -21,7 +21,7 @@ const App = () => {
   useEffect(() => {
     if (isAuthenticated && user) {
       console.log("Initializing socket for user:", user._id);
-      initializeSocket();
+      initializeSocket(user._id);
       initSocket();
       
       // Fetch initial data

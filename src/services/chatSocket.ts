@@ -6,8 +6,9 @@ export const chatSocket: Socket = io(CHAT_SOCKET_URL, {
   autoConnect: false,
 });
 
-export const initializeChatSocket = () => {
+export const initializeChatSocket = (userId: string) => {
   if (!chatSocket.connected) {
+    chatSocket.io.opts.query = { userId };
     chatSocket.connect();
   }
 };

@@ -6,8 +6,9 @@ export const socket: Socket = io(SOCKET_URL, {
   autoConnect: false,
 });
 
-export const initializeSocket = () => {
+export const initializeSocket = (userId: string) => {
   if (!socket.connected) {
+    socket.io.opts.query = { userId };
     socket.connect();
   }
 };

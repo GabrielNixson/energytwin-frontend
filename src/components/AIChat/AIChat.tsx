@@ -30,7 +30,7 @@ const AIChat = ({ projectId, tabId }: AIChatProps) => {
             return;
         }
 
-        initializeChatSocket();
+        initializeChatSocket(user?._id || 'anonymous');
         
         chatSocket.emit("join", chatId);
 
