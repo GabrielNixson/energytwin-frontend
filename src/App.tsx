@@ -16,24 +16,19 @@ const App = () => {
   const { isAuthenticated, user } = useAuthStore();
   const { initSocket } = useProjectStore();
 
-  if (!isAuthenticated) {
-    return (
-      <Routes>
-        <Route path="*" element={<Auth />} />
-      </Routes>
-    );
-  }
+  console.log("App rendering, isAuthenticated:", isAuthenticated, "userId:", user?._id);
 
   useEffect(() => {
     if (isAuthenticated && user) {
+      console.log("Initializing socket for user:", user._id);
       initializeSocket();
       initSocket();
       
       // Fetch initial data
       socket.emit('project:readAll', { userId: user._id });
 
-      // Assuming there's a listener for readAll response. If not, we should probably add one.
       const handleReadAllResponse = (data: any) => {
+        console.log("project:readAll:response received", data.success);
         if (data.success && data.data) {
            useProjectStore.getState().setProjects(data.data);
         }
@@ -50,17 +45,23 @@ const App = () => {
 
   return (
     <div className={styles["app-container"]}>
-      <Sidebar />
+      {isAuthenticated && <Sidebar />}
       <div className={styles.content}>
-        <Navbar />
+        {isAuthenticated && <Navbar />}
         <div className={styles["content-container"]}>
           <Routes>
-            <Route index element={<Dashboard />} />
-            <Route path="projects" element={<Projects />} />
-            <Route path="project/:projectID" element={<Project />} />
-            <Route path="billing" element={<Billing />} />
-            <Route path="/billing" element={<Billing />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {!isAuthenticated ? (
+              <Route path="*" element={<Auth />} />
+            ) : (
+              <>
+                <Route index element={<Dashboard />} />
+                <Route path="projects" element={<Projects />} />
+                <Route path="project/:projectID" element={<Project />} />
+                <Route path="billing" element={<Billing />} />
+                <Route path="/billing" element={<Billing />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </>
+            )}
           </Routes>
         </div>
       </div>

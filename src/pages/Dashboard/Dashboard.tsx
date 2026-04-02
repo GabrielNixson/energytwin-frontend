@@ -4,9 +4,11 @@ import Chart from "@/components/Chart/Chart"
 import styles from "./Dashboard.module.scss"
 import projectStyles from "../Project/Project.module.scss"
 import { motion, AnimatePresence } from "framer-motion"
+import AIChat from "@/components/AIChat/AIChat"
 
 const Dashboard = () => {
     const { projects, getProject } = useProjectStore();
+    console.log("Dashboard rendering, projects count:", projects.length);
 
     // Choose active project
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -142,6 +144,11 @@ const Dashboard = () => {
                     )}
                 </AnimatePresence>
             </div>
+            
+            <AIChat 
+                projectId={selectedProjectId || undefined} 
+                tabId={activeTabId} 
+            />
         </div>
     )
 }

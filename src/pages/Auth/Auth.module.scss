@@ -38,13 +38,23 @@
 
 .formGroup input {
   width: 100%;
-  padding: 12px;
+  padding: 8px 12px;
   border-radius: 6px;
   border: 1px solid #333;
   background: #222;
   color: white;
   font-size: 16px;
   box-sizing: border-box;
+
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover,
+  &:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #222 inset !important;
+    -webkit-text-fill-color: white !important;
+    border: 1px solid #333;
+    caret-color: white;
+    transition: background-color 5000s ease-in-out 0s;
+  }
 }
 
 .formGroup input:focus {
@@ -54,8 +64,8 @@
 
 .authButton {
   width: 100%;
-  padding: 12px;
-  margin-top: 16px;
+  padding: 12px !important;
+  margin-top: 30px;
   background-color: white;
   color: black;
   border: none;
@@ -64,6 +74,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
+  box-sizing: border-box;
 }
 
 .authButton:hover {
@@ -87,7 +98,7 @@
 .toggleText button {
   background: none;
   border: none;
-  color: #fff;
+  color: #917efc !important;
   cursor: pointer;
   padding: 0 4px;
   text-decoration: underline;

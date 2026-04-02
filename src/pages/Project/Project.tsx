@@ -149,7 +149,7 @@ const DroppableChartContainer = ({
 
 const Project = () => {
   const { projectID } = useParams<{ projectID: string }>();
-  const { projects, updateProjectCharts, addTab, removeTab, updateTabName, getProject } =
+  const { projects, updateProjectCharts, addChart, addTab, removeTab, updateTabName, getProject, removeChart } =
     useProjectStore();
   const { isEditMode, setIsEditMode, is3DMode, setIs3DMode, setDxfData } =
     useUIStore();
@@ -209,14 +209,25 @@ const Project = () => {
     }
   }, [projectID, getProject]);
 
-  // Ensure activeTabId is valid
+  // Ensure activeTabId is valid and handle ID transitions (temp_ -> real_id)
   useEffect(() => {
     if (currentProject) {
-      if (!currentProject.tabs.find((t) => t.id === activeTabId)) {
-        setActiveTabId(currentProject.tabs[0]?.id || "default");
+      const activeTabExists = currentProject.tabs.find((t) => t.id === activeTabId);
+      
+      if (!activeTabExists) {
+        // If we were on a temp tab, maybe it got promoted to a real one with a new ID?
+        if (activeTabId.startsWith('temp_')) {
+          // We can't easily know the name unless we store it.
+          // For now, let's just pick the first tab if the active one is truly gone,
+          // but we'll try to find a tab that WAS created recently if possible?
+          // Actually, let's just default to the first tab for now, but usually it will be the real one at the end of the list.
+          setActiveTabId(currentProject.tabs[currentProject.tabs.length - 1]?.id || "default");
+        } else {
+          setActiveTabId(currentProject.tabs[0]?.id || "default");
+        }
       }
     }
-  }, [currentProject, activeTabId]);
+  }, [currentProject?.tabs, activeTabId]);
 
   const activeTab = useMemo(() => {
     return currentProject?.tabs.find((t) => t.id === activeTabId);
@@ -400,10 +411,15 @@ const Project = () => {
       if (isAutoAlign) {
         updated = compactLayout(updated);
       }
-      saveCharts(updated);
+      
+      setCharts(updated);
+      if (projectID && activeTabId) {
+        removeChart(projectID, activeTabId, id);
+      }
+      
       if (selectedChartId === id) setSelectedChartId(null);
     },
-    [charts, saveCharts, selectedChartId, isAutoAlign, compactLayout],
+    [charts, removeChart, projectID, activeTabId, selectedChartId, isAutoAlign, compactLayout],
   );
 
   // Calculate the preview layout in real-time (for dragging)
@@ -601,7 +617,7 @@ const Project = () => {
 
       // Get the charts from preview and filter out the hidden original (if sorting)
       const chartsForDrop = previewCharts.filter((c) => !c.isHidden);
-      let finalLayout: ChartData[];
+      let finalLayout: ChartData[] = [];
 
       if (isFromSidebar) {
         // For sidebar drag, we resolve collisions only on drop
@@ -611,12 +627,19 @@ const Project = () => {
             ...ghost,
             id: `chart-${Date.now()}`,
             isGhost: false,
-          };
+          } as ChartData;
+          
           const withNewChart = chartsForDrop.map((c) =>
             c.id === "preview-ghost" ? newChart : c,
           );
+          
           // Resolve collisions now that the item is dropped
           finalLayout = resolveCollisions(newChart, withNewChart);
+          
+          // Add the new chart explicitly (single emit)
+          if (projectID && activeTabId) {
+            addChart(projectID, activeTabId, newChart);
+          }
         } else {
           finalLayout = chartsForDrop.map((c) => ({ ...c, isGhost: false }));
         }
@@ -786,7 +809,7 @@ const Project = () => {
 
   const handleTabModalSubmit = (name: string) => {
     if (tabModalMode.type === "add" && projectID) {
-      const newTabId = Math.random().toString(36).substring(2, 9);
+      const newTabId = 'temp_' + Math.random().toString(36).substring(2, 9);
       addTab(projectID, name, newTabId);
       setActiveTabId(newTabId); // Switch to the new tab!
     } else if (
@@ -1027,7 +1050,10 @@ const Project = () => {
         title={tabModalMode.type === "add" ? "Add New Tab" : "Rename Tab"}
       />
 
-      <AIChat />
+      <AIChat 
+        projectId={projectID} 
+        tabId={activeTabId} 
+      />
     </DndContext>
   );
 };

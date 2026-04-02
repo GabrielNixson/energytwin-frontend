@@ -137,16 +137,44 @@
   .user-details {
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-width: 0;
 
     .user-name {
       font-size: 0.75rem;
       font-weight: 600;
       color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .user-email {
       font-size: 0.625rem;
       color: #898989;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .logout-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: #898989;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    &:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
     }
   }
 }
@@ -211,6 +239,10 @@
     padding: 6px;
 
     .user-details {
+      display: none;
+    }
+
+    .logout-btn {
       display: none;
     }
   }

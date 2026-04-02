@@ -125,24 +125,11 @@ export const useProjectStore = create<ProjectStore>()(
                         } : p
                     )
                 }));
-                // Send updates or creates for the charts
+
+                // ONLY send updates for existing charts (real IDs)
                 charts.forEach(c => {
                     const isNew = String(c.id).startsWith('temp_') || String(c.id).startsWith('chart-');
-                    if (isNew) {
-                         socket.emit('chart:create', {
-                            tabId,
-                            chartData: { 
-                                chartId: c.id, 
-                                type: c.type, 
-                                title: c.title, 
-                                x: c.x, 
-                                y: c.y, 
-                                w: c.w, 
-                                h: c.h 
-                            },
-                            configData: c.config
-                        });
-                    } else {
+                    if (!isNew) {
                         socket.emit('chart:update', {
                             chartId: c.id,
                             chartData: { x: c.x, y: c.y, w: c.w, h: c.h, title: c.title, type: c.type },
@@ -165,6 +152,7 @@ export const useProjectStore = create<ProjectStore>()(
                     )
                 }));
                 socket.emit('chart:create', {
+                    projectId,
                     tabId,
                     chartData: { 
                         chartId: chart.id, // the frontend generated temp ID
@@ -177,9 +165,6 @@ export const useProjectStore = create<ProjectStore>()(
                     },
                     configData: chart.config
                 });
-                // Wait, if backend sends back a DIFFERENT _id in 'chart:created', we will have duplicates.
-                // We leave it to the _handleChartCreated to wipe the temp one if it can, but it's complex.
-                // Let's rely on the backend possibly giving the same ID or we just wipe any chart with same x, y.
             },
             
             removeChart: (projectId, tabId, chartId) => {
@@ -256,11 +241,16 @@ export const useProjectStore = create<ProjectStore>()(
             
             _handleTabCreated: (data) => set((state) => {
                 console.log("tab:created/response", data);
+                if (!data) return state;
+
+                const tab = data.tab || data;
+                if (!tab || (!tab._id && !tab.id)) return state;
+
                 // If projectId is missing, try to find the correct project by name (best guess fallback)
                 let targetProjectId: string | undefined = data.projectId;
                 if (!targetProjectId) {
                     targetProjectId = state.projects.find(p => p.tabs.some(t => 
-                        (String(t.id).startsWith('temp_') || String(t.id).startsWith('tab-')) && t.name === data.tab?.name
+                        (String(t.id).startsWith('temp_') || String(t.id).startsWith('tab-')) && t.name === (tab.name || tab.tab?.name)
                     ))?.id;
                 }
 
@@ -271,11 +261,15 @@ export const useProjectStore = create<ProjectStore>()(
                 return {
                     projects: state.projects.map(p => p.id === pid ? {
                         ...p, tabs: [
-                            ...p.tabs.filter(t => 
-                                t.id !== data.tab._id && 
-                                !( (String(t.id).startsWith('temp_') || String(t.id).startsWith('tab-')) && t.name === data.tab.name )
-                            ), 
-                            mapTab(data.tab)
+                            ...p.tabs.filter(t => {
+                                const tabId = tab._id || tab.id;
+                                const isRealMatch = t.id === tabId;
+                                const isOptimisticMatch = 
+                                    (String(t.id).startsWith('temp_') || String(t.id).startsWith('tab-') || String(t.id).length < 15) && 
+                                    t.name === tab.name;
+                                return !isRealMatch && !isOptimisticMatch;
+                            }), 
+                            mapTab(tab)
                         ]
                     } : p)
                 };
@@ -296,7 +290,14 @@ export const useProjectStore = create<ProjectStore>()(
             
             _handleTabDeleted: (data) => set((state) => {
                 console.log("tab:deleted broadcast", data);
-                const tabId = data.tabId;
+                if (!data) return state;
+                
+                // Be very robust: check data.tab._id, data.tabId, data.id, or data itself
+                const tab = data.tab || data;
+                const tabId = tab._id || tab.id || data.tabId || (typeof data === 'string' ? data : undefined);
+                
+                if (!tabId) return state;
+                
                 return {
                     projects: state.projects.map(p => ({
                         ...p,
@@ -306,20 +307,70 @@ export const useProjectStore = create<ProjectStore>()(
             }),
             
             _handleChartCreated: (data) => set((state) => {
+                console.log("chart:created broadcast/response received:", data);
+                const chart = data.chart || data;
+                if (!chart || (!chart._id && !chart.id)) {
+                    console.warn("Invalid chart data received in broadcast", data);
+                    return state;
+                }
+                
+                let targetProjectId = data.projectId || chart.projectId;
+                let targetTabId = data.tabId || chart.tabId;
+
+                console.log(`Initial targets - Project: ${targetProjectId}, Tab: ${targetTabId}`);
+
+                // Fallback: If projectId or tabId is missing, try to find them
+                if (!targetProjectId || !targetTabId) {
+                    console.log("Target IDs missing, attempting fallback search...");
+                    for (const p of state.projects) {
+                        for (const t of p.tabs) {
+                            // 1. Check if this tab matches our targetTabId (for Window B observers)
+                            if (targetTabId && t.id === targetTabId) {
+                                console.log(`Found project ${p.id} which owns tab ${t.id}`);
+                                targetProjectId = p.id;
+                                break;
+                            }
+                            
+                            // 2. Check for optimistic match (for creator Window A)
+                            const isOptimisticMatch = t.charts.some(c => 
+                                (String(c.id).startsWith('temp_') || String(c.id).startsWith('chart-')) &&
+                                c.x === (chart.chartData?.x ?? chart.x) &&
+                                c.y === (chart.chartData?.y ?? chart.y)
+                            );
+                            
+                            if (isOptimisticMatch) {
+                                console.log(`Found optimistic match in Project: ${p.id}, Tab: ${t.id}`);
+                                targetProjectId = p.id;
+                                if (!targetTabId) targetTabId = t.id;
+                                break;
+                            }
+                        }
+                        if (targetProjectId) break;
+                    }
+                }
+
+                if (!targetProjectId || !targetTabId) {
+                    console.warn("Could not determine target project or tab for chart creation", chart);
+                    return state;
+                }
+
                 // Remove the corresponding temp chart and insert the real one
                 return {
-                    projects: state.projects.map(p => p.id === data.projectId ? {
-                        ...p, tabs: p.tabs.map(t => t.id === data.tabId ? {
+                    projects: state.projects.map(p => p.id === targetProjectId ? {
+                        ...p, tabs: p.tabs.map(t => t.id === targetTabId ? {
                             ...t, 
                             // Try to remove a temp chart that matches this one's coordinates and type
                             charts: [
-                                ...t.charts.filter(c => 
-                                    !(String(c.id).startsWith('temp_') || String(c.id).startsWith('chart-') 
-                                      && c.x === data.chart.chartData?.x 
-                                      && c.y === data.chart.chartData?.y)
-                                    && c.id !== data.chart._id
-                                ), 
-                                mapChart(data.chart)
+                                ...t.charts.filter(c => {
+                                    const realId = chart._id || chart.id;
+                                    const isRealMatch = c.id === realId;
+                                    const isOptimisticMatch = 
+                                        (String(c.id).startsWith('temp_') || String(c.id).startsWith('chart-')) 
+                                        && c.x === (chart.chartData?.x ?? chart.x) 
+                                        && c.y === (chart.chartData?.y ?? chart.y);
+                                    return !isRealMatch && !isOptimisticMatch;
+                                }), 
+                                mapChart(chart)
                             ]
                         } : t)
                     } : p)
@@ -344,7 +395,14 @@ export const useProjectStore = create<ProjectStore>()(
             
             _handleChartDeleted: (data) => set((state) => {
                 console.log("chart:deleted broadcast", data);
-                const chartId = data.chartId;
+                if (!data) return state;
+                
+                // Be very robust: check data.chart._id, data.chartId, data.id, or data itself
+                const chart = data.chart || data;
+                const chartId = chart._id || chart.id || data.chartId || (typeof data === 'string' ? data : undefined);
+                
+                if (!chartId) return state;
+
                 return {
                     projects: state.projects.map(p => ({
                         ...p,

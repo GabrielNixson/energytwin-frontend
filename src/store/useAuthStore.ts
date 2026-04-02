@@ -10,6 +10,7 @@ interface User {
 interface AuthStore {
   user: User | null;
   isAuthenticated: boolean;
+  chatSessionId: string | null;
   login: (userData: User) => void;
   logout: () => void;
 }
@@ -19,15 +20,18 @@ export const useAuthStore = create<AuthStore>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
+      chatSessionId: null,
       login: (userData) =>
         set({
           user: userData,
           isAuthenticated: true,
+          chatSessionId: 'chat-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9),
         }),
       logout: () =>
         set({
           user: null,
           isAuthenticated: false,
+          chatSessionId: null,
         }),
     }),
     {

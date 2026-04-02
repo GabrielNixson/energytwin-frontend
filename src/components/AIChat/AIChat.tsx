@@ -2,54 +2,121 @@ import { useState, useRef, useEffect } from "react"
 import { AIIcon } from "@/assets/svg/Misc"
 import styles from "./AIChat.module.scss"
 import { motion, AnimatePresence } from "framer-motion"
+import { chatSocket, initializeChatSocket, disconnectChatSocket } from "@/services/chatSocket"
+import { useAuthStore } from "@/store/useAuthStore"
 
-const AIChat = () => {
+interface AIChatProps {
+    projectId?: string;
+    tabId?: string | null;
+}
+
+const AIChat = ({ projectId, tabId }: AIChatProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
-    const [chatHistory, setChatHistory] = useState([
-        { role: 'ai', content: "Hello! I'm your AI Energy Assistant. How can I help you today?" }
-    ]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [chatHistory, setChatHistory] = useState<any[]>([]);
+    const { user, chatSessionId } = useAuthStore();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const isFirstRender = useRef(true);
+    const chatId = chatSessionId || user?._id || 'anonymous';
 
     const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
         messagesEndRef.current?.scrollIntoView({ behavior });
     };
 
     useEffect(() => {
+        if (!isOpen) {
+            isFirstRender.current = true;
+            return;
+        }
+
+        initializeChatSocket();
+        
+        chatSocket.emit("join", chatId);
+
+        const handleHistory = (history: any[]) => {
+            console.log("Chat history received:", history);
+            if (history && history.length > 0) {
+                setChatHistory(history);
+            } else {
+                setChatHistory([{ role: 'ai', content: "Hello! I'm your AI Energy Assistant. How can I help you today?" }]);
+            }
+        };
+
+        const handleStream = (data: { type: string, content: any }) => {
+            if (data.type === 'text') {
+                setChatHistory(prev => {
+                    const lastMessage = prev[prev.length - 1];
+                    if (lastMessage && lastMessage.role === 'ai' && lastMessage.isStreaming) {
+                        return [
+                            ...prev.slice(0, -1),
+                            { ...lastMessage, content: lastMessage.content + data.content }
+                        ];
+                    } else {
+                        return [...prev, { role: 'ai', content: data.content, isStreaming: true }];
+                    }
+                });
+            } else if (data.type === 'tool') {
+                console.log("Tool data received:", data.content);
+            }
+        };
+
+        const handleDone = () => {
+            setIsLoading(false);
+            setChatHistory(prev => {
+                const lastMessage = prev[prev.length - 1];
+                if (lastMessage && lastMessage.role === 'ai' && lastMessage.isStreaming) {
+                    return [...prev.slice(0, -1), { ...lastMessage, isStreaming: false }];
+                }
+                return prev;
+            });
+        };
+
+        chatSocket.on("history", handleHistory);
+        chatSocket.on("stream", handleStream);
+        chatSocket.on("done", handleDone);
+
+        return () => {
+            chatSocket.off("history", handleHistory);
+            chatSocket.off("stream", handleStream);
+            chatSocket.off("done", handleDone);
+            disconnectChatSocket();
+        };
+    }, [isOpen, chatId]);
+
+    // Independent effect for scrolling
+    useEffect(() => {
         if (isOpen) {
             if (isFirstRender.current) {
-                // Initial scroll when opening - make it instant to avoid "fast scroll" look
-                // Use a tiny timeout to ensure the DOM has updated and element is visible
                 const timer = setTimeout(() => {
                     scrollToBottom("auto");
                     isFirstRender.current = false;
                 }, 100);
                 return () => clearTimeout(timer);
             } else {
-                // Subsequent scrolls (new messages) - keep them smooth
                 scrollToBottom("smooth");
             }
-        } else {
-            // Reset when closed so next time it's "first render" again
-            isFirstRender.current = true;
         }
     }, [chatHistory, isOpen]);
 
     const handleSend = () => {
-        if (!message.trim()) return;
+        if (!message.trim() || isLoading) return;
         
-        const newHistory = [...chatHistory, { role: 'user', content: message }];
-        setChatHistory(newHistory);
+        setIsLoading(true);
+        const userMsg = { role: 'user', content: message };
+        setChatHistory(prev => [...prev, userMsg]);
+        
+        chatSocket.emit("message", {
+            chatId,
+            message: message,
+            context: { 
+                userId: user?._id,
+                projectId: projectId,
+                tabId: tabId
+            }
+        });
+        
         setMessage("");
-        
-        // Mock AI response
-        setTimeout(() => {
-            setChatHistory(prev => [...prev, { 
-                role: 'ai', 
-                content: "I'm analyzing your building's energy footprint. Based on current trends, we can reduce consumption by 12% by optimizing the HVAC schedule." 
-            }]);
-        }, 1000);
     };
 
     return (
@@ -69,7 +136,7 @@ const AIChat = () => {
                                     <AIIcon />
                                 </div>
                                 <div className={styles["ai-status"]}>
-                                    <h3>Energy AI</h3>
+                                    <h3>Plixy</h3>
                                     <span>Online</span>
                                 </div>
                             </div>
@@ -90,12 +157,17 @@ const AIChat = () => {
                         <div className={styles["input-area"]}>
                             <input 
                                 type="text" 
-                                placeholder="Ask about energy data..."
+                                placeholder={isLoading ? "AI is thinking..." : "Ask Plixy..."}
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                                disabled={isLoading}
                             />
-                            <button className={styles["send-btn"]} onClick={handleSend}>
+                            <button 
+                                className={`${styles["send-btn"]} ${isLoading ? styles.loading : ""}`} 
+                                onClick={handleSend}
+                                disabled={isLoading || !message.trim()}
+                            >
                                 <span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="22" y1="2" x2="11" y2="13"></line>
                                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
