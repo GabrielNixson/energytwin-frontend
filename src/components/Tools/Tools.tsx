@@ -12,20 +12,20 @@ const AssetsIcon = () => (
 
 const Tools = () => {
     const [activeTool, setActiveTool] = useState<string | null>(null);
-    const { selectedSubOption, setSelectedSubOption, setIsAssetSidebarOpen, isAssetSidebarOpen } = useUIStore();
+    const { selectedSubOption, setSelectedSubOption, setIsAssetSidebarOpen, isAssetSidebarOpen, isChartSidebarOpen, setIsChartSidebarOpen, isEyedropperActive, setIsEyedropperActive } = useUIStore();
     const containerRef = useRef<HTMLDivElement>(null);
 
     const tools = useMemo(() => [
-        {
-            label: "Draw", 
-            icon: DrawIcon, 
-            options: [
-                { label: "line", icon: LineIcon },
-                { label: "rectangle", icon: RectangleIcon },
-                { label: "circle", icon: CircleIcon },
-                { label: "polygon", icon: CustomIcon }
-            ]
-        },
+        // {
+        //     label: "Draw",
+        //     icon: DrawIcon,
+        //     options: [
+        //         { label: "line", icon: LineIcon },
+        //         { label: "rectangle", icon: RectangleIcon },
+        //         { label: "circle", icon: CircleIcon },
+        //         { label: "polygon", icon: CustomIcon }
+        //     ]
+        // },
         {
             label: "Assets",
             icon: AssetsIcon
@@ -70,6 +70,41 @@ const Tools = () => {
     return (
         <div className={styles["tools-container"]} ref={containerRef}>
             <div className={styles["tools-wrapper"]}>
+                {/* Unified Add Charts Toggle */}
+                <div className={styles["tool-item-group"]}>
+                    <button
+                        className={`${styles["tool-button"]} ${isChartSidebarOpen ? styles.active : ""}`}
+                        onClick={() => setIsChartSidebarOpen(!isChartSidebarOpen)}
+                    >
+                        <div className={styles.icon}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <line x1="12" y1="20" x2="12" y2="10" />
+                                <line x1="18" y1="20" x2="18" y2="4" />
+                                <line x1="6" y1="20" x2="6" y2="16" />
+                            </svg>
+                        </div>
+                        <div className={styles.label}>Charts</div>
+                    </button>
+                </div>
+
+                {/* Eyedropper Add Tab */}
+                <div className={styles["tool-item-group"]}>
+                    <button
+                        className={`${styles["tool-button"]} ${isEyedropperActive ? styles.active : ""}`}
+                        onClick={() => setIsEyedropperActive(!isEyedropperActive)}
+                    >
+                        <div className={styles.icon}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m2 22 1-1h3l9-9"/>
+                                <path d="M3 21v-3l9-9"/>
+                                <path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l-3-3Z"/>
+                            </svg>
+                        </div>
+                        <div className={styles.label}>Add Tab</div>
+                    </button>
+                </div>
+
                 {tools.map((tool) => {
                     // Determine which icon to display for the main button
                     // If a sub-option is selected, use its icon. Else use the default tool icon.
@@ -87,8 +122,8 @@ const Tools = () => {
                             {tool.options && activeTool === tool.label && (
                                 <div className={styles["sub-menu"]}>
                                     {tool.options.map((option) => (
-                                        <button 
-                                            key={option.label} 
+                                        <button
+                                            key={option.label}
                                             className={`${styles["sub-tool-button"]} ${selectedSubOption === option.label ? styles.active : ""}`}
                                             onClick={() => handleSubOptionClick(option.label)}
                                         >
@@ -102,7 +137,8 @@ const Tools = () => {
                             )}
 
                             {/* Main Tool Button */}
-                            <button 
+
+                            <button
                                 className={`${styles["tool-button"]} ${activeTool === tool.label ? styles.active : ""}`}
                                 onClick={() => handleToolClick(tool.label)}
                             >
@@ -110,7 +146,7 @@ const Tools = () => {
                                     {displayIcon()}
                                 </div>
                                 <div className={styles.label}>{selectedSubOption || tool.label}</div>
-                                
+
                                 {tool.options && (
                                     <div className={`${styles["chevron"]} ${activeTool === tool.label ? styles.open : ""}`}>
                                         <svg width="8" height="6" viewBox="0 0 8 6" fill="none">

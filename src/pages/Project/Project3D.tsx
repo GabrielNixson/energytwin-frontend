@@ -12,14 +12,19 @@ import {
     TransformControls
 } from '@react-three/drei';
 import * as THREE from 'three';
+import { useDroppable } from '@dnd-kit/core';
+import ChartOverlay from './components/ChartOverlay/ChartOverlay';
 
 // extend({ FillingMaterial }); // Removed as per request to remove loading box
 import Tools from '@/components/Tools/Tools';
 import { useUIStore } from '@/store/useUIStore';
+import { useProjectStore } from '@/store/useProjectStore';
+import { useParams } from 'react-router-dom';
 import Controls from '@/components/3D/Controls';
 import ModelContextMenu from '@/components/ModelContextMenu/ModelContextMenu';
+import styles from './Project.module.scss';
 
-const PlacedModel = ({ id, path, position, rotation, name, onContextMenu, isSelected, onSelect, children }: { id: string, path: string, position: [number, number, number], rotation: [number, number, number], name: string, onContextMenu: (e: any) => void, isSelected: boolean, onSelect: (obj: THREE.Object3D) => void, children?: React.ReactNode }) => {
+const PlacedModel = ({ id, path, position, rotation, name, onContextMenu, isSelected, onSelect, onPointerOver, onPointerOut, children }: { id: string, path: string, position: [number, number, number], rotation: [number, number, number], name: string, onContextMenu: (e: any) => void, isSelected: boolean, onSelect: (obj: THREE.Object3D) => void, onPointerOver?: (e: any) => void, onPointerOut?: () => void, children?: React.ReactNode }) => {
     const groupRef = useRef<THREE.Group>(null!);
     const { scene } = useGLTF(path);
     const clonedScene = useMemo(() => scene.clone(), [scene]);
@@ -52,6 +57,8 @@ const PlacedModel = ({ id, path, position, rotation, name, onContextMenu, isSele
             rotation={rotation}
             userData={{ id }}
             onPointerDown={handlePointerDown}
+            onPointerOver={onPointerOver}
+            onPointerOut={onPointerOut}
             onClick={(e) => {
                 if (isClick(e)) {
                     e.stopPropagation();
@@ -213,6 +220,8 @@ const DxfLayer = () => {
 };
 
 const Project3D = () => {
+    const { projectID } = useParams<{ projectID: string }>();
+    const { projects, updateProjectCharts, removeChart } = useProjectStore();
     const {
         selectedSubOption,
         placedModels,
@@ -225,16 +234,39 @@ const Project3D = () => {
         selectedModelId,
         setSelectedModelId,
         updateModelPosition,
-        updateModelRotation
+        updateModelRotation,
+        overlayCharts,
+        draggingChartPreview,
+        isChartSidebarOpen,
+        setIsChartSidebarOpen,
+        activeTabId,
+        isEyedropperActive,
+        setIsEyedropperActive,
+        setEyedropperSelection,
+        setHoveredAsset
     } = useUIStore();
+
+    // Get current tab's charts for unified rendering
+    const currentProject = projects.find(p => p.id === projectID);
+    const activeTab = currentProject?.tabs.find(t => t.id === activeTabId) || currentProject?.tabs[0];
+    const projectCharts = activeTab?.charts || [];
+
+    // Filter overlayCharts to only show those NOT in projectCharts (avoiding double rendering)
+    const uniqueOverlays = overlayCharts.filter(oc => !projectCharts.some(pc => pc.id === oc.id));
     const cameraRef = useRef<any>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null!);
+    // mousePointer is used for dragging and 3D interactions
     const mousePointer = useMemo(() => new THREE.Vector2(), []);
     const dragPositionRef = useRef(new THREE.Vector3());
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, modelId: string } | null>(null);
     const [isTransforming, setIsTransforming] = useState(false);
     const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
     const [transformMode, setTransformMode] = useState<'translate' | 'rotate'>('translate');
+    const [isCtrlPressed, setIsCtrlPressed] = useState(false);
+
+    const { setNodeRef } = useDroppable({
+        id: '3d-overlay-area',
+    });
 
     // We are in "Ortho" mode if a tool is selected
     const isOrthoView = !!selectedSubOption;
@@ -339,6 +371,8 @@ const Project3D = () => {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey) setIsCtrlPressed(true);
+
             if (e.ctrlKey && e.key === 'v' && copiedModel) {
                 addPlacedModel({
                     ...copiedModel,
@@ -351,17 +385,92 @@ const Project3D = () => {
             if (e.key.toLowerCase() === 'w') setTransformMode('translate');
             if (e.key.toLowerCase() === 'e') setTransformMode('rotate');
         };
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (e.key === 'Control') setIsCtrlPressed(false);
+        };
+
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
     }, [copiedModel, addPlacedModel]);
 
     return (
         <div
-            ref={containerRef}
+            ref={(node) => {
+                if (node) {
+                    containerRef.current = node;
+                    setNodeRef(node);
+                }
+            }}
+            className={`${styles["three-container"]} ${isEyedropperActive ? styles["eyedropper-active"] : ""}`}
             style={{ width: '100%', height: '100%', position: 'relative' }}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
         >
+
+            {/* Project Persistent Charts rendered as Overlays */}
+            {projectCharts.map((chart) => (
+                <ChartOverlay
+                    key={chart.id}
+                    {...chart}
+                    // Map 3D fields to expected props or fallback
+                    x={chart.x3d ?? 400}
+                    y={chart.y3d ?? 200}
+                    w={chart.w3d ?? 400}
+                    h={chart.h3d ?? 300}
+                    constraintsRef={containerRef}
+                    onUpdate={(updates) => {
+                        if (projectID && activeTab) {
+                            const newCharts = projectCharts.map(c =>
+                                c.id === chart.id ? {
+                                    ...c,
+                                    ...updates,
+                                    x3d: updates.x ?? c.x3d,
+                                    y3d: updates.y ?? c.y3d,
+                                    w3d: updates.w ?? c.w3d,
+                                    h3d: updates.h ?? c.h3d
+                                } : c
+                            );
+                            updateProjectCharts(projectID, activeTab.id, newCharts);
+                        }
+                    }}
+                    onDelete={() => {
+                        if (projectID && activeTab) {
+                            removeChart(projectID, activeTab.id, chart.id);
+                        }
+                    }}
+                />
+            ))}
+
+            {/* Transient/Temp Overlays (for newly dropped but not yet saved, if any) */}
+            {uniqueOverlays.map((chart) => (
+                <ChartOverlay
+                    key={chart.id}
+                    {...chart}
+                    constraintsRef={containerRef}
+                />
+            ))}
+
+            {/* Live Drag Preview for Charts */}
+            {draggingChartPreview && (
+                <div style={{ pointerEvents: 'none', opacity: 0.5 }}>
+                    <ChartOverlay
+                        id="preview-ghost"
+                        {...draggingChartPreview}
+                        w={400}
+                        h={300}
+                        constraintsRef={containerRef}
+                    />
+                </div>
+            )}
+
+
+
+
             <Tools />
 
             {/* Transform Mode Toggle UI */}
@@ -470,7 +579,18 @@ const Project3D = () => {
                             name={model.name}
                             onContextMenu={(e) => handleModelContextMenu(e, model.id)}
                             isSelected={selectedModelId === model.id}
+                            onPointerOver={(e) => {
+                                e.stopPropagation();
+                                if (isEyedropperActive) setHoveredAsset({ name: model.name, id: model.id });
+                            }}
+                            onPointerOut={() => setHoveredAsset(null)}
                             onSelect={(obj) => {
+                                if (isEyedropperActive) {
+                                    setEyedropperSelection({ name: model.name, id: model.id });
+                                    setIsEyedropperActive(false);
+                                    setHoveredAsset(null);
+                                    return;
+                                }
                                 setSelectedModelId(model.id);
                                 setSelectedObject(obj);
                             }}
@@ -483,15 +603,14 @@ const Project3D = () => {
                             object={selectedObject as any}
                             mode={transformMode}
 
+                            // Snapping logic
+                            translationSnap={isCtrlPressed ? 0.5 : null}
+                            rotationSnap={isCtrlPressed ? Math.PI / 12 : null}
+
                             // Translation controls
                             showX={transformMode === 'translate'}
                             showY={true}
                             showZ={transformMode === 'translate'}
-
-                            // Rotation controls (THIS is key)
-                            rotationAxis={
-                                transformMode === 'rotate' ? 'y' : undefined
-                            }
 
                             onMouseDown={() => setIsTransforming(true)}
                             onMouseUp={() => {
@@ -499,11 +618,11 @@ const Project3D = () => {
 
                                 if (selectedObject) {
                                     const { x, y, z } = selectedObject.position;
-                                    const { x: rx, y: ry, z: rz } = selectedObject.rotation;
+                                    const ry = selectedObject.rotation.y;
 
                                     updateModelPosition(selectedModelId, [x, y, z]);
 
-                                    // Force lock X & Z rotation
+                                    // Force lock X & Z rotation (Y-axis only)
                                     updateModelRotation(selectedModelId, [0, ry, 0]);
                                 }
                             }}

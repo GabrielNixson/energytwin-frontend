@@ -60,7 +60,7 @@ interface ChartListSidebarProps {
 }
 
 const ChartListSidebar = ({ isOpen = true }: ChartListSidebarProps) => {
-    const { isEditMode } = useUIStore();
+    const { isEditMode, is3DMode } = useUIStore();
     const [searchQuery, setSearchQuery] = useState("");
 
     const chartList = [
@@ -82,8 +82,11 @@ const ChartListSidebar = ({ isOpen = true }: ChartListSidebarProps) => {
         chart.label.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // In 3D mode, we allow the sidebar to open via the toolbar toggle even if not in "Edit Mode"
+    const shouldBeCollapsed = !is3DMode ? (!isEditMode || !isOpen) : !isOpen;
+
     return (
-        <div className={`${styles["chart-list-sidebar-container"]} ${(!isEditMode || !isOpen) ? styles.collapsed : ""}`}>
+        <div className={`${styles["chart-list-sidebar-container"]} ${shouldBeCollapsed ? styles.collapsed : ""}`}>
             <div className={styles.header}>
                 <h1>Charts</h1>
                 <div className={styles["search-box"]}>

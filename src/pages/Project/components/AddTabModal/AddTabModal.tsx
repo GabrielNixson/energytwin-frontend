@@ -8,20 +8,31 @@ interface AddTabModalProps {
     onSubmit: (name: string) => void;
     initialValue?: string;
     title?: string;
+    existingNames?: string[];
 }
 
-const AddTabModal = ({ isOpen, onClose, onSubmit, initialValue, title }: AddTabModalProps) => {
+const AddTabModal = ({ isOpen, onClose, onSubmit, initialValue, title, existingNames = [] }: AddTabModalProps) => {
     const [name, setName] = useState("");
+    const [error, setError] = useState("");
 
     useEffect(() => {
         if (isOpen) {
             setName(initialValue || "");
+            setError("");
         }
     }, [isOpen, initialValue]);
 
+    useEffect(() => {
+        if (name.trim() && existingNames.some(en => en.toLowerCase() === name.trim().toLowerCase() && en !== initialValue)) {
+            setError("A tab with this name already exists in this project.");
+        } else {
+            setError("");
+        }
+    }, [name, existingNames, initialValue]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (name.trim()) {
+        if (name.trim() && !error) {
             onSubmit(name.trim());
             onClose();
         }
@@ -38,14 +49,16 @@ const AddTabModal = ({ isOpen, onClose, onSubmit, initialValue, title }: AddTabM
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Room A, Energy Stats..."
                         autoFocus
+                        className={error ? styles.errorInput : ""}
                     />
+                    {error && <span className={styles.errorMessage}>{error}</span>}
                 </div>
                 <div className={styles.actions}>
                     <button type="button" onClick={onClose} className={styles.cancelButton}>
                         Cancel
                     </button>
-                    <button type="submit" className={styles.submitButton} disabled={!name.trim()}>
-                        Create Tab
+                    <button type="submit" className={styles.submitButton} disabled={!name.trim() || !!error}>
+                        {title?.includes("Rename") ? "Rename Tab" : "Create Tab"}
                     </button>
                 </div>
             </form>

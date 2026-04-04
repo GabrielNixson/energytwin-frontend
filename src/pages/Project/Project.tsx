@@ -153,11 +153,33 @@ const Project = () => {
   const { projectID } = useParams<{ projectID: string }>();
   const { projects, updateProjectCharts, addChart, addTab, removeTab, updateTabName, getProject, removeChart } =
     useProjectStore();
-  const { isEditMode, setIsEditMode, is3DMode, setIs3DMode, setDxfData } =
-    useUIStore();
+  const {
+    isEditMode, setIsEditMode,
+    is3DMode, setIs3DMode,
+    setDxfData, setDraggingChartPreview,
+    isChartSidebarOpen,
+    findSafePosition,
+    activeTabId, setActiveTabId,
+    eyedropperSelection, setEyedropperSelection,
+    setIsSidebarCollapsed,
+    hoveredAsset,
+    isEyedropperActive
+  } = useUIStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTabId, setActiveTabId] = useState<string>("default");
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  // Track mouse for tooltip globally to avoid transform/layout issues
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    if (isEyedropperActive) {
+      window.addEventListener('mousemove', handleGlobalMouseMove);
+    }
+    return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
+  }, [isEyedropperActive]);
+
   const [isTabModalOpen, setIsTabModalOpen] = useState(false);
   const [tabModalMode, setTabModalMode] = useState<{
     type: "add" | "rename";
@@ -175,7 +197,7 @@ const Project = () => {
     isOpen: false,
     title: "",
     message: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const sensors = useSensors(
@@ -205,7 +227,7 @@ const Project = () => {
             isOpen: true,
             title: "Parsing Error",
             message: "Failed to parse DXF file. Please check if the file format is valid.",
-            onConfirm: () => {},
+            onConfirm: () => { },
             confirmText: "Okay",
             type: "danger"
           });
@@ -225,7 +247,7 @@ const Project = () => {
   // Fetch project details on mount or ID change
   useEffect(() => {
     // console.log("projectID: "+projectID);
-    
+
     if (projectID) {
       getProject(projectID);
     }
@@ -243,10 +265,10 @@ const Project = () => {
 
       // 2. Ensure current activeTabId exists in the project's tabs
       const activeTabExists = currentProject.tabs.find((t) => t.id === activeTabId);
-      
+
       if (!activeTabExists) {
         // If we were on a temp tab, maybe it got promoted to a real one with a new ID?
-        if (activeTabId.startsWith('temp_')) {
+        if (activeTabId?.startsWith('temp_')) {
           setActiveTabId(currentProject.tabs[currentProject.tabs.length - 1]?.id || "default");
         } else {
           setActiveTabId(currentProject.tabs[0]?.id || "default");
@@ -254,6 +276,11 @@ const Project = () => {
       }
     }
   }, [currentProject?.tabs, activeTabId, projectID, addTab]);
+
+  // Collapse sidebar automatically when entering a project
+  useEffect(() => {
+    setIsSidebarCollapsed(true);
+  }, [setIsSidebarCollapsed]);
 
   const activeTab = useMemo(() => {
     return currentProject?.tabs.find((t) => t.id === activeTabId);
@@ -284,7 +311,7 @@ const Project = () => {
   );
 
   // Auto-align state
-  const [isAutoAlign, setIsAutoAlign] = useState(false);
+  const [isAutoAlign, setIsAutoAlign] = useState(true);
 
   // Position of the item currently being dragged (in grid units)
   const [dragPosition, setDragPosition] = useState<{
@@ -431,18 +458,40 @@ const Project = () => {
     [charts, saveCharts, resolveCollisions],
   );
 
+  // Effect: When an asset is selected via Eyedropper in 3D, open the Add Tab modal
+  useEffect(() => {
+    if (eyedropperSelection) {
+      setTabModalMode({
+        type: "add",
+        initialName: `${eyedropperSelection.name}`
+      });
+      setIsTabModalOpen(true);
+      // We clear this selection only after the modal is handled or closed
+    }
+  }, [eyedropperSelection, setEyedropperSelection]);
+
+  // Effect: Auto-align charts when switching from 3D to 2D for a clean dashboard
+  const prevIs3DMode = useRef(is3DMode);
+  useEffect(() => {
+    if (prevIs3DMode.current && !is3DMode) {
+      // Switched from 3D to 2D
+      saveCharts(compactLayout(charts));
+    }
+    prevIs3DMode.current = is3DMode;
+  }, [is3DMode, charts, compactLayout, saveCharts]);
+
   const handleRemoveChart = useCallback(
     (id: string) => {
       let updated = charts.filter((c) => c.id !== id);
       if (isAutoAlign) {
         updated = compactLayout(updated);
       }
-      
+
       setCharts(updated);
       if (projectID && activeTabId) {
         removeChart(projectID, activeTabId, id);
       }
-      
+
       if (selectedChartId === id) setSelectedChartId(null);
     },
     [charts, removeChart, projectID, activeTabId, selectedChartId, isAutoAlign, compactLayout],
@@ -633,6 +682,38 @@ const Project = () => {
     ) {
       setDragPosition(coords);
     }
+
+    // 3D Overlay Live Preview
+    if (is3DMode && active.id.toString().startsWith("sidebar-")) {
+      const startE = event.activatorEvent as MouseEvent;
+      if (startE) {
+        const absoluteX = startE.clientX + event.delta.x;
+        const absoluteY = startE.clientY + event.delta.y;
+
+        const overId = event.over?.id;
+        const overRect = event.over?.rect;
+
+        if (overId === "3d-overlay-area" && overRect) {
+          const relX = absoluteX - overRect.left;
+          const relY = absoluteY - overRect.top;
+
+          setDraggingChartPreview({
+            type: active.data.current?.type,
+            title: active.data.current?.label,
+            x: relX - 200,
+            y: relY - 150
+          });
+        } else {
+          // Fallback for screen-based if not over the area
+          setDraggingChartPreview({
+            type: active.data.current?.type,
+            title: active.data.current?.label,
+            x: absoluteX - 200,
+            y: absoluteY - 150
+          });
+        }
+      }
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -646,28 +727,31 @@ const Project = () => {
       let finalLayout: ChartData[] = [];
 
       if (isFromSidebar) {
-        // For sidebar drag, we resolve collisions only on drop
+        // REJECT sidebar drops in 2D mode as per new requirements
+        if (!is3DMode) return;
+
         const ghost = chartsForDrop.find((c) => c.id === "preview-ghost");
         if (ghost) {
           const newChart = {
             ...ghost,
             id: `chart-${Date.now()}`,
             isGhost: false,
+            // Default 3D position if we were in 3D (though we check is3DMode above)
+            x3d: 400,
+            y3d: 200,
+            w3d: 400,
+            h3d: 300
           } as ChartData;
-          
+
           const withNewChart = chartsForDrop.map((c) =>
             c.id === "preview-ghost" ? newChart : c,
           );
-          
-          // Resolve collisions now that the item is dropped
+
           finalLayout = resolveCollisions(newChart, withNewChart);
-          
-          // Add the new chart explicitly (single emit)
+
           if (projectID && activeTabId) {
             addChart(projectID, activeTabId, newChart);
           }
-        } else {
-          finalLayout = chartsForDrop.map((c) => ({ ...c, isGhost: false }));
         }
       } else {
         // For sorting, previewCharts already resolved collisions.
@@ -685,14 +769,90 @@ const Project = () => {
       }
 
       saveCharts(finalLayout);
+    } else if (over && over.id === "3d-overlay-area" && event.activatorEvent) {
+      if (active.id.toString().startsWith("sidebar-")) {
+        const chartType = active.data.current?.type;
+        const label = active.data.current?.label;
+
+        const e = event.activatorEvent as MouseEvent;
+        const rect = event.over?.rect;
+        if (!rect) return;
+
+        const absoluteX = e.clientX + event.delta.x;
+        const absoluteY = e.clientY + event.delta.y;
+
+        // Relative to the overlay container
+        const relativeX = absoluteX - rect.left;
+        const relativeY = absoluteY - rect.top;
+
+        const containerW = rect.width;
+        const containerH = rect.height;
+
+        const safePos = findSafePosition(
+          null,
+          relativeX - 200,
+          relativeY - 150,
+          400, 300,
+          containerW, containerH,
+          isChartSidebarOpen
+        );
+
+        // Find a free spot in a 3-column-wide 2D grid (4 span each)
+        // Use activeTab.charts for the latest source of truth to avoid stale closures
+        const findBetterSpot = () => {
+          const currentChartsList = activeTab?.charts || [];
+          let foundX = 0;
+          let foundY = 0;
+          let spotFound = false;
+
+          for (let row = 0; row < 100 && !spotFound; row++) {
+            for (let col = 0; col <= 8; col += 4) {
+              const isOccupied = currentChartsList.some(c => 
+                (col < c.x + c.w && col + 4 > c.x) && 
+                (row < c.y + c.h && row + 2 > c.y)
+              );
+              if (!isOccupied) {
+                foundX = col;
+                foundY = row;
+                spotFound = true;
+                break;
+              }
+            }
+          }
+          return { x: foundX, y: foundY };
+        };
+
+        const spot = findBetterSpot();
+
+        const newChart: ChartData = {
+          id: `chart-${Date.now()}`,
+          type: chartType,
+          title: label,
+          x: spot.x,
+          y: spot.y,
+          w: 4,
+          h: 2,
+          x3d: safePos.x,
+          y3d: safePos.y,
+          w3d: 400,
+          h3d: 300,
+          config: DEFAULT_CHART_CONFIG
+        };
+
+        if (projectID && activeTabId) {
+          addChart(projectID, activeTabId, newChart);
+        }
+      }
     }
 
+    setDraggingChartPreview(null);
     setDragPosition(null);
     setActiveId(null);
     setActiveChart(null);
   };
 
   const handleDragCancel = () => {
+    setDraggingChartPreview(null);
     setDragPosition(null);
     setActiveId(null);
     setActiveChart(null);
@@ -828,16 +988,13 @@ const Project = () => {
     setSelectedChartId(id);
   };
 
-  const handleAddTab = () => {
-    setTabModalMode({ type: "add" });
-    setIsTabModalOpen(true);
-  };
 
   const handleTabModalSubmit = (name: string) => {
     if (tabModalMode.type === "add" && projectID) {
       const newTabId = 'temp_' + Math.random().toString(36).substring(2, 9);
       addTab(projectID, name, newTabId);
       setActiveTabId(newTabId); // Switch to the new tab!
+      setEyedropperSelection(null); // Clear selection after successful add
     } else if (
       tabModalMode.type === "rename" &&
       projectID &&
@@ -846,6 +1003,7 @@ const Project = () => {
       updateTabName(projectID, tabModalMode.tabId, name);
     }
     setIsTabModalOpen(false);
+    setEyedropperSelection(null); // Clear selection if cancelled/submitted
   };
 
   const handleRemoveTab = (e: React.MouseEvent, tabId: string) => {
@@ -892,39 +1050,44 @@ const Project = () => {
       }}
     >
       <div className={styles["project-container"]}>
+        <div className={styles["top-nav"]}>
+          <div className={styles["tab-bar"]}>
+            {currentProject?.tabs.map((tab) => (
+              <div
+                key={tab.id}
+                className={`${styles["tab-item"]} ${activeTabId === tab.id ? styles.active : ""}`}
+                onClick={() => setActiveTabId(tab.id)}
+                onDoubleClick={() => handleRenameTab(tab.id, tab.name)}
+              >
+                <span className={styles["tab-name"]}>{tab.name}</span>
+                {currentProject?.tabs.length > 1 && (
+                  <button
+                    className={styles["remove-tab-btn"]}
+                    onClick={(e) => handleRemoveTab(e, tab.id)}
+                    title="Delete Tab"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              className={styles["add-tab-btn"]}
+              onClick={() => {
+                setTabModalMode({ type: "add", initialName: "" });
+                setIsTabModalOpen(true);
+              }}
+              title="Add New Tab"
+            >
+              <span className={styles.icon}>+</span>
+              <span className={styles.text}>Add Tab</span>
+            </button>
+          </div>
+        </div>
+
         <div className={styles["tools-container"]}>
           {!is3DMode && (
             <>
-              <div className={styles["tab-bar"]}>
-                {currentProject?.tabs.map((tab) => (
-                  <div
-                    key={tab.id}
-                    className={`${styles["tab-item"]} ${activeTabId === tab.id ? styles.active : ""}`}
-                    onClick={() => setActiveTabId(tab.id)}
-                    onDoubleClick={() =>
-                      isEditMode && handleRenameTab(tab.id, tab.name)
-                    }
-                  >
-                    <span className={styles["tab-name"]}>{tab.name}</span>
-                    {isEditMode && currentProject?.tabs.length > 1 && (
-                      <button
-                        className={styles["remove-tab-btn"]}
-                        onClick={(e) => handleRemoveTab(e, tab.id)}
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  className={styles["add-tab-btn"]}
-                  onClick={handleAddTab}
-                  title="Add New Tab"
-                >
-                  <span className={styles["icon"]}>+</span>
-                  <span className={styles["text"]}>Add Tab</span>
-                </button>
-              </div>
               <button
                 className={`${styles["btn"]} ${isEditMode ? styles.active : ""}`}
                 onClick={() => setIsEditMode(!isEditMode)}
@@ -947,6 +1110,8 @@ const Project = () => {
 
           {is3DMode && (
             <>
+
+
               <input
                 type="file"
                 ref={fileInputRef}
@@ -969,19 +1134,24 @@ const Project = () => {
             {is3DMode ? "Switch to 2D" : "Switch to 3D"}
           </button>
         </div>
-        
-        {!is3DMode && (
-          <>
-            <ChartListSidebar isOpen={!selectedChartId} />
 
-            {isEditMode && selectedChartId && (
-              <ChartConfigSidebar
-                chart={charts.find((c) => c.id === selectedChartId)!}
-                onClose={() => setSelectedChartId(null)}
-                onUpdate={handleUpdateChart}
+        {/* Unified Sidebar Layer */}
+        {!selectedChartId && (
+          <div style={{ display: 'flex', height: '100%', pointerEvents: 'none' }}>
+            <div style={{ pointerEvents: 'auto' }}>
+              <ChartListSidebar
+                isOpen={is3DMode ? isChartSidebarOpen : true}
               />
-            )}
-          </>
+            </div>
+          </div>
+        )}
+
+        {isEditMode && selectedChartId && (
+          <ChartConfigSidebar
+            chart={charts.find((c) => c.id === selectedChartId)!}
+            onClose={() => setSelectedChartId(null)}
+            onUpdate={handleUpdateChart}
+          />
         )}
 
         <AnimatePresence mode="wait">
@@ -1086,13 +1256,14 @@ const Project = () => {
         onSubmit={handleTabModalSubmit}
         initialValue={tabModalMode.initialName}
         title={tabModalMode.type === "add" ? "Add New Tab" : "Rename Tab"}
+        existingNames={currentProject?.tabs.map(t => t.name)}
       />
 
       {/* Hide Chat in 3D Mode */}
       {!is3DMode && (
-        <AIChat 
-          projectId={projectID} 
-          tabId={activeTabId} 
+        <AIChat
+          projectId={projectID}
+          tabId={activeTabId}
         />
       )}
 
@@ -1108,6 +1279,20 @@ const Project = () => {
         confirmText={confirmConfig.confirmText}
         type={confirmConfig.type}
       />
+
+      {/* Global Asset Hover Tooltip (Eyedropper Mode) */}
+      {isEyedropperActive && hoveredAsset && (
+        <div
+          className={styles["eyedropper-tooltip"]}
+          style={{
+            left: mousePos.x,
+            top: mousePos.y,
+            position: 'fixed' // Ensure it's fixed relative to viewport
+          }}
+        >
+          Select: {hoveredAsset.name}
+        </div>
+      )}
     </DndContext>
   );
 };

@@ -94,7 +94,8 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
 
     const options = {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
+        aspectRatio: 2,
         plugins: {
             legend: {
                 display: effectiveConfig.showLegend,
@@ -285,32 +286,29 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
     return (
         <div
             className={[
-                styles['chart-wrapper'],
+                styles.chartWrapper,
                 isCompact ? styles.compact : '',
-                isBilling ? styles['pop-over'] : '',
+                isBilling ? styles.popOver : '',
                 isExpanded ? styles.expanded : '',
             ].filter(Boolean).join(' ')}
-            // ↓ KEY FIX: lift z-index AND set overflow visible when billing dropdown is open
             style={{
                 zIndex: isExpanded ? 50 : 1,
-                // overflow must be visible so the absolutely-positioned dropdown
-                // isn't clipped by the card boundary
                 overflow: isBilling ? 'visible' : undefined,
             }}
         >
-            <div className={styles['chart-header']}>
-                <div className={styles['title-group']}>
-                    <span className={styles['chart-title']}>{title}</span>
+            <div className={styles.chartHeader}>
+                <div className={styles.titleGroup}>
+                    <span className={styles.chartTitle}>{title}</span>
                     {type === 'progressBar' && (
-                        <span className={styles['percentage-badge']}>
+                        <span className={styles.percentageBadge}>
                             {data.datasets[0].data[data.datasets[0].data.length - 1]}%
                         </span>
                     )}
                 </div>
                 {isEditMode && (
-                    <div className={styles['header-actions']}>
+                    <div className={styles.headerActions}>
                         <button
-                            className={styles['delete-btn']}
+                            className={styles.deleteBtn}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (onDelete) onDelete();
@@ -322,17 +320,24 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                 )}
             </div>
 
-            {/* ↓ KEY FIX: chart-content must also be overflow:visible for billing */}
             <div
-                className={styles['chart-content']}
-                style={isBilling ? { overflow: 'visible' } : undefined}
+                className={styles.chartContent}
+                style={isBilling ? { overflow: 'visible' } : {
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    width: '100%'
+                }}
             >
-                {renderChart()}
+                <div style={{ width: '100%', maxWidth: '100%', display: 'flex', justifyContent: 'center' }}>
+                    {renderChart()}
+                </div>
             </div>
 
             {isEditMode && (
                 <div
-                    className={styles['resize-handle']}
+                    className={styles.resizeHandle}
                     onPointerDown={handleResizePointerDown}
                     data-resize-handle
                 >

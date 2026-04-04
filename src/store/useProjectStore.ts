@@ -58,6 +58,10 @@ const mapChart = (c: any): ChartData => ({
     y: c.chartData?.y ?? c.y,
     w: c.chartData?.w ?? c.w,
     h: c.chartData?.h ?? c.h,
+    x3d: c.chartData?.x3d || c.x3d,
+    y3d: c.chartData?.y3d || c.y3d,
+    w3d: c.chartData?.w3d || c.w3d,
+    h3d: c.chartData?.h3d || c.h3d,
     config: c.configData || c.config || {}
 });
 
@@ -132,7 +136,11 @@ export const useProjectStore = create<ProjectStore>()(
                     if (!isNew) {
                         socket.emit('chart:update', {
                             chartId: c.id,
-                            chartData: { x: c.x, y: c.y, w: c.w, h: c.h, title: c.title, type: c.type },
+                            chartData: { 
+                                x: c.x, y: c.y, w: c.w, h: c.h, 
+                                x3d: c.x3d, y3d: c.y3d, w3d: c.w3d, h3d: c.h3d,
+                                title: c.title, type: c.type 
+                            },
                             configData: c.config
                         });
                     }
@@ -462,6 +470,12 @@ export const useProjectStore = create<ProjectStore>()(
         {
             name: "project-store",
             version: 2,
+            partialize: (state) => ({
+                projects: state.projects.map(p => ({
+                    ...p,
+                    tabs: p.tabs.map(t => ({ ...t, charts: [] }))
+                }))
+            })
         }
     )
 );

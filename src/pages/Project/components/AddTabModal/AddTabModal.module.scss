@@ -35,7 +35,29 @@
         &::placeholder {
             color: #475569;
         }
+
+        &.errorInput {
+            border-color: #ef4444 !important;
+            background: rgba(239, 68, 68, 0.05);
+
+            &:focus {
+                box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+            }
+        }
     }
+
+    .errorMessage {
+        color: #ef4444;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-top: 0.2rem;
+        animation: fadeIn 0.2s ease-out;
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .actions {
