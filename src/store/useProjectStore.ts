@@ -58,12 +58,41 @@ const mapChart = (c: any): ChartData => ({
     y: c.chartData?.y ?? c.y,
     w: c.chartData?.w ?? c.w,
     h: c.chartData?.h ?? c.h,
-    x3d: c.chartData?.x3d || c.x3d,
-    y3d: c.chartData?.y3d || c.y3d,
-    w3d: c.chartData?.w3d || c.w3d,
-    h3d: c.chartData?.h3d || c.h3d,
+    x3d: (c.x3d !== undefined ? c.x3d : c.chartData?.x3d),
+    y3d: (c.y3d !== undefined ? c.y3d : c.chartData?.y3d),
+    w3d: (c.w3d !== undefined ? c.w3d : c.chartData?.w3d),
+    h3d: (c.h3d !== undefined ? c.h3d : c.chartData?.h3d),
     config: c.configData || c.config || {}
 });
+
+// Helper to merge local 3D data into server objects
+const mergeLocal3DData = (newP: Project, existingP: Project | undefined): Project => {
+    if (!existingP) return newP;
+    
+    return {
+        ...newP,
+        tabs: newP.tabs.map(newT => {
+            const existingT = existingP.tabs.find(t => t.id === newT.id);
+            if (!existingT) return newT;
+
+            return {
+                ...newT,
+                charts: newT.charts.map(newC => {
+                    const existingC = existingT.charts.find(c => c.id === newC.id);
+                    if (!existingC) return newC;
+                    
+                    return {
+                        ...newC,
+                        x3d: existingC.x3d ?? newC.x3d,
+                        y3d: existingC.y3d ?? newC.y3d,
+                        w3d: existingC.w3d ?? newC.w3d,
+                        h3d: existingC.h3d ?? newC.h3d
+                    };
+                })
+            };
+        })
+    };
+};
 
 export const useProjectStore = create<ProjectStore>()(
     persist(
@@ -71,14 +100,9 @@ export const useProjectStore = create<ProjectStore>()(
             projects: [],
             setProjects: (newProjects) => set((state) => {
                 const mapped = newProjects.map(mapProject);
-                // Merge projects: prefer detailed objects (with tabs) over summary objects
-                const merged = mapped.map(newP => {
-                    const existing = state.projects.find(p => p.id === newP.id);
-                    if (existing && existing.tabs.length > 0 && newP.tabs.length === 0) {
-                        return { ...newP, tabs: existing.tabs };
-                    }
-                    return newP;
-                });
+                const merged = mapped.map(newP => 
+                    mergeLocal3DData(newP, state.projects.find(p => p.id === newP.id))
+                );
                 return { projects: merged };
             }),
             
@@ -237,12 +261,13 @@ export const useProjectStore = create<ProjectStore>()(
                 console.log("project:read:response", data);
                 if (data.success && data.data) {
                     const fullProject = mapProject(data.data);
-                    // Update if exists, otherwise add
-                    const projectExists = state.projects.find(p => p.id === fullProject.id);
+                    const mergedProject = mergeLocal3DData(fullProject, state.projects.find(p => p.id === fullProject.id));
+                    
+                    const projectExists = state.projects.find(p => p.id === mergedProject.id);
                     if (projectExists) {
-                        return { projects: state.projects.map(p => p.id === fullProject.id ? fullProject : p) };
+                        return { projects: state.projects.map(p => p.id === mergedProject.id ? mergedProject : p) };
                     }
-                    return { projects: [...state.projects, fullProject] };
+                    return { projects: [...state.projects, mergedProject] };
                 }
                 return state;
             }),
@@ -473,7 +498,16 @@ export const useProjectStore = create<ProjectStore>()(
             partialize: (state) => ({
                 projects: state.projects.map(p => ({
                     ...p,
-                    tabs: p.tabs.map(t => ({ ...t, charts: [] }))
+                    tabs: p.tabs.map(t => ({ 
+                        ...t, 
+                        charts: t.charts.map(c => ({
+                            id: c.id,
+                            x3d: c.x3d,
+                            y3d: c.y3d,
+                            w3d: c.w3d,
+                            h3d: c.h3d
+                        }))
+                    }))
                 }))
             })
         }

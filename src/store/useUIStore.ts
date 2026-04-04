@@ -30,7 +30,7 @@ interface UIStore {
   removeOverlayChart: (id: string) => void;
   updateOverlayChart: (id: string, updates: Partial<{ x: number, y: number, w: number, h: number }>) => void;
   bringOverlayToFront: (id: string) => void;
-  findSafePosition: (id: string | null, x: number, y: number, w: number, h: number, containerW: number, containerH: number, sidebarOpen: boolean) => { x: number, y: number };
+  findSafePosition: (id: string | null, x: number, y: number, w: number, h: number, containerW: number, containerH: number, sidebarOpen: boolean, externalCharts?: any[]) => { x: number, y: number };
   draggingChartPreview: { type: string, title: string, x: number, y: number } | null;
   setDraggingChartPreview: (preview: { type: string, title: string, x: number, y: number } | null) => void;
   copiedModel: { name: string, path: string } | null;
@@ -121,7 +121,7 @@ export const useUIStore = create<UIStore>()(
         const remaining = state.overlayCharts.filter(c => c.id !== id);
         return { overlayCharts: [...remaining, chart] };
       }),
-      findSafePosition: (id, x, y, w, h, containerW, containerH, sidebarOpen) => {
+      findSafePosition: (id, x, y, w, h, containerW, containerH, sidebarOpen, externalCharts) => {
         const state = useUIStore.getState();
         const sidebarWidth = sidebarOpen ? 300 : 20;
         const headerHeight = 80;
@@ -129,27 +129,32 @@ export const useUIStore = create<UIStore>()(
         let safeX = Math.max(sidebarWidth, Math.min(containerW - w - 20, x));
         let safeY = Math.max(headerHeight, Math.min(containerH - h - 20, y));
 
-        const charts = state.overlayCharts.filter(c => c.id !== id);
+        const charts = [...state.overlayCharts.filter(c => c.id !== id), ...(externalCharts || [])];
         
         const checkOverlap = (nx: number, ny: number) => {
           return charts.some(c => (
-            nx < c.x + c.w &&
-            nx + w > c.x &&
-            ny < c.y + c.h &&
-            ny + h > c.y
+            nx < (c.x3d || c.x) + (c.w3d || c.w) &&
+            nx + w > (c.x3d || c.x) &&
+            ny < (c.y3d || c.y) + (c.h3d || c.h) &&
+            ny + h > (c.y3d || c.y)
           ));
         };
 
         let attempts = 0;
-        while (checkOverlap(safeX, safeY) && attempts < 25) {
-          safeX += 20;
-          safeY += 20;
+        while (checkOverlap(safeX, safeY) && attempts < 50) {
+          // Spiraling outward slightly to find next free spot instead of jumping to corner
+          const step = 20;
+          if (attempts < 10) safeX += step;
+          else if (attempts < 20) safeY += step;
+          else if (attempts < 30) safeX -= step;
+          else safeY -= step;
           
-          // Re-clamp
-          if (safeX + w > containerW - 20) safeX = sidebarWidth;
-          if (safeY + h > containerH - 20) safeY = headerHeight;
           attempts++;
         }
+
+        // Final Clamp
+        safeX = Math.max(sidebarWidth, Math.min(containerW - w - 20, safeX));
+        safeY = Math.max(headerHeight, Math.min(containerH - h - 20, safeY));
 
         return { x: safeX, y: safeY };
       },

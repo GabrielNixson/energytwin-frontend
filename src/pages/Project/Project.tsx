@@ -343,45 +343,22 @@ const Project = () => {
   };
 
   const compactLayout = useCallback(
-    (currentCharts: ChartData[], movedId?: string): ChartData[] => {
-      const movedItem = currentCharts.find(
-        (c) => c.id === movedId || c.id === "preview-ghost",
-      );
-      const others = currentCharts
-        .filter((c) => c.id !== movedId && c.id !== "preview-ghost")
-        .sort((a, b) => a.y - b.y || a.x - b.x);
-
-      const result: ChartData[] = [];
-      const isAreaOccupied = (
-        x: number,
-        y: number,
-        w: number,
-        h: number,
-        items: ChartData[],
-      ) => {
-        return items.some(
-          (item) =>
-            x < item.x + item.w &&
-            x + w > item.x &&
-            y < item.y + item.h &&
-            y + h > item.y,
-        );
-      };
-
-      if (movedItem) {
-        result.push({ ...movedItem });
-      }
-
-      for (const item of others) {
-        let newY = 0;
-        // Gravity: Move UP as far as possible without overlap, maintaining the original X
-        while (isAreaOccupied(item.x, newY, item.w, item.h, result)) {
-          newY++;
-        }
-        result.push({ ...item, y: newY });
-      }
-
-      return result.sort((a, b) => a.y * 12 + a.x - (b.y * 12 + b.x));
+    (currentCharts: ChartData[]): ChartData[] => {
+      // Full Grid Reflow: Organize into clean rows of 3 (4-columns each)
+      const sorted = [...currentCharts].sort((a, b) => a.y * 12 + a.x - (b.y * 12 + b.x));
+      
+      return sorted.map((item, index) => {
+        const col = (index % 3) * 4;
+        const row = Math.floor(index / 3) * 2;
+        return {
+          ...item,
+          // If the item had unique 2D coords before, we reuse the row/col logic but ensure they stay aligned
+          x: col,
+          y: row,
+          w: 4,
+          h: 2
+        };
+      });
     },
     [],
   );
@@ -788,13 +765,16 @@ const Project = () => {
         const containerW = rect.width;
         const containerH = rect.height;
 
+        const currentChartsList = activeTab?.charts || [];
+        
         const safePos = findSafePosition(
           null,
           relativeX - 200,
           relativeY - 150,
           400, 300,
           containerW, containerH,
-          isChartSidebarOpen
+          isChartSidebarOpen,
+          currentChartsList // Pass existing charts to avoid overlap
         );
 
         // Find a free spot in a 3-column-wide 2D grid (4 span each)
