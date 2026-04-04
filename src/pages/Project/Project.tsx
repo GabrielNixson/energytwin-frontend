@@ -35,6 +35,8 @@ import { ChartData, ChartConfig } from "@/types/chart.types";
 
 import Project3D from "./Project3D.tsx";
 import AddTabModal from "./components/AddTabModal/AddTabModal.tsx";
+import ConfirmModal from "@/components/ConfirmModal/ConfirmModal";
+import AssetSidebar from "@/components/AssetSidebar/AssetSidebar";
 import AIChat from "@/components/AIChat/AIChat.tsx";
 
 const DEFAULT_CHART_CONFIG: ChartConfig = {
@@ -162,6 +164,19 @@ const Project = () => {
     tabId?: string;
     initialName?: string;
   }>({ type: "add" });
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type?: 'danger' | 'warning' | 'info';
+    confirmText?: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -186,7 +201,14 @@ const Project = () => {
           setDxfData(dxf);
         } catch (err) {
           console.error("Error parsing DXF:", err);
-          alert("Failed to parse DXF file.");
+          setConfirmConfig({
+            isOpen: true,
+            title: "Parsing Error",
+            message: "Failed to parse DXF file. Please check if the file format is valid.",
+            onConfirm: () => {},
+            confirmText: "Okay",
+            type: "danger"
+          });
         } finally {
           if (fileInputRef.current) fileInputRef.current.value = "";
         }
@@ -212,22 +234,26 @@ const Project = () => {
   // Ensure activeTabId is valid and handle ID transitions (temp_ -> real_id)
   useEffect(() => {
     if (currentProject) {
+      // 1. If project has NO tabs, automatically add a default "Main" tab
+      if (currentProject.tabs.length === 0 && projectID) {
+        addTab(projectID, "Main", "default");
+        setActiveTabId("default");
+        return;
+      }
+
+      // 2. Ensure current activeTabId exists in the project's tabs
       const activeTabExists = currentProject.tabs.find((t) => t.id === activeTabId);
       
       if (!activeTabExists) {
         // If we were on a temp tab, maybe it got promoted to a real one with a new ID?
         if (activeTabId.startsWith('temp_')) {
-          // We can't easily know the name unless we store it.
-          // For now, let's just pick the first tab if the active one is truly gone,
-          // but we'll try to find a tab that WAS created recently if possible?
-          // Actually, let's just default to the first tab for now, but usually it will be the real one at the end of the list.
           setActiveTabId(currentProject.tabs[currentProject.tabs.length - 1]?.id || "default");
         } else {
           setActiveTabId(currentProject.tabs[0]?.id || "default");
         }
       }
     }
-  }, [currentProject?.tabs, activeTabId]);
+  }, [currentProject?.tabs, activeTabId, projectID, addTab]);
 
   const activeTab = useMemo(() => {
     return currentProject?.tabs.find((t) => t.id === activeTabId);
@@ -824,12 +850,19 @@ const Project = () => {
 
   const handleRemoveTab = (e: React.MouseEvent, tabId: string) => {
     e.stopPropagation();
-    if (
-      window.confirm("Are you sure you want to remove this tab?") &&
-      projectID
-    ) {
-      removeTab(projectID, tabId);
-    }
+    const tab = currentProject?.tabs.find(t => t.id === tabId);
+    setConfirmConfig({
+      isOpen: true,
+      title: "Remove Tab",
+      message: `Are you sure you want to remove the tab "${tab?.name || 'this tab'}"? all charts in it will be removed.`,
+      confirmText: "Remove Tab",
+      type: "danger",
+      onConfirm: () => {
+        if (projectID) {
+          removeTab(projectID, tabId);
+        }
+      }
+    });
   };
 
   const handleRenameTab = (tabId: string, currentName: string) => {
@@ -925,7 +958,7 @@ const Project = () => {
                 className={`${styles["btn"]} ${is3DMode ? styles.active : ""}`}
                 onClick={() => fileInputRef.current?.click()}
               >
-                Upload DXF
+                Upload
               </button>
             </>
           )}
@@ -936,14 +969,19 @@ const Project = () => {
             {is3DMode ? "Switch to 2D" : "Switch to 3D"}
           </button>
         </div>
-        <ChartListSidebar isOpen={!selectedChartId} />
+        
+        {!is3DMode && (
+          <>
+            <ChartListSidebar isOpen={!selectedChartId} />
 
-        {isEditMode && selectedChartId && (
-          <ChartConfigSidebar
-            chart={charts.find((c) => c.id === selectedChartId)!}
-            onClose={() => setSelectedChartId(null)}
-            onUpdate={handleUpdateChart}
-          />
+            {isEditMode && selectedChartId && (
+              <ChartConfigSidebar
+                chart={charts.find((c) => c.id === selectedChartId)!}
+                onClose={() => setSelectedChartId(null)}
+                onUpdate={handleUpdateChart}
+              />
+            )}
+          </>
         )}
 
         <AnimatePresence mode="wait">
@@ -1050,9 +1088,25 @@ const Project = () => {
         title={tabModalMode.type === "add" ? "Add New Tab" : "Rename Tab"}
       />
 
-      <AIChat 
-        projectId={projectID} 
-        tabId={activeTabId} 
+      {/* Hide Chat in 3D Mode */}
+      {!is3DMode && (
+        <AIChat 
+          projectId={projectID} 
+          tabId={activeTabId} 
+        />
+      )}
+
+      {/* Asset Sidebar (opens from Tools click) */}
+      <AssetSidebar />
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.onConfirm}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        type={confirmConfig.type}
       />
     </DndContext>
   );

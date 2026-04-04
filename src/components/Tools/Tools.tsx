@@ -3,9 +3,16 @@ import { CircleIcon, CustomIcon, DrawIcon, LineIcon, RectangleIcon } from "@/ass
 import { useUIStore } from "@/store/useUIStore"
 import styles from "./Tools.module.scss"
 
+const AssetsIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+);
+
 const Tools = () => {
     const [activeTool, setActiveTool] = useState<string | null>(null);
-    const { selectedSubOption, setSelectedSubOption } = useUIStore();
+    const { selectedSubOption, setSelectedSubOption, setIsAssetSidebarOpen, isAssetSidebarOpen } = useUIStore();
     const containerRef = useRef<HTMLDivElement>(null);
 
     const tools = useMemo(() => [
@@ -18,6 +25,10 @@ const Tools = () => {
                 { label: "circle", icon: CircleIcon },
                 { label: "polygon", icon: CustomIcon }
             ]
+        },
+        {
+            label: "Assets",
+            icon: AssetsIcon
         }
     ], []);
 
@@ -34,6 +45,12 @@ const Tools = () => {
     }, []);
 
     const handleToolClick = (toolLabel: string) => {
+        if (toolLabel === "Assets") {
+            setIsAssetSidebarOpen(!isAssetSidebarOpen);
+            setActiveTool(null);
+            return;
+        }
+
         if (activeTool === toolLabel) {
             setActiveTool(null);
         } else {

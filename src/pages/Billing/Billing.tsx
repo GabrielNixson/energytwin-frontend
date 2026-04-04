@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import styles from "./Billing.module.scss"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
+import ConfirmModal from "@/components/ConfirmModal/ConfirmModal"
 
 interface BillingData {
     bill_start_date: string
@@ -33,6 +34,8 @@ const Billing: React.FC = () => {
         }
     })
 
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
+
     const handleChange = (name: string, value: string | number) => {
         if (name === "tax_type") {
             setFormData(prev => ({
@@ -54,7 +57,7 @@ const Billing: React.FC = () => {
 
     const handleSave = () => {
         console.log("Saving Billing Data:", formData)
-        alert("Configuration Saved Successfully!")
+        setIsSuccessModalOpen(true)
     }
 
     const containerVariants = {
@@ -258,6 +261,16 @@ const Billing: React.FC = () => {
                     Save All Changes
                 </button>
             </motion.div>
+
+            <ConfirmModal
+                isOpen={isSuccessModalOpen}
+                onClose={() => setIsSuccessModalOpen(false)}
+                onConfirm={() => setIsSuccessModalOpen(false)}
+                title="Success"
+                message="Configuration Saved Successfully!"
+                confirmText="Okay"
+                type="info"
+            />
         </motion.div>
     )
 }

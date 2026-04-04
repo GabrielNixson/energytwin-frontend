@@ -77,4 +77,5 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
     cors: true,
   },
+  
 }));

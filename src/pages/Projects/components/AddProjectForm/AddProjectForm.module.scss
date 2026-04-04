@@ -21,9 +21,28 @@
         padding: 0.625rem 0.875rem;
         border-radius: 8px;
         font-size: 1rem;
+        background-color: #111;
+        color: #fff;
+        border: 1px solid #333;
+        transition: border-color 0.2s, box-shadow 0.2s;
+
+        &:focus {
+            outline: none;
+            border-color: #917efc;
+            box-shadow: 0 0 0 2px rgba(145, 126, 252, 0.2);
+        }
 
         &::placeholder {
-            color: var(--text-muted, #9ca3af);
+            color: #666;
+        }
+
+        /* Fix auto-fill styles */
+        &:-webkit-autofill,
+        &:-webkit-autofill:hover, 
+        &:-webkit-autofill:focus {
+            -webkit-text-fill-color: #fff;
+            -webkit-box-shadow: 0 0 0px 1000px #111 inset;
+            transition: background-color 5000s ease-in-out 0s;
         }
     }
 

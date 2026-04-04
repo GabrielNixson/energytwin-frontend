@@ -1,6 +1,7 @@
 import { useState } from "react";
 import styles from "./Projects.module.scss";
 import Modal from "../../components/Modal/Modal";
+import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 import AddProjectForm from "./components/AddProjectForm/AddProjectForm";
 import { useProjectStore } from "../../store/useProjectStore";
 import { useNavigate } from "react-router-dom";
@@ -13,12 +14,27 @@ const Projects = () => {
     useProjectStore();
   const { setIsSidebarCollapsed } = useUIStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id?: string; name?: string }>({
+    isOpen: false,
+  });
+
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
   const handleAddProject = (data: { name: string; description: string }) => {
     addProject(data);
     handleCloseModal();
+  };
+
+  const openDeleteConfirm = (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    setConfirmDelete({ isOpen: true, id, name });
+  };
+
+  const handleRemoveProject = () => {
+    if (confirmDelete.id) {
+      removeProject(confirmDelete.id);
+    }
   };
 
   return (
@@ -72,10 +88,7 @@ const Projects = () => {
                 )}
                 <button
                   className={styles["remove-btn"]}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeProject(project.id);
-                  }}
+                  onClick={(e) => openDeleteConfirm(e, project.id, project.name)}
                 >
                   Remove
                 </button>
@@ -102,6 +115,16 @@ const Projects = () => {
           onCancel={handleCloseModal}
         />
       </Modal>
+
+      <ConfirmModal
+        isOpen={confirmDelete.isOpen}
+        onClose={() => setConfirmDelete({ isOpen: false })}
+        onConfirm={handleRemoveProject}
+        title="Delete Project"
+        message={`Are you sure you want to delete "${confirmDelete.name}"? This action cannot be undone.`}
+        confirmText="Delete Project"
+        type="danger"
+      />
 
       <AIChat />
     </div>
