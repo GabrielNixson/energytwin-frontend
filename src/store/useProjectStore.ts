@@ -13,7 +13,7 @@ interface ProjectStore {
     getProject: (projectId: string) => void;
     setDefaultProject: (id: string) => void;
     updateProjectCharts: (projectId: string, tabId: string, charts: ChartData[]) => void;
-    addTab: (projectId: string, name: string, tabId?: string) => void;
+    addTab: (projectId: string, name: string, tabId?: string, assetId?: string) => void;
     removeTab: (projectId: string, tabId: string) => void;
     updateTabName: (projectId: string, tabId: string, name: string) => void;
     
@@ -47,6 +47,7 @@ const mapProject = (p: any): Project => ({
 const mapTab = (t: any): TabData => ({
     id: t._id || t.id,
     name: t.name,
+    assetId: t.assetId,
     charts: (t.charts || []).map(mapChart)
 });
 
@@ -213,19 +214,19 @@ export const useProjectStore = create<ProjectStore>()(
                 socket.emit('chart:delete', { tabId, chartId });
             },
             
-            addTab: (projectId, name, tabId) => {
+            addTab: (projectId: string, name: string, tabId?: string, assetId?: string) => {
                 const tempTabId = tabId || 'temp_' + Date.now();
                 set((state) => ({
                     projects: state.projects.map(p => 
                         p.id === projectId ? {
                             ...p,
-                            tabs: [...p.tabs, { id: tempTabId, name, charts: [] }]
+                            tabs: [...p.tabs, { id: tempTabId, name, assetId, charts: [] }]
                         } : p
                     )
                 }));
                 socket.emit('tab:create', {
                     projectId,
-                    data: { tabId: tempTabId, name }
+                    data: { tabId: tempTabId, name, assetId }
                 });
             },
             

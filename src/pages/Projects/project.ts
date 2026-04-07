@@ -3,6 +3,7 @@ import { ChartData } from "../../types/chart.types";
 export interface TabData {
     id: string;
     name: string;
+    assetId?: string;
     charts: ChartData[];
 }
 

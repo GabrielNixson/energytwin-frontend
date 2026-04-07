@@ -8,9 +8,14 @@ import {
     ContactShadows,
     Line,
     useGLTF,
-    Outlines,
     TransformControls
 } from '@react-three/drei';
+import {
+    Selection,
+    Select,
+    EffectComposer,
+    Outline
+} from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { useDroppable } from '@dnd-kit/core';
 import ChartOverlay from './components/ChartOverlay/ChartOverlay';
@@ -50,33 +55,50 @@ const PlacedModel = ({ id, path, position, rotation, name, onContextMenu, isSele
         }
     }, [isSelected, onSelect]);
 
+    // Pivot centering: wrap primitive in a group and offset the primitive
+    const [offset, setOffset] = useState(new THREE.Vector3(0, 0, 0));
+
+    useEffect(() => {
+        if (clonedScene) {
+            const box = new THREE.Box3().setFromObject(clonedScene);
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+            // We want to center it on X and Z, but keep Y at the base (0)
+            setOffset(new THREE.Vector3(-center.x, 0, -center.z));
+        }
+    }, [clonedScene]);
+
     return (
-        <group
-            ref={groupRef}
-            position={position}
-            rotation={rotation}
-            userData={{ id }}
-            onPointerDown={handlePointerDown}
-            onPointerOver={onPointerOver}
-            onPointerOut={onPointerOut}
-            onClick={(e) => {
-                if (isClick(e)) {
-                    e.stopPropagation();
-                    if (e.nativeEvent) e.nativeEvent.stopPropagation(); // Prevent bubbling to DOM container
-                    onSelect(groupRef.current);
-                }
-            }}
-            onContextMenu={(e: any) => {
-                if (isClick(e)) {
-                    e.stopPropagation();
-                    onContextMenu(e);
-                }
-            }}
-        >
-            <primitive object={clonedScene} name={name} />
-            {isSelected && <Outlines color="#917efc" thickness={2} transparent opacity={1} />}
-            {children}
-        </group>
+        <Select enabled={isSelected}>
+            <group
+                ref={groupRef}
+                position={position}
+                rotation={rotation}
+                userData={{ id }}
+                name={id}
+                onPointerDown={handlePointerDown}
+                onPointerOver={onPointerOver}
+                onPointerOut={onPointerOut}
+                onClick={(e) => {
+                    if (isClick(e)) {
+                        e.stopPropagation();
+                        if (e.nativeEvent) e.nativeEvent.stopPropagation(); // Prevent bubbling to DOM container
+                        onSelect(groupRef.current);
+                    }
+                }}
+                onContextMenu={(e: any) => {
+                    if (isClick(e)) {
+                        e.stopPropagation();
+                        onContextMenu(e);
+                    }
+                }}
+            >
+                <group position={[offset.x, offset.y, offset.z]}>
+                    <primitive object={clonedScene} name={name} />
+                </group>
+                {children}
+            </group>
+        </Select>
     );
 };
 
@@ -219,8 +241,76 @@ const DxfLayer = () => {
     );
 };
 
+const FocusManager = ({ cameraRef, projectID }: { cameraRef: React.RefObject<any>, projectID: string }) => {
+    const { scene } = useThree();
+    const { activeTabId, setSelectedModelId } = useUIStore();
+    const { projects } = useProjectStore();
+
+    useEffect(() => {
+        if (!cameraRef.current || !activeTabId) return;
+
+        // Add a small delay to ensure the scene is ready/settled
+        const timer = setTimeout(() => {
+            const currentProject = projects.find(p => p.id === projectID);
+            const tab = currentProject?.tabs.find(t => t.id === activeTabId);
+            const targetId = tab?.assetId;
+            const targetName = tab?.name;
+            
+            if (targetId || targetName) {
+                // Find the object in the 3D scene by its name or userData.id
+                let targetObject: THREE.Object3D | null = null;
+                scene.traverse((child) => {
+                    // Try to match by assetId first, then by the tab name (as fallback)
+                    if ((targetId && (child.userData?.id === targetId || child.name === targetId)) || 
+                        (targetName && (child.name === targetName))) {
+                        targetObject = child;
+                    }
+                });
+
+                if (targetObject) {
+                    const target = targetObject as THREE.Object3D;
+                    const objectId = target.userData?.id || target.name;
+                    if (objectId) setSelectedModelId(objectId); // Select it for outline
+                    
+                    // Ensure matrices are updated for correct bounding box calculations
+                    target.updateMatrixWorld(true);
+                    
+                    // Get the center and size of the bounding box
+                    const box = new THREE.Box3().setFromObject(target);
+                    const center = new THREE.Vector3();
+                    const size = new THREE.Vector3();
+                    box.getCenter(center);
+                    box.getSize(size);
+
+                    // Calculate the optimal distance based on the asset's size
+                    // We use the maximum dimension and FOV (50deg) to find the distance
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const fov = 50; 
+                    const distance = (maxDim / 2) / Math.tan(THREE.MathUtils.degToRad(fov / 2));
+                    const safeDistance = distance * 1.8; // Add padding similar to fitToBox
+
+                    // 🎯 Single smooth "Lerp" transition to the front-facing position
+                    cameraRef.current.setLookAt(
+                        center.x, center.y + (maxDim * 0.5), center.z - safeDistance, // Position (flipped to -Z)
+                        center.x, center.y, center.z,                                 // Target
+                        true                                                          // Animate smoothly
+                    );
+                } else if (targetId) {
+                    console.warn(`FocusManager: Could not find object with id ${targetId} or name ${targetName} in scene.`);
+                }
+            }
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [activeTabId, scene, cameraRef, projects, projectID, setSelectedModelId]);
+
+    return null;
+};
+
 const Project3D = () => {
     const { projectID } = useParams<{ projectID: string }>();
+    if (!projectID) return null; // Ensure projectID exists 
+
     const { projects, updateProjectCharts, removeChart } = useProjectStore();
     const {
         selectedSubOption,
@@ -534,83 +624,114 @@ const Project3D = () => {
                     setSelectedModelId(null);
                     setSelectedObject(null);
                 }}>
+                    <Selection>
+                        <EffectComposer multisampling={8} autoClear={false}>
+                            <Outline
+                                visibleEdgeColor={0xff9900}
+                                hiddenEdgeColor={0xff9900}
+                                edgeStrength={5}
+                            />
+                        </EffectComposer>
 
-                    {/* 🎥 Cameras */}
-                    {isOrthoView ? (
-                        <OrthographicCamera makeDefault position={[0, 30, 0]} zoom={50} />
-                    ) : (
-                        <PerspectiveCamera makeDefault position={[8, 6, 10]} fov={50} />
-                    )}
+                        {/* 🎥 Cameras */}
+                        {isOrthoView ? (
+                            <OrthographicCamera makeDefault position={[0, 30, 0]} zoom={50} />
+                        ) : (
+                            <PerspectiveCamera makeDefault position={[8, 6, 10]} fov={50} />
+                        )}
 
-                    <Controls enabled={!isTransforming} />
+                        <Controls ref={cameraRef} enabled={!isTransforming} />
+                        <FocusManager cameraRef={cameraRef} projectID={projectID} />
 
-                    {/* Lights */}
-                    <ambientLight intensity={0.4} />
-                    <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+                        {/* Lights */}
+                        <ambientLight intensity={0.4} />
+                        <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
 
-                    {/* Grid */}
-                    <Grid
-                        position={[0, -0.1, 0]}
-                        args={[50, 50]}
-                        cellSize={1}
-                        cellThickness={0.6}
-                        cellColor="#2a2a2a"
-                        sectionSize={5}
-                        sectionThickness={1.2}
-                        sectionColor="#444"
-                        // fadeDistance={50}
-                        fadeStrength={1}
-                        infiniteGrid
-                    />
-
-                    {/* Uploaded DXF Content */}
-                    <DxfLayer />
-
-                    {/* Placed 3D Models */}
-                    {placedModels.map((model) => (
-                        <PlacedModel
-                            key={model.id}
-                            id={model.id}
-                            path={model.path}
-                            position={model.position}
-                            rotation={model.rotation}
-                            name={model.name}
-                            onContextMenu={(e) => handleModelContextMenu(e, model.id)}
-                            isSelected={selectedModelId === model.id}
-                            onPointerOver={(e) => {
-                                e.stopPropagation();
-                                if (isEyedropperActive) setHoveredAsset({ name: model.name, id: model.id });
-                            }}
-                            onPointerOut={() => setHoveredAsset(null)}
-                            onSelect={(obj) => {
-                                if (isEyedropperActive) {
-                                    setEyedropperSelection({ name: model.name, id: model.id });
-                                    setIsEyedropperActive(false);
-                                    setHoveredAsset(null);
-                                    return;
-                                }
-                                setSelectedModelId(model.id);
-                                setSelectedObject(obj);
-                            }}
+                        {/* Grid */}
+                        <Grid
+                            position={[0, -0.1, 0]}
+                            args={[50, 50]}
+                            cellSize={1}
+                            cellThickness={0.6}
+                            cellColor="#2a2a2a"
+                            sectionSize={5}
+                            sectionThickness={1.2}
+                            sectionColor="#444"
+                            // fadeDistance={50}
+                            fadeStrength={1}
+                            infiniteGrid
                         />
-                    ))}
+
+                        {/* Uploaded DXF Content */}
+                        <DxfLayer />
+
+                        {/* Placed 3D Models */}
+                        {placedModels.map((model) => (
+                            <PlacedModel
+                                key={model.id}
+                                id={model.id}
+                                path={model.path}
+                                position={model.position}
+                                rotation={model.rotation}
+                                name={model.name}
+                                onContextMenu={(e) => handleModelContextMenu(e, model.id)}
+                                isSelected={selectedModelId === model.id}
+                                onPointerOver={(e) => {
+                                    e.stopPropagation();
+                                    if (isEyedropperActive) setHoveredAsset({ name: model.name, id: model.id });
+                                }}
+                                onPointerOut={() => setHoveredAsset(null)}
+                                onSelect={(obj) => {
+                                    if (isEyedropperActive) {
+                                        setEyedropperSelection({ name: model.name, id: model.id });
+                                        setIsEyedropperActive(false);
+                                        setHoveredAsset(null);
+                                        return;
+                                    }
+                                    setSelectedModelId(model.id);
+                                    setSelectedObject(obj);
+                                }}
+                            />
+                        ))}
+
+                        {/* Drag and Drop Preview */}
+                        {draggingAsset && (
+                            <>
+                                <DragTracker />
+                                <Select enabled={true}>
+                                    <DragPreview
+                                        path={draggingAsset.path}
+                                        positionRef={dragPositionRef}
+                                    />
+                                </Select>
+                            </>
+                        )}
+                    </Selection>
 
                     {/* Centralized Transform Controls */}
                     {selectedObject && selectedModelId && (
                         <TransformControls
                             object={selectedObject as any}
                             mode={transformMode}
+                            space={transformMode === 'translate' ? 'world' : 'local'}
 
                             // Snapping logic
                             translationSnap={isCtrlPressed ? 0.5 : null}
                             rotationSnap={isCtrlPressed ? Math.PI / 12 : null}
 
-                            // Translation controls
+                            // Axis visibility - explicitly hide non-Y rings for rotation
                             showX={transformMode === 'translate'}
-                            showY={true}
+                            showY={true} 
                             showZ={transformMode === 'translate'}
 
                             onMouseDown={() => setIsTransforming(true)}
+                            onObjectChange={() => {
+                                if (selectedObject && transformMode === 'rotate') {
+                                    // Robust axis lock: Always enforce perfectly upright verticality
+                                    selectedObject.rotation.order = 'YXZ';
+                                    selectedObject.rotation.set(0, selectedObject.rotation.y, 0);
+                                }
+                            }}
                             onMouseUp={() => {
                                 setIsTransforming(false);
 
@@ -625,17 +746,6 @@ const Project3D = () => {
                                 }
                             }}
                         />)}
-
-                    {/* Drag and Drop Preview */}
-                    {draggingAsset && (
-                        <>
-                            <DragTracker />
-                            <DragPreview
-                                path={draggingAsset.path}
-                                positionRef={dragPositionRef}
-                            />
-                        </>
-                    )}
 
                     {/* Shadows */}
                     <ContactShadows

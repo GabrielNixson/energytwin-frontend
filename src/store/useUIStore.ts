@@ -77,7 +77,7 @@ export const useUIStore = create<UIStore>()(
 
       // Assets Sidebar
       isAssetSidebarOpen: false,
-      setIsAssetSidebarOpen: (isOpen: boolean) => set((state) => ({ 
+      setIsAssetSidebarOpen: (isOpen: boolean) => set((state) => ({
         isAssetSidebarOpen: isOpen,
         isChartSidebarOpen: isOpen ? false : state.isChartSidebarOpen,
         selectedChartId: isOpen ? null : state.selectedChartId,
@@ -86,7 +86,7 @@ export const useUIStore = create<UIStore>()(
 
       // Charts Sidebar (3D Toggle)
       isChartSidebarOpen: false,
-      setIsChartSidebarOpen: (isOpen) => set((state) => ({ 
+      setIsChartSidebarOpen: (isOpen) => set((state) => ({
         isChartSidebarOpen: isOpen,
         isAssetSidebarOpen: isOpen ? false : state.isAssetSidebarOpen,
         selectedChartId: isOpen ? null : state.selectedChartId
@@ -136,12 +136,12 @@ export const useUIStore = create<UIStore>()(
         const state = useUIStore.getState();
         const sidebarWidth = 20; // Sidebar is adjacent in flexbox, not overlaying. Use small margin.
         const headerHeight = 20; // Smaller margin for the top.
-        
+
         let safeX = Math.max(sidebarWidth, Math.min(containerW - w - 20, x));
         let safeY = Math.max(headerHeight, Math.min(containerH - h - 20, y));
 
         const charts = [...state.overlayCharts.filter(c => c.id !== id), ...(externalCharts || [])];
-        
+
         const checkOverlap = (nx: number, ny: number) => {
           return charts.some(c => (
             nx < (c.x3d || c.x) + (c.w3d || c.w) &&
@@ -159,7 +159,7 @@ export const useUIStore = create<UIStore>()(
           else if (attempts < 20) safeY += step;
           else if (attempts < 30) safeX -= step;
           else safeY -= step;
-          
+
           attempts++;
         }
 

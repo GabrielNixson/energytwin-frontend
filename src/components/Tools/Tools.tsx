@@ -44,8 +44,8 @@ const Tools = () => {
     };
 
     return (
-        <div 
-            className={styles["tools-container"]} 
+        <div
+            className={styles["tools-container"]}
             ref={containerRef}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}

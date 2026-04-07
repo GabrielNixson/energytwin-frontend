@@ -1,8 +1,10 @@
+import { forwardRef } from 'react';
 import { CameraControls } from '@react-three/drei';
 
-const Controls = ({ enabled = true }: { enabled?: boolean }) => {
+const Controls = forwardRef<CameraControls, { enabled?: boolean }>(({ enabled = true }, ref) => {
   return (
     <CameraControls
+      ref={ref}
       enabled={enabled}
       truckSpeed={2}
       dollySpeed={1.5}
@@ -12,6 +14,8 @@ const Controls = ({ enabled = true }: { enabled?: boolean }) => {
       dollyToCursor
     />
   );
-};
+});
+
+Controls.displayName = 'Controls';
 
 export default Controls;

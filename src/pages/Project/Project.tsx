@@ -443,7 +443,7 @@ const Project = () => {
           }
         }
       }
-      return isAutoAlign ? compactLayout(newCharts, moved.id) : newCharts;
+      return isAutoAlign ? compactLayout(newCharts) : newCharts;
     },
     [isAutoAlign, compactLayout],
   );
@@ -1019,7 +1019,7 @@ const Project = () => {
 
     if (tabModalMode.type === "add" && projectID) {
       const newTabId = 'temp_' + Math.random().toString(36).substring(2, 9);
-      addTab(projectID, name, newTabId);
+      addTab(projectID, name, newTabId, eyedropperSelection?.id);
       setActiveTabId(newTabId); // Switch to the new tab!
       setEyedropperSelection(null); // Clear selection after successful add
     } else if (
