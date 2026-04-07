@@ -86,7 +86,10 @@ const ChartListSidebar = ({ isOpen = true }: ChartListSidebarProps) => {
     const shouldBeCollapsed = !is3DMode ? (!isEditMode || !isOpen) : !isOpen;
 
     return (
-        <div className={`${styles["chart-list-sidebar-container"]} ${shouldBeCollapsed ? styles.collapsed : ""}`}>
+        <div 
+            className={`${styles["chart-list-sidebar-container"]} ${shouldBeCollapsed ? styles.collapsed : ""}`}
+            onClick={(e) => e.stopPropagation()}
+        >
             <div className={styles.header}>
                 <h1>Charts</h1>
                 <div className={styles["search-box"]}>

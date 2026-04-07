@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import styles from './ModelContextMenu.module.scss';
 
 interface ModelContextMenuProps {
@@ -11,7 +12,7 @@ interface ModelContextMenuProps {
 }
 
 const ModelContextMenu: React.FC<ModelContextMenuProps> = ({ x, y, onClose, onDelete, onDuplicate, onCopy }) => {
-    return (
+    return createPortal(
         <div 
             className={styles.overlay} 
             onClick={onClose} 
@@ -39,7 +40,8 @@ const ModelContextMenu: React.FC<ModelContextMenuProps> = ({ x, y, onClose, onDe
                     Delete
                 </button>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

@@ -94,21 +94,36 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
 
     const options = {
         responsive: true,
-        maintainAspectRatio: true,
-        aspectRatio: 2,
+        maintainAspectRatio: false,
+        layout: {
+            padding: {
+                top: 5,
+                bottom: 5,
+                left: 0,
+                right: 0
+            }
+        },
         plugins: {
             legend: {
                 display: effectiveConfig.showLegend,
                 position: 'bottom' as const,
                 labels: {
                     color: '#e2e8f0',
+                    font: {
+                        size: 11
+                    },
+                    boxWidth: 12,
+                    padding: 15
                 },
             },
             tooltip: {
                 enabled: effectiveConfig.showTooltips,
-            },
-            title: {
-                display: false,
+                backgroundColor: 'rgba(15, 15, 20, 0.9)',
+                titleFont: { size: 13 },
+                bodyFont: { size: 12 },
+                padding: 10,
+                cornerRadius: 8,
+                displayColors: false
             },
         },
         scales: type !== 'pie' && type !== 'gauge' ? {
@@ -117,13 +132,20 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                     display: !!effectiveConfig.yAxisLabel,
                     text: effectiveConfig.yAxisLabel,
                     color: '#94a3b8',
+                    font: {
+                        size: 11,
+                        weight: '600' as const
+                    }
                 },
                 max: effectiveConfig.yAxisMax,
                 grid: {
                     color: effectiveConfig.showGrid ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                    drawBorder: false,
                 },
                 ticks: {
                     color: '#94a3b8',
+                    font: { size: 10 },
+                    padding: 8
                 },
             },
             x: {
@@ -131,12 +153,18 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                     display: !!effectiveConfig.xAxisLabel,
                     text: effectiveConfig.xAxisLabel,
                     color: '#94a3b8',
+                    font: {
+                        size: 11,
+                        weight: '600' as const
+                    }
                 },
                 grid: {
                     display: false,
                 },
                 ticks: {
                     color: '#94a3b8',
+                    font: { size: 10 },
+                    padding: 8
                 },
             },
         } : undefined,
@@ -323,16 +351,12 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
             <div
                 className={styles.chartContent}
                 style={isBilling ? { overflow: 'visible' } : {
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
                     height: '100%',
-                    width: '100%'
+                    width: '100%',
+                    position: 'relative'
                 }}
             >
-                <div style={{ width: '100%', maxWidth: '100%', display: 'flex', justifyContent: 'center' }}>
-                    {renderChart()}
-                </div>
+                {renderChart()}
             </div>
 
             {isEditMode && (

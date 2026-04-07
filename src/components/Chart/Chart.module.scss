@@ -6,11 +6,12 @@
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
-    padding: 20px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.5);
+    min-height: 0;
 
     &:hover {
         background: rgba(14, 14, 20, 0.8);
@@ -25,8 +26,8 @@
         align-items: center;
         flex-wrap: wrap;
         gap: 8px;
-        margin-bottom: 10px;
-        padding-bottom: 8px;
+        margin-bottom: 6px;
+        padding-bottom: 6px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 
         .titleGroup {

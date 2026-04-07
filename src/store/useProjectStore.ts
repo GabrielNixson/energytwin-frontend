@@ -502,10 +502,17 @@ export const useProjectStore = create<ProjectStore>()(
                         ...t, 
                         charts: t.charts.map(c => ({
                             id: c.id,
+                            type: c.type,
+                            title: c.title,
+                            x: c.x,
+                            y: c.y,
+                            w: c.w,
+                            h: c.h,
                             x3d: c.x3d,
                             y3d: c.y3d,
                             w3d: c.w3d,
-                            h3d: c.h3d
+                            h3d: c.h3d,
+                            config: c.config
                         }))
                     }))
                 }))

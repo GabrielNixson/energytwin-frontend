@@ -26,7 +26,7 @@ const DEFAULT_CHART_CONFIG: ChartConfig = {
 };
 
 const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, x, y, w, h, constraintsRef, onUpdate, onDelete }) => {
-    const { removeOverlayChart, updateOverlayChart, bringOverlayToFront, findSafePosition, isChartSidebarOpen } = useUIStore();
+    const { removeOverlayChart, updateOverlayChart, bringOverlayToFront, findSafePosition, setSelectedChartId } = useUIStore();
     const [isResizing, setIsResizing] = React.useState(false);
     const [localW, setLocalW] = React.useState(w);
     const [localH, setLocalH] = React.useState(h);
@@ -47,7 +47,11 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, x, y, w, h
             dragMomentum={false}
             dragConstraints={constraintsRef}
             dragElastic={0} // Tight containment
-            onPointerDown={() => bringOverlayToFront(id)}
+            onPointerDown={(e) => {
+                e.stopPropagation();
+                bringOverlayToFront(id);
+            }}
+            onTap={() => setSelectedChartId(id)}
             onDragEnd={() => {
                 if (!itemRef.current || !constraintsRef.current) return;
                 
@@ -62,7 +66,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, x, y, w, h
                 const containerW = parentRect.width;
                 const containerH = parentRect.height;
 
-                const finalPos = findSafePosition(id, visualX, visualY, w, h, containerW, containerH, isChartSidebarOpen);
+                const finalPos = findSafePosition(id, visualX, visualY, w, h, containerW, containerH);
                 
                 if (onUpdate) {
                     onUpdate({ ...finalPos, w, h });
@@ -136,11 +140,15 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, x, y, w, h
                         const startX = e.clientX;
                         const startY = e.clientY;
 
+                        // Use locals to keep track of values since state updates won't be seen by onUp due to closure
+                        let currentW = startW;
+                        let currentH = startH;
+
                         const onMove = (moveEvent: PointerEvent) => {
-                            const newW = startW + (moveEvent.clientX - startX);
-                            const newH = startH + (moveEvent.clientY - startY);
-                            setLocalW(Math.max(300, newW));
-                            setLocalH(Math.max(300, newH));
+                            currentW = Math.max(300, startW + (moveEvent.clientX - startX));
+                            currentH = Math.max(300, startH + (moveEvent.clientY - startY));
+                            setLocalW(currentW);
+                            setLocalH(currentH);
                         };
 
                         const onUp = () => {
@@ -148,11 +156,10 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, x, y, w, h
                             window.removeEventListener('pointermove', onMove);
                             window.removeEventListener('pointerup', onUp);
                             
-                            // Commit final size
                             if (onUpdate) {
-                                onUpdate({ x, y, w: Math.max(300, localW), h: Math.max(300, localH) });
+                                onUpdate({ x, y, w: currentW, h: currentH });
                             } else {
-                                updateOverlayChart(id, { w: localW, h: localH });
+                                updateOverlayChart(id, { w: currentW, h: currentH });
                             }
                         };
 

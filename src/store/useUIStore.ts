@@ -25,12 +25,12 @@ interface UIStore {
   setDraggingAsset: (asset: { name: string, path: string, position: [number, number, number] } | null) => void;
   selectedModelId: string | null;
   setSelectedModelId: (id: string | null) => void;
-  overlayCharts: Array<{ id: string, type: string, title: string, x: number, y: number, w: number, h: number }>;
-  addOverlayChart: (chart: { type: string, title: string, x: number, y: number, w: number, h: number }) => void;
+  overlayCharts: Array<{ id: string, type: string, title: string, x: number, y: number, w: number, h: number, config?: any }>;
+  addOverlayChart: (chart: { type: string, title: string, x: number, y: number, w: number, h: number, config?: any }) => void;
   removeOverlayChart: (id: string) => void;
-  updateOverlayChart: (id: string, updates: Partial<{ x: number, y: number, w: number, h: number }>) => void;
+  updateOverlayChart: (id: string, updates: Partial<{ x: number, y: number, w: number, h: number, config: any }>) => void;
   bringOverlayToFront: (id: string) => void;
-  findSafePosition: (id: string | null, x: number, y: number, w: number, h: number, containerW: number, containerH: number, sidebarOpen: boolean, externalCharts?: any[]) => { x: number, y: number };
+  findSafePosition: (id: string | null, x: number, y: number, w: number, h: number, containerW: number, containerH: number, externalCharts?: any[]) => { x: number, y: number };
   draggingChartPreview: { type: string, title: string, x: number, y: number } | null;
   setDraggingChartPreview: (preview: { type: string, title: string, x: number, y: number } | null) => void;
   copiedModel: { name: string, path: string } | null;
@@ -45,6 +45,8 @@ interface UIStore {
   setEyedropperSelection: (selection: { name: string, id: string } | null) => void;
   hoveredAsset: { name: string, id: string } | null;
   setHoveredAsset: (asset: { name: string, id: string } | null) => void;
+  selectedChartId: string | null;
+  setSelectedChartId: (id: string | null) => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -75,11 +77,20 @@ export const useUIStore = create<UIStore>()(
 
       // Assets Sidebar
       isAssetSidebarOpen: false,
-      setIsAssetSidebarOpen: (isOpen: boolean) => set({ isAssetSidebarOpen: isOpen }),
+      setIsAssetSidebarOpen: (isOpen: boolean) => set((state) => ({ 
+        isAssetSidebarOpen: isOpen,
+        isChartSidebarOpen: isOpen ? false : state.isChartSidebarOpen,
+        selectedChartId: isOpen ? null : state.selectedChartId,
+        is3DMode: isOpen ? true : state.is3DMode
+      })),
 
       // Charts Sidebar (3D Toggle)
       isChartSidebarOpen: false,
-      setIsChartSidebarOpen: (isOpen) => set({ isChartSidebarOpen: isOpen }),
+      setIsChartSidebarOpen: (isOpen) => set((state) => ({ 
+        isChartSidebarOpen: isOpen,
+        isAssetSidebarOpen: isOpen ? false : state.isAssetSidebarOpen,
+        selectedChartId: isOpen ? null : state.selectedChartId
+      })),
 
       // Placed 3D Models
       placedModels: [] as Array<{ id: string, name: string, path: string, position: [number, number, number], rotation: [number, number, number] }>,
@@ -104,7 +115,7 @@ export const useUIStore = create<UIStore>()(
       })),
 
       // Overlay Charts (3D Overlays)
-      overlayCharts: [] as Array<{ id: string, type: string, title: string, x: number, y: number, w: number, h: number }>,
+      overlayCharts: [] as Array<{ id: string, type: string, title: string, x: number, y: number, w: number, h: number, config?: any }>,
       addOverlayChart: (chart) => set((state) => ({
         overlayCharts: [...state.overlayCharts, { ...chart, id: 'overlay-' + Date.now() }]
       })),
@@ -121,10 +132,10 @@ export const useUIStore = create<UIStore>()(
         const remaining = state.overlayCharts.filter(c => c.id !== id);
         return { overlayCharts: [...remaining, chart] };
       }),
-      findSafePosition: (id, x, y, w, h, containerW, containerH, sidebarOpen, externalCharts) => {
+      findSafePosition: (id: string | null, x: number, y: number, w: number, h: number, containerW: number, containerH: number, externalCharts?: any[]) => {
         const state = useUIStore.getState();
-        const sidebarWidth = sidebarOpen ? 300 : 20;
-        const headerHeight = 80;
+        const sidebarWidth = 20; // Sidebar is adjacent in flexbox, not overlaying. Use small margin.
+        const headerHeight = 20; // Smaller margin for the top.
         
         let safeX = Math.max(sidebarWidth, Math.min(containerW - w - 20, x));
         let safeY = Math.max(headerHeight, Math.min(containerH - h - 20, y));
@@ -188,11 +199,15 @@ export const useUIStore = create<UIStore>()(
       setEyedropperSelection: (selection: { name: string, id: string } | null) => set({ eyedropperSelection: selection }),
       hoveredAsset: null as { name: string, id: string } | null,
       setHoveredAsset: (asset: { name: string, id: string } | null) => set({ hoveredAsset: asset }),
+
+      // Chart Selection
+      selectedChartId: null as string | null,
+      setSelectedChartId: (id: string | null) => set({ selectedChartId: id }),
     }),
     {
       name: "ui-store", // key in localStorage
       partialize: (state) => {
-        const { dxfData, draggingAsset, copiedModel, selectedModelId, overlayCharts, ...rest } = state;
+        const { dxfData, draggingAsset, copiedModel, selectedModelId, overlayCharts, selectedChartId, ...rest } = state;
         return rest;
       },
     }

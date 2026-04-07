@@ -237,8 +237,6 @@ const Project3D = () => {
         updateModelRotation,
         overlayCharts,
         draggingChartPreview,
-        isChartSidebarOpen,
-        setIsChartSidebarOpen,
         activeTabId,
         isEyedropperActive,
         setIsEyedropperActive,
@@ -461,8 +459,8 @@ const Project3D = () => {
                     <ChartOverlay
                         id="preview-ghost"
                         {...draggingChartPreview}
-                        w={400}
-                        h={300}
+                        w={500}
+                        h={350}
                         constraintsRef={containerRef}
                     />
                 </div>

@@ -50,7 +50,7 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
     );
 
     return (
-        <div className={styles.sidebar}>
+        <div className={styles.sidebar} onClick={(e) => e.stopPropagation()}>
             <div className={styles.header}>
                 <h3>Configuration</h3>
                 <button className={styles["close-btn"]} onClick={onClose}>✕</button>
