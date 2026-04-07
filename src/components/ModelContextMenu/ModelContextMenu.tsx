@@ -9,9 +9,10 @@ interface ModelContextMenuProps {
     onDelete: () => void;
     onDuplicate: () => void;
     onCopy: () => void;
+    onLinkToTab?: () => void;
 }
 
-const ModelContextMenu: React.FC<ModelContextMenuProps> = ({ x, y, onClose, onDelete, onDuplicate, onCopy }) => {
+const ModelContextMenu: React.FC<ModelContextMenuProps> = ({ x, y, onClose, onDelete, onDuplicate, onCopy, onLinkToTab }) => {
     return createPortal(
         <div 
             className={styles.overlay} 
@@ -26,17 +27,23 @@ const ModelContextMenu: React.FC<ModelContextMenuProps> = ({ x, y, onClose, onDe
                 style={{ left: x, top: y }}
                 onClick={(e) => e.stopPropagation()}
             >
+                {onLinkToTab && (
+                    <button onClick={() => { onLinkToTab(); onClose(); }}>
+                        <div className={styles.icon}>🔗</div>
+                        Link to Active Tab
+                    </button>
+                )}
                 <button onClick={() => { onDuplicate(); onClose(); }}>
-                    <span className={styles.icon}>📋</span>
+                    <div className={styles.icon}>📁</div>
                     Duplicate
                 </button>
                 <button onClick={() => { onCopy(); onClose(); }}>
-                    <span className={styles.icon}>✂️</span>
+                    <div className={styles.icon}>✂️</div>
                     Copy
                 </button>
                 <div className={styles.divider} />
                 <button className={styles.danger} onClick={() => { onDelete(); onClose(); }}>
-                    <span className={styles.icon}>🗑️</span>
+                    <div className={styles.icon}>🗑️</div>
                     Delete
                 </button>
             </div>

@@ -90,7 +90,6 @@ const AssetSidebar = ({ isOpen: propIsOpen }: AssetSidebarProps) => {
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, model)}
                                     onDragEnd={handleDragEnd}
-                                    onClick={() => handleAddModel(model)}
                                 >
                                     <div className={styles.icon}>
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -99,7 +98,13 @@ const AssetSidebar = ({ isOpen: propIsOpen }: AssetSidebarProps) => {
                                         </svg>
                                     </div>
                                     <div className={styles.label}>{model.name}</div>
-                                    <div className={styles.add}>+</div>
+                                    <div 
+                                        className={styles.add}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleAddModel(model);
+                                        }}
+                                    >+</div>
                                 </div>
                             ))}
                         </div>

@@ -16,6 +16,7 @@ interface ProjectStore {
     addTab: (projectId: string, name: string, tabId?: string, assetId?: string) => void;
     removeTab: (projectId: string, tabId: string) => void;
     updateTabName: (projectId: string, tabId: string, name: string) => void;
+    updateTabAssetId: (projectId: string, tabId: string, assetId: string | null) => void;
     
     addChart: (projectId: string, tabId: string, chart: ChartData) => void;
     removeChart: (projectId: string, tabId: string, chartId: string) => void;
@@ -242,6 +243,10 @@ export const useProjectStore = create<ProjectStore>()(
             
             updateTabName: (_projectId, tabId, name) => {
                 socket.emit('tab:update', { tabId, data: { name } });
+            },
+
+            updateTabAssetId: (_projectId, tabId, assetId) => {
+                socket.emit('tab:update', { tabId, data: { assetId } });
             },
 
             // Socket response handlers

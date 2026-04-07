@@ -1086,7 +1086,10 @@ const Project = () => {
                 onClick={() => setActiveTabId(tab.id)}
                 onDoubleClick={() => handleRenameTab(tab.id, tab.name)}
               >
-                <span className={styles["tab-name"]}>{tab.name}</span>
+                <span className={styles["tab-name"]}>
+                  {tab.assetId && <span className={styles["link-icon"]} title="Linked to 3D Asset">🔗</span>}
+                  {tab.name}
+                </span>
                 {currentProject?.tabs.length > 1 && (
                   <button
                     className={styles["remove-tab-btn"]}
@@ -1149,25 +1152,35 @@ const Project = () => {
         )}
 
         <AnimatePresence>
-          {(isEditMode || is3DMode) && selectedChartId && (
-            <motion.div
-              key="config-sidebar"
-              initial={{ x: 400, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 400, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              style={{ position: 'fixed', right: 0, top: 0, height: '100%', zIndex: 1100 }}
-            >
-              <ChartConfigSidebar
-                chart={[...charts, ...overlayCharts].map(c => ({
-                  ...c,
-                  config: c.config || DEFAULT_CHART_CONFIG
-                })).find((c) => c.id === selectedChartId)! as any}
-                onClose={() => setSelectedChartId(null)}
-                onUpdate={handleUpdateChart}
-              />
-            </motion.div>
-          )}
+          {(() => {
+            if (!(isEditMode || is3DMode) || !selectedChartId) return null;
+            
+            // Find the chart in either the active tab's charts or global overlay charts
+            const allAvailableCharts = [...charts, ...overlayCharts];
+            const foundChart = allAvailableCharts.find(c => c.id === selectedChartId);
+            
+            if (!foundChart) return null;
+
+            return (
+              <motion.div
+                key="config-sidebar"
+                initial={{ x: 400, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 400, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                style={{ position: 'fixed', right: 0, top: 0, height: '100%', zIndex: 1100 }}
+              >
+                <ChartConfigSidebar
+                  chart={{
+                    ...foundChart,
+                    config: foundChart.config || DEFAULT_CHART_CONFIG
+                  }}
+                  onClose={() => setSelectedChartId(null)}
+                  onUpdate={handleUpdateChart}
+                />
+              </motion.div>
+            );
+          })()}
         </AnimatePresence>
 
         <AnimatePresence mode="wait">
