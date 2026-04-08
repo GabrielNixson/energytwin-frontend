@@ -47,6 +47,10 @@ interface UIStore {
   setHoveredAsset: (asset: { name: string, id: string } | null) => void;
   selectedChartId: string | null;
   setSelectedChartId: (id: string | null) => void;
+  showLabels: boolean;
+  setShowLabels: (show: boolean) => void;
+  showCharts: boolean;
+  setShowCharts: (show: boolean) => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -203,6 +207,12 @@ export const useUIStore = create<UIStore>()(
       // Chart Selection
       selectedChartId: null as string | null,
       setSelectedChartId: (id: string | null) => set({ selectedChartId: id }),
+
+      // Visibility Toggles
+      showLabels: true,
+      setShowLabels: (showLabels: boolean) => set({ showLabels }),
+      showCharts: true,
+      setShowCharts: (showCharts: boolean) => set({ showCharts }),
     }),
     {
       name: "ui-store", // key in localStorage

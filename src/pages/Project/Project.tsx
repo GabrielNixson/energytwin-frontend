@@ -39,6 +39,7 @@ import AddTabModal from "./components/AddTabModal/AddTabModal.tsx";
 import ConfirmModal from "@/components/ConfirmModal/ConfirmModal";
 import AssetSidebar from "@/components/AssetSidebar/AssetSidebar";
 import AIChat from "@/components/AIChat/AIChat.tsx";
+import ActionCenter from "./components/ActionCenter/ActionCenter";
 
 const DEFAULT_CHART_CONFIG: ChartConfig = {
   showTooltips: true,
@@ -1084,6 +1085,7 @@ const Project = () => {
       }}
     >
       <div className={styles["project-container"]}>
+        <ActionCenter />
         <div className={styles["tools-container"]}>
           <div className={styles["tab-bar"]}>
             {currentProject?.tabs.map((tab) => (
@@ -1097,7 +1099,7 @@ const Project = () => {
                   {tab.assetId && <span className={styles["link-icon"]} title="Linked to 3D Asset">🔗</span>}
                   {tab.name}
                 </span>
-                {currentProject?.tabs.length > 1 && (
+                {isEditMode && currentProject?.tabs.length > 1 && (
                   <button
                     className={styles["remove-tab-btn"]}
                     onClick={(e) => handleRemoveTab(e, tab.id)}
@@ -1108,7 +1110,7 @@ const Project = () => {
                 )}
               </div>
             ))}
-            {is3DMode && (
+            {isEditMode && is3DMode && (
               <button
                 className={styles["add-tab-btn"]}
                 onClick={() => {

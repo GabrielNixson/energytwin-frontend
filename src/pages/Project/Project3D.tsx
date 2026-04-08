@@ -39,9 +39,11 @@ interface PlacedModelProps {
     onSelect: (obj: THREE.Object3D) => void;
     onPointerOver?: (e: any) => void;
     onPointerOut?: () => void;
+    showLabels?: boolean;
+    isEditMode?: boolean;
 }
 
-const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onContextMenu, isSelected, onSelect, onPointerOver, onPointerOut }: PlacedModelProps) => {
+const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onContextMenu, isSelected, onSelect, onPointerOver, onPointerOut, showLabels, isEditMode }: PlacedModelProps) => {
     const groupRef = useRef<THREE.Group>(null!);
     const gltf = useGLTF(path) as any;
     const downPos = useRef({ x: 0, y: 0 });
@@ -117,7 +119,7 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
     };
 
     return (
-        <Select enabled={isSelected}>
+        <Select enabled={isEditMode && isSelected}>
             <group
                 ref={groupRef}
                 position={position}
@@ -129,6 +131,7 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                 onPointerOut={onPointerOut}
                 onClick={handleSelect}
                 onContextMenu={(e: any) => {
+                    if (!isEditMode) return;
                     if (isClick(e)) {
                         // Select the model on right-click too for consistency
                         e.stopPropagation();
@@ -143,7 +146,7 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
             >
                 <primitive object={clonedScene} name={name} />
 
-                {linkedTabName && (
+                {linkedTabName && showLabels && (
                     <Html
                         position={[0, labelHeight, 0]}
                         center
@@ -417,7 +420,10 @@ const Project3D = () => {
         isEyedropperActive,
         setIsEyedropperActive,
         setEyedropperSelection,
-        setHoveredAsset
+        setHoveredAsset,
+        isEditMode,
+        showLabels,
+        showCharts
     } = useUIStore();
 
     // Get current project and scene data
@@ -490,7 +496,7 @@ const Project3D = () => {
 
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
-        if (!draggingAsset || !projectID) return;
+        if (!isEditMode || !draggingAsset || !projectID) return;
         
         addSceneObject(projectID, {
             name: draggingAsset.name,
@@ -582,6 +588,14 @@ const Project3D = () => {
         };
     }, [copiedModel, addSceneObject]);
 
+    // Clear selection when switching out of edit mode
+    useEffect(() => {
+        if (!isEditMode) {
+            setSelectedModelId(null);
+            setSelectedObject(null);
+        }
+    }, [isEditMode, setSelectedModelId]);
+
     return (
         <div
             ref={(node) => {
@@ -597,7 +611,7 @@ const Project3D = () => {
         >
 
             {/* Project Persistent Charts rendered as Overlays */}
-            {projectCharts.map((chart) => (
+            {showCharts && projectCharts.map((chart) => (
                 <ChartOverlay
                     key={chart.id}
                     {...chart}
@@ -631,7 +645,7 @@ const Project3D = () => {
             ))}
 
             {/* Transient/Temp Overlays (for newly dropped but not yet saved, if any) */}
-            {uniqueOverlays.map((chart) => (
+            {showCharts && uniqueOverlays.map((chart) => (
                 <ChartOverlay
                     key={chart.id}
                     {...chart}
@@ -658,7 +672,7 @@ const Project3D = () => {
             <Tools />
 
             {/* Transform Mode Toggle UI */}
-            {selectedModelId && (
+            {isEditMode && selectedModelId && (
                 <div style={{
                     position: 'absolute',
                     bottom: '100px',
@@ -786,12 +800,15 @@ const Project3D = () => {
                                     linkedTabName={linkedTab?.name}
                                     onContextMenu={(e: any) => handleModelContextMenu(e, model.id)}
                                     isSelected={selectedModelId === model.id}
+                                    showLabels={showLabels}
+                                    isEditMode={isEditMode}
                                     onPointerOver={(e: any) => {
                                         e.stopPropagation();
                                         if (isEyedropperActive) setHoveredAsset({ name: model.name, id: model.id });
                                     }}
                                     onPointerOut={() => setHoveredAsset(null)}
                                     onSelect={(obj: THREE.Object3D) => {
+                                        if (!isEditMode && !isEyedropperActive) return;
                                         if (isEyedropperActive) {
                                             setEyedropperSelection({ name: model.name, id: model.id });
                                             // Also select it immediately to show focus/controls
@@ -822,7 +839,7 @@ const Project3D = () => {
                     </Selection>
 
                     {/* Centralized Transform Controls */}
-                    {selectedObject && selectedModelId && (
+                    {isEditMode && selectedObject && selectedModelId && (
                         <TransformControls
                             object={selectedObject as any}
                             mode={transformMode}
