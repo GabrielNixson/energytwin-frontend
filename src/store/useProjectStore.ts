@@ -247,11 +247,27 @@ export const useProjectStore = create<ProjectStore>()(
             },
 
             removeSceneObject: (projectId, modelId) => {
+                const project = get().projects.find(p => p.id === projectId);
+                const tabsToDelete = project?.tabs.filter(t => String(t.assetId) === String(modelId)) || [];
+
                 set((state) => ({
                     projects: state.projects.map(p => 
-                        p.id === projectId ? { ...p, scene: p.scene.filter(s => s.id !== modelId) } : p
+                        p.id === projectId ? { 
+                            ...p, 
+                            scene: (p.scene || []).filter(s => s.id !== modelId),
+                            tabs: p.tabs.filter(t => String(t.assetId) !== String(modelId))
+                        } : p
                     )
                 }));
+
+                // Cascade delete to linked tabs
+                tabsToDelete.forEach(tab => {
+                    if (useUIStore.getState().activeTabId === tab.id) {
+                        useUIStore.getState().setActiveTabId(null);
+                    }
+                    socket.emit('tab:delete', { projectId, tabId: tab.id });
+                });
+
                 socket.emit('scene:delete', { projectId, modelId });
             },
 
@@ -298,6 +314,12 @@ export const useProjectStore = create<ProjectStore>()(
                         tabs: p.tabs.filter(t => t.id !== tabId)
                     } : p)
                 }));
+
+                // Clear active tab if match
+                if (useUIStore.getState().activeTabId === tabId) {
+                    useUIStore.getState().setActiveTabId(null);
+                }
+
                 socket.emit('tab:delete', { projectId, tabId });
             },
             

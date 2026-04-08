@@ -45,6 +45,8 @@ const Tools = () => {
         }
     };
 
+    if (!isEditMode) return null;
+
     return (
         <div
             className={styles["tools-container"]}
