@@ -10,12 +10,7 @@ const Navbar = () => {
 
     const currentProject = projects.find(p => p.id === projectID);
 
-    const getPageTitle = () => {
-        if (location.pathname === "/") return "Overview";
-        if (location.pathname === "/projects") return "Projects Library";
-        if (currentProject) return currentProject.name;
-        return "Energy Module";
-    };
+    
 
     return (
         <div className={styles["navbar-container"]}>

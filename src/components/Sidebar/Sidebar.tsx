@@ -69,7 +69,7 @@ const Sidebar = () => {
         <div className={styles.icon}>
           <LogoIcon />
         </div>
-        <span>Energy Module</span>
+        <span>Energy Twin</span>
       </div>
 
       <div className={styles["options-container"]}>

@@ -7,9 +7,9 @@ export const OverviewIcon = () => {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <rect width="7" height="7" x="3" y="3" rx="1"></rect>
       <rect width="7" height="7" x="14" y="3" rx="1"></rect>
@@ -29,9 +29,9 @@ export const ServicesIcon = () => {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <rect width="20" height="8" x="2" y="2" rx="2" ry="2"></rect>
       <rect width="20" height="8" x="2" y="14" rx="2" ry="2"></rect>

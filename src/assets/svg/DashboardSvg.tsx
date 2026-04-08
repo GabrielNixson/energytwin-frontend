@@ -7,9 +7,9 @@ export const TotalServicesIcon = () => {
       viewBox="0 0 24 24"
       fill="none"
       stroke="#00C6E6"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <rect width="20" height="8" x="2" y="2" rx="2" ry="2"></rect>
       <rect width="20" height="8" x="2" y="14" rx="2" ry="2"></rect>
@@ -28,9 +28,9 @@ export const HealthyIcon = () => {
       viewBox="0 0 24 24"
       fill="none"
       stroke="#10B981"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path>
     </svg>
@@ -46,9 +46,9 @@ export const DegradedIcon = () => {
       viewBox="0 0 24 24"
       fill="none"
       stroke="#F59E0B"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path>
       <path d="M12 9v4"></path>
@@ -66,9 +66,9 @@ export const FailureIcon = () => {
       viewBox="0 0 24 24"
       fill="none"
       stroke="#EF4444"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <circle cx="12" cy="12" r="10"></circle>
       <path d="m15 9-6 6"></path>
@@ -86,9 +86,9 @@ export const ActivePodsIcon = () => {
       viewBox="0 0 24 24"
       fill="none"
       stroke="#3B82F6"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
       <path d="m3.3 7 8.7 5 8.7-5"></path>
@@ -106,9 +106,9 @@ export const AvgCPUIcon = () => {
       viewBox="0 0 24 24"
       fill="none"
       stroke="#00C6E6"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       <rect width="16" height="16" x="4" y="4" rx="2"></rect>
       <rect width="6" height="6" x="9" y="9" rx="1"></rect>

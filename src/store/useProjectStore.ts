@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Project, TabData } from "../pages/Projects/project";
+import { Project, TabData, SceneModel } from "../pages/Projects/project";
 import { ChartData } from "../types/chart.types";
 import { useAuthStore } from "./useAuthStore";
+import { useUIStore } from "./useUIStore";
 import socket from "../services/socket";
 
 interface ProjectStore {
@@ -13,9 +14,15 @@ interface ProjectStore {
     getProject: (projectId: string) => void;
     setDefaultProject: (id: string) => void;
     updateProjectCharts: (projectId: string, tabId: string, charts: ChartData[]) => void;
-    addTab: (projectId: string, name: string, tabId?: string) => void;
+    addTab: (projectId: string, name: string, tabId?: string, assetId?: string) => void;
     removeTab: (projectId: string, tabId: string) => void;
     updateTabName: (projectId: string, tabId: string, name: string) => void;
+    updateTabAssetId: (projectId: string, tabId: string, assetId: string | null) => void;
+    
+    // Scene (3D Model) management per project
+    addSceneObject: (projectId: string, model: Omit<SceneModel, 'id'>) => void;
+    removeSceneObject: (projectId: string, modelId: string) => void;
+    updateSceneObject: (projectId: string, modelId: string, updates: Partial<SceneModel>) => void;
     
     addChart: (projectId: string, tabId: string, chart: ChartData) => void;
     removeChart: (projectId: string, tabId: string, chartId: string) => void;
@@ -26,11 +33,16 @@ interface ProjectStore {
     _handleProjectDeleted: (projectId: string) => void;
     _handleProjectRead: (data: any) => void;
     _handleTabCreated: (data: any) => void;
+    _handleTabCreatedLog: (projectId: string) => void;
     _handleTabUpdated: (data: any) => void;
     _handleTabDeleted: (data: any) => void;
     _handleChartCreated: (data: any) => void;
     _handleChartUpdated: (data: any) => void;
     _handleChartDeleted: (data: any) => void;
+    
+    _handleSceneObjectCreated: (data: any) => void;
+    _handleSceneObjectUpdated: (data: any) => void;
+    _handleSceneObjectDeleted: (data: any) => void;
     
     initSocket: () => void;
 }
@@ -41,12 +53,22 @@ const mapProject = (p: any): Project => ({
     description: p.description || '',
     createdAt: p.createdAt || new Date().toISOString(),
     default: p.default || false,
-    tabs: (p.tabs || []).map(mapTab)
+    tabs: (p.tabs || []).map(mapTab),
+    scene: (p.scene || p.models || []).map(mapScene)
+});
+
+const mapScene = (s: any): SceneModel => ({
+    id: s._id || s.id,
+    name: s.name,
+    path: s.path,
+    position: s.position || [0, 0, 0],
+    rotation: s.rotation || [0, 0, 0]
 });
 
 const mapTab = (t: any): TabData => ({
     id: t._id || t.id,
     name: t.name,
+    assetId: t.assetId,
     charts: (t.charts || []).map(mapChart)
 });
 
@@ -58,8 +80,41 @@ const mapChart = (c: any): ChartData => ({
     y: c.chartData?.y ?? c.y,
     w: c.chartData?.w ?? c.w,
     h: c.chartData?.h ?? c.h,
+    x3d: (c.x3d !== undefined ? c.x3d : c.chartData?.x3d),
+    y3d: (c.y3d !== undefined ? c.y3d : c.chartData?.y3d),
+    w3d: (c.w3d !== undefined ? c.w3d : c.chartData?.w3d),
+    h3d: (c.h3d !== undefined ? c.h3d : c.chartData?.h3d),
     config: c.configData || c.config || {}
 });
+
+// Helper to merge local 3D data into server objects
+const mergeLocal3DData = (newP: Project, existingP: Project | undefined): Project => {
+    if (!existingP) return newP;
+    
+    return {
+        ...newP,
+        tabs: newP.tabs.map(newT => {
+            const existingT = existingP.tabs.find(t => t.id === newT.id);
+            if (!existingT) return newT;
+
+            return {
+                ...newT,
+                charts: newT.charts.map(newC => {
+                    const existingC = existingT.charts.find(c => c.id === newC.id);
+                    if (!existingC) return newC;
+                    
+                    return {
+                        ...newC,
+                        x3d: existingC.x3d ?? newC.x3d,
+                        y3d: existingC.y3d ?? newC.y3d,
+                        w3d: existingC.w3d ?? newC.w3d,
+                        h3d: existingC.h3d ?? newC.h3d
+                    };
+                })
+            };
+        })
+    };
+};
 
 export const useProjectStore = create<ProjectStore>()(
     persist(
@@ -67,14 +122,9 @@ export const useProjectStore = create<ProjectStore>()(
             projects: [],
             setProjects: (newProjects) => set((state) => {
                 const mapped = newProjects.map(mapProject);
-                // Merge projects: prefer detailed objects (with tabs) over summary objects
-                const merged = mapped.map(newP => {
-                    const existing = state.projects.find(p => p.id === newP.id);
-                    if (existing && existing.tabs.length > 0 && newP.tabs.length === 0) {
-                        return { ...newP, tabs: existing.tabs };
-                    }
-                    return newP;
-                });
+                const merged = mapped.map(newP => 
+                    mergeLocal3DData(newP, state.projects.find(p => p.id === newP.id))
+                );
                 return { projects: merged };
             }),
             
@@ -132,7 +182,11 @@ export const useProjectStore = create<ProjectStore>()(
                     if (!isNew) {
                         socket.emit('chart:update', {
                             chartId: c.id,
-                            chartData: { x: c.x, y: c.y, w: c.w, h: c.h, title: c.title, type: c.type },
+                            chartData: { 
+                                x: c.x, y: c.y, w: c.w, h: c.h, 
+                                x3d: c.x3d, y3d: c.y3d, w3d: c.w3d, h3d: c.h3d,
+                                title: c.title, type: c.type 
+                            },
                             configData: c.config
                         });
                     }
@@ -180,21 +234,60 @@ export const useProjectStore = create<ProjectStore>()(
                 }));
                 socket.emit('chart:delete', { tabId, chartId });
             },
+
+            addSceneObject: (projectId, model) => {
+                const tempId = 'scene-' + Date.now();
+                set((state) => ({
+                    projects: state.projects.map(p => 
+                        p.id === projectId ? { ...p, scene: [...(p.scene || []), { ...model, id: tempId }] } : p
+                    )
+                }));
+                socket.emit('scene:create', { projectId, data: { ...model, id: tempId } });
+            },
+
+            removeSceneObject: (projectId, modelId) => {
+                set((state) => ({
+                    projects: state.projects.map(p => 
+                        p.id === projectId ? { ...p, scene: p.scene.filter(s => s.id !== modelId) } : p
+                    )
+                }));
+                socket.emit('scene:delete', { projectId, modelId });
+            },
+
+            updateSceneObject: (projectId, modelId, updates) => {
+                set((state) => ({
+                    projects: state.projects.map(p => 
+                        p.id === projectId ? { 
+                            ...p, 
+                            scene: p.scene.map(s => s.id === modelId ? { ...s, ...updates } : s) 
+                        } : p
+                    )
+                }));
+                socket.emit('scene:update', { projectId, modelId, data: updates });
+            },
             
-            addTab: (projectId, name, tabId) => {
+            addTab: (projectId: string, name: string, tabId?: string, assetId?: string) => {
                 const tempTabId = tabId || 'temp_' + Date.now();
                 set((state) => ({
                     projects: state.projects.map(p => 
                         p.id === projectId ? {
                             ...p,
-                            tabs: [...p.tabs, { id: tempTabId, name, charts: [] }]
+                            tabs: [...p.tabs, { id: tempTabId, name, assetId, charts: [] }]
                         } : p
                     )
                 }));
                 socket.emit('tab:create', {
                     projectId,
-                    data: { tabId: tempTabId, name }
+                    data: { tabId: tempTabId, name, assetId }
                 });
+
+                // --- LOGGING ---
+                const updatedState = get();
+                const currentProject = updatedState.projects.find(p => p.id === projectId);
+                console.group("Tab Added (Optimistic)");
+                console.log("Full Tabs in Project:", currentProject?.tabs);
+                console.log("All Assets in Scene:", useUIStore.getState().placedModels);
+                console.groupEnd();
             },
             
             removeTab: (projectId, tabId) => {
@@ -209,6 +302,10 @@ export const useProjectStore = create<ProjectStore>()(
             
             updateTabName: (_projectId, tabId, name) => {
                 socket.emit('tab:update', { tabId, data: { name } });
+            },
+
+            updateTabAssetId: (_projectId, tabId, assetId) => {
+                socket.emit('tab:update', { tabId, data: { assetId } });
             },
 
             // Socket response handlers
@@ -229,12 +326,13 @@ export const useProjectStore = create<ProjectStore>()(
                 console.log("project:read:response", data);
                 if (data.success && data.data) {
                     const fullProject = mapProject(data.data);
-                    // Update if exists, otherwise add
-                    const projectExists = state.projects.find(p => p.id === fullProject.id);
+                    const mergedProject = mergeLocal3DData(fullProject, state.projects.find(p => p.id === fullProject.id));
+                    
+                    const projectExists = state.projects.find(p => p.id === mergedProject.id);
                     if (projectExists) {
-                        return { projects: state.projects.map(p => p.id === fullProject.id ? fullProject : p) };
+                        return { projects: state.projects.map(p => p.id === mergedProject.id ? mergedProject : p) };
                     }
-                    return { projects: [...state.projects, fullProject] };
+                    return { projects: [...state.projects, mergedProject] };
                 }
                 return state;
             }),
@@ -274,6 +372,15 @@ export const useProjectStore = create<ProjectStore>()(
                     } : p)
                 };
             }),
+            
+            _handleTabCreatedLog: (projectId: string) => {
+                 const state = get();
+                 const project = state.projects.find(p => p.id === projectId);
+                 console.group("Tab Created (Server Response)");
+                 console.log("Full Tabs in Project:", project?.tabs);
+                 console.log("All Assets in Scene:", useUIStore.getState().placedModels);
+                 console.groupEnd();
+            },
             
              _handleTabUpdated: (data) => set((state) => {
                 console.log("tab:updated broadcast", data);
@@ -413,6 +520,47 @@ export const useProjectStore = create<ProjectStore>()(
                     }))
                 };
             }),
+
+            _handleSceneObjectCreated: (data) => set((state) => {
+                const sceneObject = data.model || data.scene || data;
+                const projectId = data.projectId || sceneObject.projectId;
+                if (!projectId || (!sceneObject.id && !sceneObject._id)) return state;
+                return {
+                    projects: state.projects.map(p => p.id === projectId ? {
+                        ...p,
+                        scene: [
+                            ...(p.scene || []).filter(s => {
+                                const sid = sceneObject._id || sceneObject.id;
+                                const isRealMatch = s.id === sid;
+                                const isOptimisticMatch = (String(s.id).startsWith('scene-')) && s.name === sceneObject.name;
+                                return !isRealMatch && !isOptimisticMatch;
+                            }),
+                            mapScene(sceneObject)
+                        ]
+                    } : p)
+                };
+            }),
+
+            _handleSceneObjectUpdated: (data) => set((state) => {
+                const sceneObject = data.model || data.scene || data;
+                const sid = sceneObject._id || sceneObject.id;
+                return {
+                    projects: state.projects.map(p => ({
+                        ...p,
+                        scene: (p.scene || []).map(s => s.id === sid ? mapScene(sceneObject) : s)
+                    }))
+                };
+            }),
+
+            _handleSceneObjectDeleted: (data) => set((state) => {
+                const sid = data.modelId || data.id || data;
+                return {
+                    projects: state.projects.map(p => ({
+                        ...p,
+                        scene: (p.scene || []).filter(s => s.id !== sid)
+                    }))
+                };
+            }),
             
             initSocket: () => {
                 const store = get();
@@ -437,7 +585,11 @@ export const useProjectStore = create<ProjectStore>()(
                 socket.off('tab:created').on('tab:created', store._handleTabCreated);
                 socket.off('tab:create:response').on('tab:create:response', (data: any) => {
                     console.log("tab:create:response", data);
-                    data.success && store._handleTabCreated(data.data);
+                    if (data.success) {
+                        store._handleTabCreated(data.data);
+                        // Log after state update
+                        setTimeout(() => store._handleTabCreatedLog(data.projectId || data.data?.projectId), 0);
+                    }
                 });
                 socket.off('tab:updated').on('tab:updated', store._handleTabUpdated);
                 socket.off('tab:deleted').on('tab:deleted', store._handleTabDeleted);
@@ -457,11 +609,44 @@ export const useProjectStore = create<ProjectStore>()(
                     console.log("chart:delete:response", data);
                     data.success && store._handleChartDeleted(data.data || { tabId: data.tabId, chartId: data.chartId || data.id });
                 });
+
+                socket.off('scene:created').on('scene:created', store._handleSceneObjectCreated);
+                socket.off('scene:updated').on('scene:updated', store._handleSceneObjectUpdated);
+                socket.off('scene:deleted').on('scene:deleted', store._handleSceneObjectDeleted);
             }
         }),
         {
             name: "project-store",
             version: 2,
+            partialize: (state) => ({
+                projects: state.projects.map(p => ({
+                    ...p,
+                    tabs: p.tabs.map(t => ({ 
+                        ...t, 
+                        charts: t.charts.map(c => ({
+                            id: c.id,
+                            type: c.type,
+                            title: c.title,
+                            x: c.x,
+                            y: c.y,
+                            w: c.w,
+                            h: c.h,
+                            x3d: c.x3d,
+                            y3d: c.y3d,
+                            w3d: c.w3d,
+                            h3d: c.h3d,
+                            config: c.config
+                        })),
+                        scene: p.scene.map(s => ({
+                            id: s.id,
+                            name: s.name,
+                            path: s.path,
+                            position: s.position,
+                            rotation: s.rotation
+                        }))
+                    }))
+                }))
+            })
         }
     )
 );

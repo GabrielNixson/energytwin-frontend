@@ -1,3 +1,34 @@
+.eyedropper-tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: rgba(145, 126, 252, 0.95);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    transform: translate(-50%, -100%);
+    margin-top: -25px;
+    animation: tooltipFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    @keyframes tooltipFadeIn {
+        from {
+            opacity: 0;
+            transform: translate(-50%, -85%);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate(-50%, -100%);
+        }
+    }
+}
+
 .project-container {
     width: 100%;
     height: 100%;
@@ -10,16 +41,17 @@
         flex: 1;
         min-width: 0;
         height: 100%;
-        padding: 80px 40px 40px 40px;
+        padding: 100px 50px 50px 50px;
         display: grid;
         grid-template-columns: repeat(12, 1fr);
-        grid-auto-rows: var(--row-height, 150px);
-        gap: 20px;
+        grid-auto-rows: var(--row-height, 120px);
+        gap: 32px;
         overflow-y: auto;
         transition: padding 0.3s ease;
         align-content: start;
         position: relative;
         transition: all 0.5s linear;
+
         &.edit-mode {
             background-image:
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
@@ -42,9 +74,14 @@
     }
 
     .chart-item {
-        min-width: 300px;
+        min-width: 0;
         transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease;
         position: relative;
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
 
         &.ghost {
             z-index: 0;
@@ -66,6 +103,21 @@
                 opacity: 0.6;
                 filter: grayscale(0.5);
             }
+        }
+    }
+
+    .top-nav {
+        position: absolute;
+        top: 20px;
+        left: 40px;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        pointer-events: none;
+
+        &>* {
+            pointer-events: auto;
         }
     }
 
@@ -122,6 +174,14 @@
     position: relative;
     background: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
     overflow: hidden;
+
+    &.eyedropper-active {
+        cursor: crosshair !important;
+
+        * {
+            cursor: crosshair !important;
+        }
+    }
 }
 
 .tab-bar {
@@ -129,11 +189,13 @@
     align-items: center;
     gap: 4px;
     flex-wrap: wrap;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 4px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(10, 10, 10, 0.6);
+    padding: 6px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     margin-right: 12px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 
     .tab-item {
         padding: 6px 16px;

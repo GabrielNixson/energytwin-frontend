@@ -95,19 +95,35 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
     const options = {
         responsive: true,
         maintainAspectRatio: false,
+        layout: {
+            padding: {
+                top: 5,
+                bottom: 5,
+                left: 0,
+                right: 0
+            }
+        },
         plugins: {
             legend: {
                 display: effectiveConfig.showLegend,
                 position: 'bottom' as const,
                 labels: {
                     color: '#e2e8f0',
+                    font: {
+                        size: 11
+                    },
+                    boxWidth: 12,
+                    padding: 15
                 },
             },
             tooltip: {
                 enabled: effectiveConfig.showTooltips,
-            },
-            title: {
-                display: false,
+                backgroundColor: 'rgba(15, 15, 20, 0.9)',
+                titleFont: { size: 13 },
+                bodyFont: { size: 12 },
+                padding: 10,
+                cornerRadius: 8,
+                displayColors: false
             },
         },
         scales: type !== 'pie' && type !== 'gauge' ? {
@@ -116,13 +132,20 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                     display: !!effectiveConfig.yAxisLabel,
                     text: effectiveConfig.yAxisLabel,
                     color: '#94a3b8',
+                    font: {
+                        size: 11,
+                        weight: '600' as const
+                    }
                 },
                 max: effectiveConfig.yAxisMax,
                 grid: {
                     color: effectiveConfig.showGrid ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                    drawBorder: false,
                 },
                 ticks: {
                     color: '#94a3b8',
+                    font: { size: 10 },
+                    padding: 8
                 },
             },
             x: {
@@ -130,12 +153,18 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                     display: !!effectiveConfig.xAxisLabel,
                     text: effectiveConfig.xAxisLabel,
                     color: '#94a3b8',
+                    font: {
+                        size: 11,
+                        weight: '600' as const
+                    }
                 },
                 grid: {
                     display: false,
                 },
                 ticks: {
                     color: '#94a3b8',
+                    font: { size: 10 },
+                    padding: 8
                 },
             },
         } : undefined,
@@ -285,32 +314,29 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
     return (
         <div
             className={[
-                styles['chart-wrapper'],
+                styles.chartWrapper,
                 isCompact ? styles.compact : '',
-                isBilling ? styles['pop-over'] : '',
+                isBilling ? styles.popOver : '',
                 isExpanded ? styles.expanded : '',
             ].filter(Boolean).join(' ')}
-            // ↓ KEY FIX: lift z-index AND set overflow visible when billing dropdown is open
             style={{
                 zIndex: isExpanded ? 50 : 1,
-                // overflow must be visible so the absolutely-positioned dropdown
-                // isn't clipped by the card boundary
                 overflow: isBilling ? 'visible' : undefined,
             }}
         >
-            <div className={styles['chart-header']}>
-                <div className={styles['title-group']}>
-                    <span className={styles['chart-title']}>{title}</span>
+            <div className={styles.chartHeader}>
+                <div className={styles.titleGroup}>
+                    <span className={styles.chartTitle}>{title}</span>
                     {type === 'progressBar' && (
-                        <span className={styles['percentage-badge']}>
+                        <span className={styles.percentageBadge}>
                             {data.datasets[0].data[data.datasets[0].data.length - 1]}%
                         </span>
                     )}
                 </div>
                 {isEditMode && (
-                    <div className={styles['header-actions']}>
+                    <div className={styles.headerActions}>
                         <button
-                            className={styles['delete-btn']}
+                            className={styles.deleteBtn}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (onDelete) onDelete();
@@ -322,17 +348,20 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
                 )}
             </div>
 
-            {/* ↓ KEY FIX: chart-content must also be overflow:visible for billing */}
             <div
-                className={styles['chart-content']}
-                style={isBilling ? { overflow: 'visible' } : undefined}
+                className={styles.chartContent}
+                style={isBilling ? { overflow: 'visible' } : {
+                    height: '100%',
+                    width: '100%',
+                    position: 'relative'
+                }}
             >
                 {renderChart()}
             </div>
 
             {isEditMode && (
                 <div
-                    className={styles['resize-handle']}
+                    className={styles.resizeHandle}
                     onPointerDown={handleResizePointerDown}
                     data-resize-handle
                 >
