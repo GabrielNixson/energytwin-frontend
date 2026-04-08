@@ -4,6 +4,43 @@
 
     .project-card {
         position: relative;
+        overflow: visible; // Ensure badges aren't clipped by default
+    }
+
+    .shine-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        overflow: hidden;
+        border-radius: 12px;
+        z-index: 10;
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: -100%;
+            width: 300%;
+            height: 300%;
+            background: linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0) 40%,
+                rgba(255, 255, 255, 0.4) 50%,
+                rgba(255, 255, 255, 0) 60%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(25deg);
+            animation: shine 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+    }
+
+    @keyframes shine {
+        0% { transform: translateX(-100%) rotate(25deg); }
+        100% { transform: translateX(100%) rotate(25deg); }
     }
 
     .header {
