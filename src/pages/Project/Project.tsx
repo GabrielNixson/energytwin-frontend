@@ -1085,8 +1085,8 @@ const Project = () => {
       }}
     >
       <div className={styles["project-container"]}>
-        <ActionCenter />
         <div className={styles["tools-container"]}>
+          
           <div className={styles["tab-bar"]}>
             {currentProject?.tabs.map((tab) => (
               <div
@@ -1126,8 +1126,7 @@ const Project = () => {
             )}
           </div>
 
-          {/* 2D Tools - Hidden as per request */}
-          {!is3DMode && null}
+          <ActionCenter />
 
           {is3DMode && (
             <input

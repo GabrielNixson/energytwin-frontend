@@ -1,8 +1,5 @@
 .action-center {
-    position: fixed;
-    top: 24px;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
     z-index: 1000;
     pointer-events: auto;
 }

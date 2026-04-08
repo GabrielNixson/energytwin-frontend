@@ -13,8 +13,8 @@ const Controls = forwardRef<CameraControls, { enabled?: boolean }>(({ enabled = 
       // Infinite Zoom & Flexibility like Blender
       minDistance={0}
       maxDistance={Infinity}
-      minPolarAngle={0}                // no flip under
-      maxPolarAngle={Math.PI / 2.5}     // stop at horizon (adjust if needed)
+      minPolarAngle={0}
+      maxPolarAngle={Math.PI / 2.1}     // Allow looking from bottom
       minAzimuthAngle={-Infinity}
       maxAzimuthAngle={Infinity}
 

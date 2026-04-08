@@ -333,77 +333,8 @@ const DxfLayer = () => {
     );
 };
 
-const FocusManager = ({ cameraRef, projectID }: { cameraRef: React.RefObject<any>, projectID: string }) => {
-    const { scene } = useThree();
-    const { activeTabId, setSelectedModelId } = useUIStore();
-    const { projects } = useProjectStore();
-
-    useEffect(() => {
-        if (!cameraRef.current || !activeTabId) return;
-
-        // console.log("FocusManager check for:", activeTabId);
-        const timer = setTimeout(() => {
-            const currentProject = projects.find(p => p.id === projectID);
-            const tab = currentProject?.tabs.find(t => t.id === activeTabId);
-            const targetId = tab?.assetId;
-            const targetName = tab?.name;
-
-            // console.log("FocusManager found tab info:", { targetId, targetName });
-
-            if (targetId || targetName) {
-                let targetObject: THREE.Object3D | null = null;
-
-                // 1. Search for EXACT ID match first (highest priority)
-                if (targetId) {
-                    scene.traverse((child) => {
-                        if (targetObject) return; // Stop if already found
-                        // Check both userData.id and child.name (the primitive/group name)
-                        if (child.userData?.id === targetId || child.name === targetId || (child.parent?.name === targetId && child.type==='Mesh')) {
-                            targetObject = child;
-                        }
-                    });
-                }
-
-                // 2. Fallback to Name match only if ID not found or not provided
-                if (!targetObject && targetName) {
-                    scene.traverse((child) => {
-                        if (targetObject) return;
-                        if (child.name === targetName || (child.userData?.name === targetName)) {
-                            targetObject = child;
-                        }
-                    });
-                }
-
-                if (targetObject) {
-                    const target = targetObject as THREE.Object3D;
-                    const objectId = target.userData?.id || target.name;
-                    if (objectId) setSelectedModelId(objectId);
-
-                    target.updateMatrixWorld(true);
-                    const box = new THREE.Box3().setFromObject(target);
-                    const center = new THREE.Vector3();
-                    const size = new THREE.Vector3();
-                    box.getCenter(center);
-                    box.getSize(size);
-
-                    const maxDim = Math.max(size.x, size.y, size.z);
-                    const distance = (maxDim / 2) / Math.tan(THREE.MathUtils.degToRad(50 / 2));
-                    const safeDistance = distance * 2.0;
-
-                    cameraRef.current.setLookAt(
-                        center.x + (maxDim * 0.4), center.y + (maxDim * 0.6), center.z + safeDistance,
-                        center.x, center.y, center.z,
-                        true
-                    );
-                }
-            }
-        }, 200);
-
-        return () => clearTimeout(timer);
-    }, [activeTabId, scene, cameraRef, projectID, setSelectedModelId]);
-
-    return null;
-};
+import FocusManager from './components/FocusManager/FocusManager';
+import ShortcutManager from './components/ShortcutManager/ShortcutManager';
 
 const Project3D = () => {
     const { projectID } = useParams<{ projectID: string }>();
@@ -469,8 +400,10 @@ const Project3D = () => {
         id: '3d-overlay-area',
     });
 
-    // We are in "Ortho" mode if a tool is selected
-    const isOrthoView = !!selectedSubOption;
+    const [isOrthoManual, setIsOrthoManual] = useState(false);
+
+    // We are in "Ortho" mode if a tool is selected OR if manually toggled (e.g., via Numpad 5)
+    const isOrthoView = !!selectedSubOption || isOrthoManual;
 
     // 🎯 Switch camera animation automatically when view type changes
     useEffect(() => {
@@ -822,6 +755,11 @@ const Project3D = () => {
                         setSelectedObject(null);
                     }}
                 >
+                    <ShortcutManager 
+                        cameraRef={cameraRef} 
+                        selectedModelId={selectedModelId} 
+                        setIsOrthoManual={setIsOrthoManual} 
+                    />
                     <Selection>
                         <EffectComposer multisampling={8} autoClear={false}>
                             <Outline
