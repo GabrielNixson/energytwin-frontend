@@ -15,6 +15,12 @@ const ShortcutManager = ({ cameraRef, selectedModelId, setIsOrthoManual }: Short
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!cameraRef.current) return;
             
+            // 🛡️ Gating: Ignore shortcuts when typing in inputs, textareas, or contenteditables
+            const isTyping = e.target instanceof HTMLInputElement || 
+                             e.target instanceof HTMLTextAreaElement || 
+                             (e.target as HTMLElement).isContentEditable;
+            if (isTyping) return;
+            
             // Toggle Ortho/Perspective (5)
             if (e.key === '5') {
                 e.preventDefault();
