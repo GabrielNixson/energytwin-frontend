@@ -41,9 +41,10 @@ interface PlacedModelProps {
     onPointerOut?: () => void;
     showLabels?: boolean;
     isEditMode?: boolean;
+    autoRotate?: boolean;
 }
 
-const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onContextMenu, isSelected, onSelect, onPointerOver, onPointerOut, showLabels, isEditMode }: PlacedModelProps) => {
+const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onContextMenu, isSelected, onSelect, onPointerOver, onPointerOut, showLabels, isEditMode, autoRotate }: PlacedModelProps) => {
     const groupRef = useRef<THREE.Group>(null!);
     const gltf = useGLTF(path) as any;
     const downPos = useRef({ x: 0, y: 0 });
@@ -59,6 +60,13 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
         );
         return dist < 10; // 10px threshold
     };
+
+    // Auto-rotate logic (spinning idle animation)
+    useFrame((_state, delta) => {
+        if (autoRotate && groupRef.current) {
+            groupRef.current.rotation.y += delta * 1.0;
+        }
+    });
 
     // Auto-select the object in the parent if store says this is the selected ID
     // This handles cases where selection happens outside direct 3D interaction
@@ -83,8 +91,9 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
         box.getCenter(center);
         box.getSize(size);
         
-        // 🎯 STABILIZE: Center on X/Z, but pin BOTTOM to Y=0
-        clone.position.set(-center.x, -box.min.y, -center.z);
+        // 🎯 STABILIZE: Center on X, but pin BOTTOM and BACK to (0,0,0)
+        // This ensures the origin is at the base-back, making wall placement flush.
+        clone.position.set(-center.x, -box.min.y, -box.min.z);
 
         // 🛡️ MATERIAL STABILIZATION: Fix internal z-fighting and ensure solid opaque look
         clone.traverse((child: any) => {
@@ -185,7 +194,7 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
 };
 
 
-const DragPreview = ({ path, positionRef }: { path: string, positionRef: React.RefObject<THREE.Vector3> }) => {
+const DragPreview = ({ path, positionRef, rotationRef }: { path: string, positionRef: React.RefObject<THREE.Vector3>, rotationRef: React.RefObject<THREE.Euler> }) => {
     const meshRef = useRef<THREE.Group>(null);
 
     // Track transition opacities and scales
@@ -194,6 +203,9 @@ const DragPreview = ({ path, positionRef }: { path: string, positionRef: React.R
     useFrame(() => {
         if (positionRef.current && meshRef.current) {
             meshRef.current.position.copy(positionRef.current);
+        }
+        if (rotationRef.current && meshRef.current) {
+            meshRef.current.rotation.copy(rotationRef.current);
         }
 
         // Fast fade-in and scale-up instead of 3s loading box
@@ -229,8 +241,8 @@ const PlacedModelPreview = ({ path, meshRef, opacity, scale }: { path: string, m
         const center = new THREE.Vector3();
         box.getCenter(center);
 
-        // Pin BOTTOM to ground
-        clone.position.set(-center.x, -box.min.y, -center.z);
+        // Pin BOTTOM and BACK to (0,0,0)
+        clone.position.set(-center.x, -box.min.y, -box.min.z);
 
         // 🛡️ PREVIEW STABILIZATION
         clone.traverse((child: any) => {
@@ -250,7 +262,7 @@ const PlacedModelPreview = ({ path, meshRef, opacity, scale }: { path: string, m
     }, [scene, path, opacity]);
 
     return (
-        <group ref={meshRef} position={[0, 0, 0]}>
+        <group ref={meshRef} position={[0, 0, 0]} name="ghost">
             <primitive object={clonedScene} visible={opacity > 0.01} />
         </group>
     );
@@ -444,6 +456,14 @@ const Project3D = () => {
     const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
     const [transformMode, setTransformMode] = useState<'translate' | 'rotate'>('translate');
     const [isCtrlPressed, setIsCtrlPressed] = useState(false);
+    const [isRelocating, setIsRelocating] = useState(false);
+    const [relocatingAssetId, setRelocatingAssetId] = useState<string | null>(null);
+    const dragRotationRef = useRef(new THREE.Euler(0, 0, 0));
+
+    const relocatingAsset = useMemo(() => {
+        if (!relocatingAssetId) return null;
+        return placedModels.find(m => m.id === relocatingAssetId);
+    }, [relocatingAssetId, placedModels]);
 
     const { setNodeRef } = useDroppable({
         id: '3d-overlay-area',
@@ -472,14 +492,27 @@ const Project3D = () => {
             );
         }
     }, [isOrthoView]);
-
-    // Handle drag state tracking for animations
+    
     const startTimeRef = useRef(Date.now());
+
     useEffect(() => {
-        if (draggingAsset) {
+        if (draggingAsset || isRelocating) {
             startTimeRef.current = Date.now();
         }
-    }, [!!draggingAsset]);
+    }, [!!draggingAsset, isRelocating]);
+
+    const updateMousePointer = (clientX: number, clientY: number) => {
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const x = ((clientX - rect.left) / rect.width) * 2 - 1;
+            const y = -((clientY - rect.top) / rect.height) * 2 + 1;
+            mousePointer.set(x, y);
+        }
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        updateMousePointer(e.clientX, e.clientY);
+    };
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -507,15 +540,44 @@ const Project3D = () => {
         setDraggingAsset(null);
     };
 
-    const DragTracker = () => {
-        const { raycaster, camera } = useThree();
+    const DragTracker = ({ relocating }: { relocating?: boolean } = {}) => {
+        const { raycaster, camera, scene } = useThree();
         const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
         useFrame(() => {
-            if (draggingAsset) {
+            if (draggingAsset || relocating) {
                 raycaster.setFromCamera(mousePointer, camera);
-                // Directly update the ref to ensure it's always the latest for handleDrop
-                raycaster.ray.intersectPlane(plane, dragPositionRef.current);
+                
+                // Smart Raycasting: Try hitting geometry first (walls, floors, etc.)
+                const intersects = raycaster.intersectObjects(scene.children, true);
+                
+                // Filter out the ghost/preview itself and some helpers
+                const validHit = intersects.find(hit => {
+                    let p: any = hit.object;
+                    while (p) {
+                        if (p.name === 'ghost' || p.type === 'GridHelper' || p.type === 'AxesHelper') return false;
+                        p = p.parent;
+                    }
+                    return hit.object.type === 'Mesh';
+                });
+
+                if (validHit) {
+                    // Offset by 0.1 units along the normal to prevent merging into the wall
+                    const offset = validHit.face ? validHit.face.normal.clone().multiplyScalar(0.1) : new THREE.Vector3(0, 0, 0);
+                    dragPositionRef.current.copy(validHit.point).add(offset);
+                    
+                    // Surface Alignment Rotation
+                    if (validHit.face) {
+                        const normal = validHit.face.normal.clone();
+                        normal.applyQuaternion(validHit.object.quaternion);
+                        const angle = Math.atan2(normal.x, normal.z);
+                        dragRotationRef.current.set(0, angle, 0);
+                    }
+                } else {
+                    // Fallback to ground plane
+                    raycaster.ray.intersectPlane(plane, dragPositionRef.current);
+                    dragRotationRef.current.set(0, 0, 0);
+                }
             }
         });
 
@@ -596,6 +658,13 @@ const Project3D = () => {
         }
     }, [isEditMode, setSelectedModelId]);
 
+    const handleRelocate = () => {
+        if (!contextMenu) return;
+        setRelocatingAssetId(contextMenu.modelId);
+        setIsRelocating(true);
+        setContextMenu(null);
+    };
+
     return (
         <div
             ref={(node) => {
@@ -604,10 +673,11 @@ const Project3D = () => {
                     setNodeRef(node);
                 }
             }}
-            className={`${styles["three-container"]} ${isEyedropperActive ? styles["eyedropper-active"] : ""}`}
+            className={`${styles["three-container"]} ${isEyedropperActive ? styles["eyedropper-active"] : ""} ${isRelocating ? styles["relocating-active"] : ""}`}
             style={{ width: '100%', height: '100%', position: 'relative' }}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
+            onMouseMove={handleMouseMove}
         >
 
             {/* Project Persistent Charts rendered as Overlays */}
@@ -739,6 +809,15 @@ const Project3D = () => {
                         powerPreference: "high-performance"
                     }} 
                     onPointerMissed={() => {
+                        if (isRelocating && relocatingAssetId && projectID) {
+                            updateSceneObject(projectID, relocatingAssetId, {
+                                position: [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z],
+                                rotation: [dragRotationRef.current.x, dragRotationRef.current.y, dragRotationRef.current.z]
+                            });
+                            setIsRelocating(false);
+                            setRelocatingAssetId(null);
+                            return;
+                        }
                         setSelectedModelId(null);
                         setSelectedObject(null);
                     }}
@@ -783,7 +862,7 @@ const Project3D = () => {
                         <DxfLayer />
 
                         {/* Placed 3D Models */}
-                        {placedModels.map((model) => {
+                        {placedModels.filter(m => m.id !== relocatingAssetId).map((model) => {
                             // Find linked tab by assetId (direct link only)
                             const linkedTab = currentProject?.tabs.find(t => 
                                 t.assetId && (String(t.assetId) === String(model.id))
@@ -802,12 +881,24 @@ const Project3D = () => {
                                     isSelected={selectedModelId === model.id}
                                     showLabels={showLabels}
                                     isEditMode={isEditMode}
+                                    autoRotate={model.autoRotate}
                                     onPointerOver={(e: any) => {
                                         e.stopPropagation();
                                         if (isEyedropperActive) setHoveredAsset({ name: model.name, id: model.id });
                                     }}
                                     onPointerOut={() => setHoveredAsset(null)}
                                     onSelect={(obj: THREE.Object3D) => {
+                                        if (isRelocating) {
+                                            if (relocatingAssetId && projectID) {
+                                                updateSceneObject(projectID, relocatingAssetId, {
+                                                    position: [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z],
+                                                    rotation: [dragRotationRef.current.x, dragRotationRef.current.y, dragRotationRef.current.z]
+                                                });
+                                                setIsRelocating(false);
+                                                setRelocatingAssetId(null);
+                                            }
+                                            return;
+                                        }
                                         if (!isEditMode && !isEyedropperActive) return;
                                         if (isEyedropperActive) {
                                             setEyedropperSelection({ name: model.name, id: model.id });
@@ -832,6 +923,20 @@ const Project3D = () => {
                                     <DragPreview
                                         path={draggingAsset.path}
                                         positionRef={dragPositionRef}
+                                        rotationRef={dragRotationRef}
+                                    />
+                                </Select>
+                            </>
+                        )}
+                        {/* Relocation Preview */}
+                        {isRelocating && relocatingAsset && (
+                            <>
+                                <DragTracker relocating />
+                                <Select enabled={true}>
+                                    <DragPreview
+                                        path={relocatingAsset.path}
+                                        positionRef={dragPositionRef}
+                                        rotationRef={dragRotationRef}
                                     />
                                 </Select>
                             </>
@@ -851,7 +956,7 @@ const Project3D = () => {
 
                             // Axis visibility
                             showX={transformMode === 'translate'}
-                            showY={transformMode === 'rotate'} // Only show Y for rotation (upright spin), hide for Move
+                            showY={transformMode === 'translate' || transformMode === 'rotate'} 
                             showZ={transformMode === 'translate'}
 
                             onMouseDown={() => setIsTransforming(true)}
@@ -861,9 +966,6 @@ const Project3D = () => {
                                         // Robust axis lock: Always enforce perfectly upright verticality
                                         selectedObject.rotation.order = 'YXZ';
                                         selectedObject.rotation.set(0, selectedObject.rotation.y, 0);
-                                    } else {
-                                        // Floor lock: prevent vertical movement
-                                        selectedObject.position.y = 0;
                                     }
                                 }
                             }}
@@ -897,6 +999,17 @@ const Project3D = () => {
                     onDuplicate={handleDuplicate}
                     onCopy={handleCopy}
                     onLinkToTab={handleLinkToActiveTab}
+                    onRelocate={handleRelocate}
+                    autoRotate={placedModels.find(m => m.id === contextMenu.modelId)?.autoRotate}
+                    onToggleAutoRotate={() => {
+                        if (projectID) {
+                            const model = placedModels.find(m => m.id === contextMenu.modelId);
+                            updateSceneObject(projectID, contextMenu.modelId, {
+                                autoRotate: !model?.autoRotate
+                            });
+                        }
+                        setContextMenu(null);
+                    }}
                 />
             )}
         </div>

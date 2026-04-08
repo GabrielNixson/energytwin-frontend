@@ -13,6 +13,7 @@ export interface SceneModel {
     path: string;
     position: [number, number, number];
     rotation: [number, number, number];
+    autoRotate?: boolean;
 }
 
 export interface Project {

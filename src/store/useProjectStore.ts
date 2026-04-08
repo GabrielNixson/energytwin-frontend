@@ -62,7 +62,8 @@ const mapScene = (s: any): SceneModel => ({
     name: s.name,
     path: s.path,
     position: s.position || [0, 0, 0],
-    rotation: s.rotation || [0, 0, 0]
+    rotation: s.rotation || [0, 0, 0],
+    autoRotate: s.autoRotate || false
 });
 
 const mapTab = (t: any): TabData => ({
