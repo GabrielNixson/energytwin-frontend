@@ -489,9 +489,9 @@ const Project3D = () => {
                             showZ={transformMode === 'translate'}
 
                             // Rotation controls (THIS is key)
-                            rotationAxis={
-                                transformMode === 'rotate' ? 'y' : undefined
-                            }
+                            // rotationAxis={
+                            //     transformMode === 'rotate' ? 'y' : undefined
+                            // }
 
                             onMouseDown={() => setIsTransforming(true)}
                             onMouseUp={() => {
