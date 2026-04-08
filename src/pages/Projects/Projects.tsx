@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import styles from "./Projects.module.scss";
 import Modal from "../../components/Modal/Modal";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
@@ -26,16 +26,37 @@ const Projects = () => {
     handleCloseModal();
   };
 
-  const openDeleteConfirm = (e: React.MouseEvent, id: string, name: string) => {
-    e.stopPropagation();
-    setConfirmDelete({ isOpen: true, id, name });
-  };
+  const [newlyCreatedIds, setNewlyCreatedIds] = useState<Set<string>>(new Set());
+  const prevProjectsRef = useRef(projects);
 
-  const handleRemoveProject = () => {
-    if (confirmDelete.id) {
-      removeProject(confirmDelete.id);
+  useEffect(() => {
+    // Detect truly new projects (IDs that didn't exist before)
+    const newlyAdded = projects.filter(
+      (p) => !prevProjectsRef.current.some((prevP) => prevP.id === p.id)
+    );
+
+    if (newlyAdded.length > 0) {
+      const newIds = newlyAdded.map((p) => p.id);
+      setNewlyCreatedIds((prev) => {
+        const next = new Set(prev);
+        newIds.forEach((id) => next.add(id));
+        return next;
+      });
+
+      // Remove IDs after animation completes (3 seconds for safety)
+      const timer = setTimeout(() => {
+        setNewlyCreatedIds((prev) => {
+          const next = new Set(prev);
+          newIds.forEach((id) => next.delete(id));
+          return next;
+        });
+      }, 3000);
+
+      return () => clearTimeout(timer);
     }
-  };
+
+    prevProjectsRef.current = projects;
+  }, [projects]);
 
   return (
     <div className={styles["project-container"]}>
@@ -62,6 +83,9 @@ const Projects = () => {
                 navigate(`/project/${project.id}`);
               }}
             >
+              {newlyCreatedIds.has(project.id) && (
+                <div className={styles["shine-overlay"]} />
+              )}
               <div className={styles["card-header"]}>
                 <h3>{project.name}</h3>
                 <span className={styles.date}>
