@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
+import * as THREE from 'three';
 
 interface ShortcutManagerProps {
     cameraRef: React.RefObject<any>;
@@ -33,22 +34,44 @@ const ShortcutManager = ({ cameraRef, selectedModelId, setIsOrthoManual }: Short
                 }
             }
 
-            const DIST = 30;
-            // Views (Standard Numpad mapping)
+            // Helper to get target center and distance
+            const getControlInfo = () => {
+                const center = new THREE.Vector3();
+                cameraRef.current.getTarget(center); // Fallback to current target
+                let distance = cameraRef.current.distance;
+                
+                if (selectedModelId) {
+                    const target = scene.getObjectByName(selectedModelId);
+                    if (target) {
+                        const box = new THREE.Box3().setFromObject(target);
+                        box.getCenter(center);
+                        const size = new THREE.Vector3();
+                        box.getSize(size);
+                        // Safe viewing distance based on object size
+                        distance = Math.max(size.x, size.y, size.z) * 4;
+                    }
+                }
+                return { center, distance };
+            };
+
+            const info = getControlInfo();
+            const { center, distance } = info;
+
+            // Views (Standard Numpad mapping relative to target)
             if (e.key === '1') {
                 e.preventDefault();
-                if (e.ctrlKey) cameraRef.current.setLookAt(0, 0, -DIST, 0, 0, 0, true); // Back
-                else cameraRef.current.setLookAt(0, 0, DIST, 0, 0, 0, true); // Front
+                if (e.ctrlKey) cameraRef.current.setLookAt(center.x, center.y, center.z - distance, center.x, center.y, center.z, true); // Back
+                else cameraRef.current.setLookAt(center.x, center.y, center.z + distance, center.x, center.y, center.z, true); // Front
             }
             if (e.key === '3') {
                 e.preventDefault();
-                if (e.ctrlKey) cameraRef.current.setLookAt(-DIST, 0, 0, 0, 0, 0, true); // Left
-                else cameraRef.current.setLookAt(DIST, 0, 0, 0, 0, 0, true); // Right
+                if (e.ctrlKey) cameraRef.current.setLookAt(center.x - distance, center.y, center.z, center.x, center.y, center.z, true); // Left
+                else cameraRef.current.setLookAt(center.x + distance, center.y, center.z, center.x, center.y, center.z, true); // Right
             }
             if (e.key === '7') {
                 e.preventDefault();
-                if (e.ctrlKey) cameraRef.current.setLookAt(0, -DIST, 0, 0, 0, 0, true); // Bottom
-                else cameraRef.current.setLookAt(0, DIST, 0, 0, 0, 0, true); // Top
+                if (e.ctrlKey) cameraRef.current.setLookAt(center.x, center.y - distance, center.z, center.x, center.y, center.z, true); // Bottom
+                else cameraRef.current.setLookAt(center.x, center.y + distance, center.z, center.x, center.y, center.z, true); // Top
             }
         };
         
