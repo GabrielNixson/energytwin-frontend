@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useUIStore } from '@/store/useUIStore';
+import { useProjectStore } from '@/store/useProjectStore';
+import { useParams } from 'react-router-dom';
 import styles from './AssetSidebar.module.scss';
 import { SearchIcon } from '../ChartListSidebar/ChartListSidebarIcons';
 
@@ -26,15 +28,19 @@ interface AssetSidebarProps {
 }
 
 const AssetSidebar = ({ isOpen: propIsOpen }: AssetSidebarProps) => {
-    const { isAssetSidebarOpen: storeIsOpen, addPlacedModel, setDraggingAsset } = useUIStore();
+    const { projectID } = useParams<{ projectID: string }>();
+    const { addSceneObject } = useProjectStore();
+    const { isAssetSidebarOpen: storeIsOpen, setDraggingAsset } = useUIStore();
     const isAssetSidebarOpen = propIsOpen !== undefined ? propIsOpen : storeIsOpen;
     const [searchQuery, setSearchQuery] = useState("");
 
     const handleAddModel = (model: { name: string, path: string }) => {
-        addPlacedModel({
+        if (!projectID) return;
+        addSceneObject(projectID, {
             name: model.name,
             path: model.path,
-            position: [0, 0, 0]
+            position: [0, 0, 0],
+            rotation: [0, 0, 0]
         });
     };
 

@@ -31,6 +31,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, x, y, w, h
     const [localW, setLocalW] = React.useState(w);
     const [localH, setLocalH] = React.useState(h);
     const itemRef = React.useRef<HTMLDivElement>(null);
+    const isDraggingRef = React.useRef(false);
 
     // Sync local dimensions when props change (from external updates)
     React.useEffect(() => {
@@ -47,12 +48,25 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, x, y, w, h
             dragMomentum={false}
             dragConstraints={constraintsRef}
             dragElastic={0} // Tight containment
+            onDragStart={() => {
+                isDraggingRef.current = true;
+            }}
             onPointerDown={(e) => {
                 e.stopPropagation();
                 bringOverlayToFront(id);
             }}
-            onTap={() => setSelectedChartId(id)}
+            onTap={() => {
+                // Only select if we weren't just dragging
+                if (!isDraggingRef.current) {
+                    setSelectedChartId(id);
+                }
+            }}
             onDragEnd={() => {
+                // Delay clearing the flag so onTap (which fires slightly after DragEnd) sees it
+                setTimeout(() => {
+                    isDraggingRef.current = false;
+                }, 50);
+
                 if (!itemRef.current || !constraintsRef.current) return;
                 
                 // Precise absolute coordinate detection via Ref
@@ -110,7 +124,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, x, y, w, h
                             removeOverlayChart(id);
                         }
                     }}
-                    isEditMode={true}
+                    isEditMode={false} // 3D Overlay handles its own resizing and deletion
                 />
 
                 {/* Resize Handle Override */}

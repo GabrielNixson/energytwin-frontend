@@ -5,7 +5,6 @@ import {
     OrthographicCamera,
     Grid,
     Environment,
-    ContactShadows,
     Line,
     useGLTF,
     TransformControls,
@@ -20,8 +19,6 @@ import {
 import * as THREE from 'three';
 import { useDroppable } from '@dnd-kit/core';
 import ChartOverlay from './components/ChartOverlay/ChartOverlay';
-
-// extend({ FillingMaterial }); // Removed as per request to remove loading box
 import Tools from '@/components/Tools/Tools';
 import { useUIStore } from '@/store/useUIStore';
 import { useProjectStore } from '@/store/useProjectStore';
@@ -42,10 +39,9 @@ interface PlacedModelProps {
     onSelect: (obj: THREE.Object3D) => void;
     onPointerOver?: (e: any) => void;
     onPointerOut?: () => void;
-    children?: React.ReactNode;
 }
 
-const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onContextMenu, isSelected, onSelect, onPointerOver, onPointerOut, children }: PlacedModelProps) => {
+const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onContextMenu, isSelected, onSelect, onPointerOver, onPointerOut }: PlacedModelProps) => {
     const groupRef = useRef<THREE.Group>(null!);
     const gltf = useGLTF(path) as any;
     const downPos = useRef({ x: 0, y: 0 });
@@ -134,6 +130,9 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                 onClick={handleSelect}
                 onContextMenu={(e: any) => {
                     if (isClick(e)) {
+                        // Select the model on right-click too for consistency
+                        e.stopPropagation();
+                        onSelect(groupRef.current);
                         onContextMenu(e);
                     } else {
                         // Prevent menu during pans
@@ -177,7 +176,6 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                         </div>
                     </Html>
                 )}
-                {children}
             </group>
         </Select>
     );
@@ -344,7 +342,8 @@ const FocusManager = ({ cameraRef, projectID }: { cameraRef: React.RefObject<any
                 if (targetId) {
                     scene.traverse((child) => {
                         if (targetObject) return; // Stop if already found
-                        if (child.userData?.id === targetId || child.name === targetId) {
+                        // Check both userData.id and child.name (the primitive/group name)
+                        if (child.userData?.id === targetId || child.name === targetId || (child.parent?.name === targetId && child.type==='Mesh')) {
                             targetObject = child;
                         }
                     });
@@ -377,7 +376,7 @@ const FocusManager = ({ cameraRef, projectID }: { cameraRef: React.RefObject<any
                     const safeDistance = distance * 2.0;
 
                     cameraRef.current.setLookAt(
-                        center.x, center.y + (maxDim * 0.6), center.z - safeDistance,
+                        center.x + (maxDim * 0.4), center.y + (maxDim * 0.6), center.z + safeDistance,
                         center.x, center.y, center.z,
                         true
                     );
@@ -386,7 +385,7 @@ const FocusManager = ({ cameraRef, projectID }: { cameraRef: React.RefObject<any
         }, 200);
 
         return () => clearTimeout(timer);
-    }, [activeTabId, scene, cameraRef, projects, projectID, setSelectedModelId]);
+    }, [activeTabId, scene, cameraRef, projectID, setSelectedModelId]);
 
     return null;
 };
@@ -395,20 +394,23 @@ const Project3D = () => {
     const { projectID } = useParams<{ projectID: string }>();
     if (!projectID) return null; // Ensure projectID exists 
 
-    const { projects, updateProjectCharts, removeChart, updateTabAssetId } = useProjectStore();
+    const { 
+        projects, 
+        updateProjectCharts, 
+        removeChart, 
+        updateTabAssetId,
+        addSceneObject,
+        removeSceneObject,
+        updateSceneObject
+    } = useProjectStore();
     const {
         selectedSubOption,
-        placedModels,
-        addPlacedModel,
-        removePlacedModel,
         draggingAsset,
         setDraggingAsset,
         copiedModel,
         setCopiedModel,
         selectedModelId,
         setSelectedModelId,
-        updateModelPosition,
-        updateModelRotation,
         overlayCharts,
         draggingChartPreview,
         activeTabId,
@@ -418,8 +420,9 @@ const Project3D = () => {
         setHoveredAsset
     } = useUIStore();
 
-    // Get current tab's charts for unified rendering
+    // Get current project and scene data
     const currentProject = projects.find(p => p.id === projectID);
+    const placedModels = currentProject?.scene || [];
     const activeTab = currentProject?.tabs.find(t => t.id === activeTabId) || currentProject?.tabs[0];
     const projectCharts = activeTab?.charts || [];
 
@@ -487,12 +490,13 @@ const Project3D = () => {
 
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
-        if (!draggingAsset) return;
-
-        addPlacedModel({
+        if (!draggingAsset || !projectID) return;
+        
+        addSceneObject(projectID, {
             name: draggingAsset.name,
             path: draggingAsset.path,
-            position: [dragPositionRef.current.x, 0, dragPositionRef.current.z]
+            position: [dragPositionRef.current.x, 0, dragPositionRef.current.z],
+            rotation: [0, 0, 0]
         });
         setDraggingAsset(null);
     };
@@ -523,13 +527,14 @@ const Project3D = () => {
     };
 
     const handleDuplicate = () => {
-        if (!contextMenu) return;
+        if (!contextMenu || !projectID) return;
         const model = placedModels.find(m => m.id === contextMenu.modelId);
         if (model) {
-            addPlacedModel({
+            addSceneObject(projectID, {
                 name: model.name,
                 path: model.path,
-                position: [model.position[0] + 2, model.position[1], model.position[2] + 2]
+                position: [model.position[0] + 2, model.position[1], model.position[2] + 2],
+                rotation: model.rotation
             });
         }
     };
@@ -552,8 +557,8 @@ const Project3D = () => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.ctrlKey) setIsCtrlPressed(true);
 
-            if (e.ctrlKey && e.key === 'v' && copiedModel) {
-                addPlacedModel({
+            if (e.ctrlKey && e.key === 'v' && copiedModel && projectID) {
+                addSceneObject(projectID, {
                     ...copiedModel,
                     position: [0, 0, 0],
                     rotation: [0, 0, 0]
@@ -575,7 +580,7 @@ const Project3D = () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
-    }, [copiedModel, addPlacedModel]);
+    }, [copiedModel, addSceneObject]);
 
     return (
         <div
@@ -607,11 +612,11 @@ const Project3D = () => {
                             const newCharts = projectCharts.map(c =>
                                 c.id === chart.id ? {
                                     ...c,
-                                    ...updates,
-                                    x3d: updates.x ?? c.x3d,
-                                    y3d: updates.y ?? c.y3d,
-                                    w3d: updates.w ?? c.w3d,
-                                    h3d: updates.h ?? c.h3d
+                                    // Update 3D specific fields primarily
+                                    x3d: updates.x !== undefined ? updates.x : c.x3d,
+                                    y3d: updates.y !== undefined ? updates.y : c.y3d,
+                                    w3d: updates.w !== undefined ? updates.w : c.w3d,
+                                    h3d: updates.h !== undefined ? updates.h : c.h3d
                                 } : c
                             );
                             updateProjectCharts(projectID, activeTab.id, newCharts);
@@ -765,10 +770,9 @@ const Project3D = () => {
 
                         {/* Placed 3D Models */}
                         {placedModels.map((model) => {
-                            // Find linked tab by assetId (direct link) or by name (fallback if no assetId in any tab)
-                            const linkedTab = currentProject?.tabs.find(t =>
-                                t.assetId === model.id ||
-                                (!currentProject.tabs.some(tt => tt.assetId === model.id) && t.name === model.name)
+                            // Find linked tab by assetId (direct link only)
+                            const linkedTab = currentProject?.tabs.find(t => 
+                                t.assetId && (String(t.assetId) === String(model.id))
                             );
 
                             return (
@@ -790,6 +794,8 @@ const Project3D = () => {
                                     onSelect={(obj: THREE.Object3D) => {
                                         if (isEyedropperActive) {
                                             setEyedropperSelection({ name: model.name, id: model.id });
+                                            // Also select it immediately to show focus/controls
+                                            setSelectedModelId(model.id);
                                             setIsEyedropperActive(false);
                                             setHoveredAsset(null);
                                             return;
@@ -845,18 +851,13 @@ const Project3D = () => {
                                 }
                             }}
                             onMouseUp={() => {
-                                setIsTransforming(false);
-
-                                if (selectedObject) {
-                                    const { x, z } = selectedObject.position;
-                                    const ry = selectedObject.rotation.y;
-
-                                    // Floor Lock: Ensure saved position is always grounded
-                                    updateModelPosition(selectedModelId, [x, 0, z]);
-
-                                    // Force lock X & Z rotation (Y-axis only)
-                                    updateModelRotation(selectedModelId, [0, ry, 0]);
+                                if (projectID && selectedModelId && selectedObject) {
+                                    updateSceneObject(projectID, selectedModelId, {
+                                        position: [selectedObject.position.x, selectedObject.position.y, selectedObject.position.z],
+                                        rotation: [selectedObject.rotation.x, selectedObject.rotation.y, selectedObject.rotation.z]
+                                    });
                                 }
+                                setIsTransforming(false);
                             }}
                         />)}
 
@@ -870,7 +871,12 @@ const Project3D = () => {
                     x={contextMenu.x}
                     y={contextMenu.y}
                     onClose={() => setContextMenu(null)}
-                    onDelete={() => removePlacedModel(contextMenu.modelId)}
+                    onDelete={() => {
+                        if (projectID) {
+                            removeSceneObject(projectID, contextMenu.modelId);
+                            setContextMenu(null);
+                        }
+                    }}
                     onDuplicate={handleDuplicate}
                     onCopy={handleCopy}
                     onLinkToTab={handleLinkToActiveTab}

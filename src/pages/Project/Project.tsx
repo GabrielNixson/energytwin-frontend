@@ -200,6 +200,7 @@ const Project = () => {
     type: "add" | "rename";
     tabId?: string;
     initialName?: string;
+    assetId?: string;
   }>({ type: "add" });
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
@@ -300,7 +301,11 @@ const Project = () => {
   // Handle Eyedropper selection -> Open Tab Modal
   useEffect(() => {
     if (eyedropperSelection) {
-      setTabModalMode({ type: "add", initialName: eyedropperSelection.name });
+      setTabModalMode({ 
+        type: "add", 
+        initialName: eyedropperSelection.name,
+        assetId: eyedropperSelection.id 
+      });
       setIsTabModalOpen(true);
       // selection is cleared in handleTabModalSubmit or cancel
     }
@@ -1019,7 +1024,9 @@ const Project = () => {
 
     if (tabModalMode.type === "add" && projectID) {
       const newTabId = 'temp_' + Math.random().toString(36).substring(2, 9);
-      addTab(projectID, name, newTabId, eyedropperSelection?.id);
+      // Ensure we use the assetId from the modal state OR the current selection as fallback
+      const targetAssetId = tabModalMode.assetId || eyedropperSelection?.id;
+      addTab(projectID, name, newTabId, targetAssetId);
       setActiveTabId(newTabId); // Switch to the new tab!
       setEyedropperSelection(null); // Clear selection after successful add
     } else if (
