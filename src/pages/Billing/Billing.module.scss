@@ -1,22 +1,22 @@
 @use "../../styles/base/variables" as vars;
 
-$primary: var(--button-primary);
-$bg-darker: var(--background);
-$bg-card: var(--secondary);
-$text-dim: var(--text-secondary);
-$border-soft: var(--border-color);
+$primary: #7c5dfa;
+$bg-darker: #08080a;
+$bg-card: #121218;
+$text-dim: #8e8e9e;
+$border-soft: rgba(255, 255, 255, 0.05);
 
 .billing-container {
     padding: 2rem 3rem;
     max-width: 1200px;
     margin: 0 auto;
-    color: var(--text-primary);
+    color: #ffffff;
     min-height: 100vh;
 }
 
 .page-header {
     margin-bottom: 3.5rem;
-    
+
     h1 {
         font-size: 2.25rem;
         font-weight: 800;
@@ -34,6 +34,7 @@ $border-soft: var(--border-color);
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
+
     @media (max-width: 900px) {
         grid-template-columns: 1fr;
     }
@@ -64,7 +65,7 @@ $border-soft: var(--border-color);
         h2 {
             font-size: 1.15rem;
             font-weight: 700;
-            color: var(--text-primary);
+            color: #ffffff;
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -98,7 +99,7 @@ $border-soft: var(--border-color);
         input {
             background: transparent;
             border: none;
-            color: var(--text-primary);
+            color: #ffffff;
             font-size: 0.95rem;
             font-weight: 500;
             outline: none;
@@ -107,7 +108,10 @@ $border-soft: var(--border-color);
             &::-webkit-calendar-picker-indicator {
                 filter: invert(1);
                 opacity: 0.5;
-                &:hover { opacity: 1; }
+
+                &:hover {
+                    opacity: 1;
+                }
             }
         }
     }
@@ -130,13 +134,13 @@ $border-soft: var(--border-color);
         color: $text-dim;
     }
 
-    input[type="text"], 
+    input[type="text"],
     input[type="number"] {
         background: rgba(0, 0, 0, 0.2);
         border: 1px solid $border-soft;
         border-radius: 14px;
         padding: 0.85rem 1.25rem;
-        color: var(--text-primary);
+        color: #ffffff;
         font-size: 1rem;
         font-weight: 500;
         transition: all 0.2s;
@@ -144,7 +148,7 @@ $border-soft: var(--border-color);
 
         &:focus {
             border-color: $primary;
-            background: var(--accent-hover);
+            background: rgba($primary, 0.05);
         }
     }
 }
@@ -191,7 +195,7 @@ $border-soft: var(--border-color);
 
         &.active {
             background: $primary;
-            color: var(--text-primary);
+            color: #ffffff;
             box-shadow: 0 4px 12px rgba($primary, 0.3);
         }
     }
@@ -215,8 +219,9 @@ $border-soft: var(--border-color);
 
         &.btn-primary {
             background: $primary;
-            color: var(--text-primary);
+            color: #ffffff;
             border: none;
+
             &:hover {
                 transform: translateY(-2px);
                 box-shadow: 0 8px 24px rgba($primary, 0.4);
@@ -227,9 +232,10 @@ $border-soft: var(--border-color);
             background: transparent;
             color: $text-dim;
             border: 1px solid $border-soft;
+
             &:hover {
-                background: var(--secondary);
-                color: var(--text-primary);
+                background: rgba(255, 255, 255, 0.03);
+                color: #ffffff;
                 border-color: $text-dim;
             }
         }

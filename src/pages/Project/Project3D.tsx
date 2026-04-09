@@ -90,7 +90,7 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
         const size = new THREE.Vector3();
         box.getCenter(center);
         box.getSize(size);
-        
+
         // 🎯 STABILIZE: Center on X, but pin BOTTOM and BACK to (0,0,0)
         // This ensures the origin is at the base-back, making wall placement flush.
         clone.position.set(-center.x, -box.min.y, -box.min.z);
@@ -102,20 +102,20 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                 child.receiveShadow = true;
                 if (child.material) {
                     const mats = Array.isArray(child.material) ? child.material : [child.material];
-                        mats.forEach((m: any) => {
-                            m.transparent = false;
-                            m.opacity = 1.0;
-                            m.depthWrite = true;
-                            m.depthTest = true;
-                            // Precision fix: Increased factor to separate large overlapping planes
-                            m.polygonOffset = true;
-                            m.polygonOffsetFactor = 2;
-                            m.polygonOffsetUnits = 2;
-                        });
+                    mats.forEach((m: any) => {
+                        m.transparent = false;
+                        m.opacity = 1.0;
+                        m.depthWrite = true;
+                        m.depthTest = true;
+                        // Precision fix: Increased factor to separate large overlapping planes
+                        m.polygonOffset = true;
+                        m.polygonOffsetFactor = 2;
+                        m.polygonOffsetUnits = 2;
+                    });
                 }
             }
         });
-        
+
         return [clone, size.y + 0.5];
     }, [gltf.scene, path]);
 
@@ -340,14 +340,14 @@ const Project3D = () => {
     const { projectID } = useParams<{ projectID: string }>();
     if (!projectID) return null; // Ensure projectID exists 
 
-    const { 
-        projects, 
-        updateProjectCharts, 
-        removeChart, 
+    const {
+        projects,
+        updateProjectCharts,
+        removeChart,
         updateTabAssetId,
-        addSceneObject,
-        removeSceneObject,
-        updateSceneObject
+        addAsset,
+        removeAsset,
+        updateAsset
     } = useProjectStore();
     const {
         selectedSubOption,
@@ -369,9 +369,9 @@ const Project3D = () => {
         showCharts
     } = useUIStore();
 
-    // Get current project and scene data
+    // Get current project and asset data
     const currentProject = projects.find(p => p.id === projectID);
-    const placedModels = currentProject?.scene || [];
+    const placedModels = currentProject?.assets || [];
     const activeTab = currentProject?.tabs.find(t => t.id === activeTabId) || currentProject?.tabs[0];
     const projectCharts = activeTab?.charts || [];
 
@@ -425,7 +425,7 @@ const Project3D = () => {
             );
         }
     }, [isOrthoView]);
-    
+
     const startTimeRef = useRef(Date.now());
 
     useEffect(() => {
@@ -463,8 +463,8 @@ const Project3D = () => {
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         if (!isEditMode || !draggingAsset || !projectID) return;
-        
-        addSceneObject(projectID, {
+
+        addAsset(projectID, {
             name: draggingAsset.name,
             path: draggingAsset.path,
             position: [dragPositionRef.current.x, 0, dragPositionRef.current.z],
@@ -480,10 +480,10 @@ const Project3D = () => {
         useFrame(() => {
             if (draggingAsset || relocating) {
                 raycaster.setFromCamera(mousePointer, camera);
-                
+
                 // Smart Raycasting: Try hitting geometry first (walls, floors, etc.)
                 const intersects = raycaster.intersectObjects(scene.children, true);
-                
+
                 // Filter out the ghost/preview itself and some helpers
                 const validHit = intersects.find(hit => {
                     let p: any = hit.object;
@@ -498,7 +498,7 @@ const Project3D = () => {
                     // Offset by 0.1 units along the normal to prevent merging into the wall
                     const offset = validHit.face ? validHit.face.normal.clone().multiplyScalar(0.1) : new THREE.Vector3(0, 0, 0);
                     dragPositionRef.current.copy(validHit.point).add(offset);
-                    
+
                     // Surface Alignment Rotation
                     if (validHit.face) {
                         const normal = validHit.face.normal.clone();
@@ -531,7 +531,7 @@ const Project3D = () => {
         if (!contextMenu || !projectID) return;
         const model = placedModels.find(m => m.id === contextMenu.modelId);
         if (model) {
-            addSceneObject(projectID, {
+            addAsset(projectID, {
                 name: model.name,
                 path: model.path,
                 position: [model.position[0] + 2, model.position[1], model.position[2] + 2],
@@ -559,7 +559,7 @@ const Project3D = () => {
             if (e.ctrlKey) setIsCtrlPressed(true);
 
             if (e.ctrlKey && e.key === 'v' && copiedModel && projectID) {
-                addSceneObject(projectID, {
+                addAsset(projectID, {
                     ...copiedModel,
                     position: [0, 0, 0],
                     rotation: [0, 0, 0]
@@ -581,7 +581,7 @@ const Project3D = () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
-    }, [copiedModel, addSceneObject]);
+    }, [copiedModel, addAsset]);
 
     // Clear selection when switching out of edit mode
     useEffect(() => {
@@ -733,17 +733,17 @@ const Project3D = () => {
             )}
 
             <Suspense fallback={<div style={{ color: 'white' }}>Loading 3D Scene...</div>}>
-                <Canvas 
-                    shadows 
-                    gl={{ 
-                        antialias: true, 
-                        alpha: true, 
+                <Canvas
+                    shadows
+                    gl={{
+                        antialias: true,
+                        alpha: true,
                         logarithmicDepthBuffer: true,
                         powerPreference: "high-performance"
-                    }} 
+                    }}
                     onPointerMissed={() => {
                         if (isRelocating && relocatingAssetId && projectID) {
-                            updateSceneObject(projectID, relocatingAssetId, {
+                            updateAsset(projectID, relocatingAssetId, {
                                 position: [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z],
                                 rotation: [dragRotationRef.current.x, dragRotationRef.current.y, dragRotationRef.current.z]
                             });
@@ -755,10 +755,10 @@ const Project3D = () => {
                         setSelectedObject(null);
                     }}
                 >
-                    <ShortcutManager 
-                        cameraRef={cameraRef} 
-                        selectedModelId={selectedModelId} 
-                        setIsOrthoManual={setIsOrthoManual} 
+                    <ShortcutManager
+                        cameraRef={cameraRef}
+                        selectedModelId={selectedModelId}
+                        setIsOrthoManual={setIsOrthoManual}
                     />
                     <Selection>
                         <EffectComposer multisampling={8} autoClear={false}>
@@ -802,7 +802,7 @@ const Project3D = () => {
                         {/* Placed 3D Models */}
                         {placedModels.filter(m => m.id !== relocatingAssetId).map((model) => {
                             // Find linked tab by assetId (direct link only)
-                            const linkedTab = currentProject?.tabs.find(t => 
+                            const linkedTab = currentProject?.tabs.find(t =>
                                 t.assetId && (String(t.assetId) === String(model.id))
                             );
 
@@ -828,7 +828,7 @@ const Project3D = () => {
                                     onSelect={(obj: THREE.Object3D) => {
                                         if (isRelocating) {
                                             if (relocatingAssetId && projectID) {
-                                                updateSceneObject(projectID, relocatingAssetId, {
+                                                updateAsset(projectID, relocatingAssetId, {
                                                     position: [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z],
                                                     rotation: [dragRotationRef.current.x, dragRotationRef.current.y, dragRotationRef.current.z]
                                                 });
@@ -894,7 +894,7 @@ const Project3D = () => {
 
                             // Axis visibility
                             showX={transformMode === 'translate'}
-                            showY={transformMode === 'translate' || transformMode === 'rotate'} 
+                            showY={transformMode === 'translate' || transformMode === 'rotate'}
                             showZ={transformMode === 'translate'}
 
                             onMouseDown={() => setIsTransforming(true)}
@@ -909,7 +909,7 @@ const Project3D = () => {
                             }}
                             onMouseUp={() => {
                                 if (projectID && selectedModelId && selectedObject) {
-                                    updateSceneObject(projectID, selectedModelId, {
+                                    updateAsset(projectID, selectedModelId, {
                                         position: [selectedObject.position.x, selectedObject.position.y, selectedObject.position.z],
                                         rotation: [selectedObject.rotation.x, selectedObject.rotation.y, selectedObject.rotation.z]
                                     });
@@ -930,7 +930,7 @@ const Project3D = () => {
                     onClose={() => setContextMenu(null)}
                     onDelete={() => {
                         if (projectID) {
-                            removeSceneObject(projectID, contextMenu.modelId);
+                            removeAsset(projectID, contextMenu.modelId);
                             setContextMenu(null);
                         }
                     }}
@@ -942,7 +942,7 @@ const Project3D = () => {
                     onToggleAutoRotate={() => {
                         if (projectID) {
                             const model = placedModels.find(m => m.id === contextMenu.modelId);
-                            updateSceneObject(projectID, contextMenu.modelId, {
+                            updateAsset(projectID, contextMenu.modelId, {
                                 autoRotate: !model?.autoRotate
                             });
                         }

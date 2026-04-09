@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Project, TabData, SceneModel } from "../pages/Projects/project";
+import { Project, TabData, Asset } from "../pages/Projects/project";
 import { ChartData } from "../types/chart.types";
 import { useAuthStore } from "./useAuthStore";
 import { useUIStore } from "./useUIStore";
@@ -18,15 +18,17 @@ interface ProjectStore {
     removeTab: (projectId: string, tabId: string) => void;
     updateTabName: (projectId: string, tabId: string, name: string) => void;
     updateTabAssetId: (projectId: string, tabId: string, assetId: string | null) => void;
-    
-    // Scene (3D Model) management per project
-    addSceneObject: (projectId: string, model: Omit<SceneModel, 'id'>) => void;
-    removeSceneObject: (projectId: string, modelId: string) => void;
-    updateSceneObject: (projectId: string, modelId: string, updates: Partial<SceneModel>) => void;
-    
+
+    // Asset management per project
+    addAsset: (projectId: string, asset: Omit<Asset, 'id'>) => void;
+    removeAsset: (projectId: string, assetId: string) => void;
+    updateAsset: (projectId: string, assetId: string, updates: Partial<Asset>) => void;
+    getAssets: (projectId: string) => void;
+    getAsset: (assetId: string) => void;
+
     addChart: (projectId: string, tabId: string, chart: ChartData) => void;
     removeChart: (projectId: string, tabId: string, chartId: string) => void;
-    
+
     // Support functions for handling Socket.io callbacks
     _handleProjectCreated: (project: any) => void;
     _handleProjectUpdated: (project: any) => void;
@@ -39,11 +41,13 @@ interface ProjectStore {
     _handleChartCreated: (data: any) => void;
     _handleChartUpdated: (data: any) => void;
     _handleChartDeleted: (data: any) => void;
-    
-    _handleSceneObjectCreated: (data: any) => void;
-    _handleSceneObjectUpdated: (data: any) => void;
-    _handleSceneObjectDeleted: (data: any) => void;
-    
+
+    _handleAssetCreated: (data: any) => void;
+    _handleAssetUpdated: (data: any) => void;
+    _handleAssetDeleted: (data: any) => void;
+    _handleAssetsRead: (data: any) => void;
+    _handleAssetRead: (data: any) => void;
+
     initSocket: () => void;
 }
 
@@ -54,10 +58,10 @@ const mapProject = (p: any): Project => ({
     createdAt: p.createdAt || new Date().toISOString(),
     default: p.default || false,
     tabs: (p.tabs || []).map(mapTab),
-    scene: (p.scene || p.models || []).map(mapScene)
+    assets: (p.assets || p.scene || p.models || p.data?.assets || p.data?.scene || []).map(mapAsset)
 });
 
-const mapScene = (s: any): SceneModel => ({
+const mapAsset = (s: any): Asset => ({
     id: s._id || s.id,
     name: s.name,
     path: s.path,
@@ -91,7 +95,7 @@ const mapChart = (c: any): ChartData => ({
 // Helper to merge local 3D data into server objects
 const mergeLocal3DData = (newP: Project, existingP: Project | undefined): Project => {
     if (!existingP) return newP;
-    
+
     return {
         ...newP,
         tabs: newP.tabs.map(newT => {
@@ -103,7 +107,7 @@ const mergeLocal3DData = (newP: Project, existingP: Project | undefined): Projec
                 charts: newT.charts.map(newC => {
                     const existingC = existingT.charts.find(c => c.id === newC.id);
                     if (!existingC) return newC;
-                    
+
                     return {
                         ...newC,
                         x3d: existingC.x3d ?? newC.x3d,
@@ -113,7 +117,10 @@ const mergeLocal3DData = (newP: Project, existingP: Project | undefined): Projec
                     };
                 })
             };
-        })
+        }),
+        // Preserve assets if the backend project document no longer embeds them, 
+        // to prevent overwriting the data fetched by asset:read_all
+        assets: newP.assets && newP.assets.length > 0 ? newP.assets : (existingP.assets || [])
     };
 };
 
@@ -123,37 +130,37 @@ export const useProjectStore = create<ProjectStore>()(
             projects: [],
             setProjects: (newProjects) => set((state) => {
                 const mapped = newProjects.map(mapProject);
-                const merged = mapped.map(newP => 
+                const merged = mapped.map(newP =>
                     mergeLocal3DData(newP, state.projects.find(p => p.id === newP.id))
                 );
                 return { projects: merged };
             }),
-            
+
             addProject: (projectData) => {
                 const userId = useAuthStore.getState().user?._id;
                 if (!userId) return;
-                socket.emit('project:create', { 
-                    userId, 
+                socket.emit('project:create', {
+                    userId,
                     projectId: 'temp_' + Date.now(),
-                    name: projectData.name, 
-                    description: projectData.description, 
-                    default: projectData.default 
+                    name: projectData.name,
+                    description: projectData.description,
+                    default: projectData.default
                 });
             },
-            
+
             removeProject: (id) => {
                 set((state) => ({
                     projects: state.projects.filter(p => p.id !== id)
                 }));
                 socket.emit('project:delete', { projectId: id });
             },
-            
+
             getProject: (projectId) => {
                 socket.emit('project:readOne', { projectId });
-                console.log("readOne Socket "+ projectId);
-                
+                console.log("readOne Socket " + projectId);
+
             },
-            
+
             setDefaultProject: (id) => {
                 // Since there"s no explicit set default API, maybe we update the project
                 set((state) => ({
@@ -163,16 +170,16 @@ export const useProjectStore = create<ProjectStore>()(
                     }))
                 }));
             },
-            
+
             // This method was originally used to bulk update charts from Dashboard
             updateProjectCharts: (projectId, tabId, charts) => {
                 set((state) => ({
-                    projects: state.projects.map(p => 
-                        p.id === projectId ? { 
-                            ...p, 
-                            tabs: p.tabs.map(tab => 
+                    projects: state.projects.map(p =>
+                        p.id === projectId ? {
+                            ...p,
+                            tabs: p.tabs.map(tab =>
                                 tab.id === tabId ? { ...tab, charts } : tab
-                            ) 
+                            )
                         } : p
                     )
                 }));
@@ -183,110 +190,102 @@ export const useProjectStore = create<ProjectStore>()(
                     if (!isNew) {
                         socket.emit('chart:update', {
                             chartId: c.id,
-                            chartData: { 
-                                x: c.x, y: c.y, w: c.w, h: c.h, 
+                            chartData: {
+                                x: c.x, y: c.y, w: c.w, h: c.h,
                                 x3d: c.x3d, y3d: c.y3d, w3d: c.w3d, h3d: c.h3d,
-                                title: c.title, type: c.type 
+                                title: c.title, type: c.type
                             },
                             configData: c.config
                         });
                     }
                 });
             },
-            
+
             addChart: (projectId, tabId, chart) => {
                 // Optimistically add it
                 set((state) => ({
-                    projects: state.projects.map(p => 
-                        p.id === projectId ? { 
-                            ...p, 
-                            tabs: p.tabs.map(tab => 
+                    projects: state.projects.map(p =>
+                        p.id === projectId ? {
+                            ...p,
+                            tabs: p.tabs.map(tab =>
                                 tab.id === tabId ? { ...tab, charts: [...tab.charts, chart] } : tab
-                            ) 
+                            )
                         } : p
                     )
                 }));
                 socket.emit('chart:create', {
                     projectId,
                     tabId,
-                    chartData: { 
+                    chartData: {
                         chartId: chart.id, // the frontend generated temp ID
-                        type: chart.type, 
-                        title: chart.title, 
-                        x: chart.x, 
-                        y: chart.y, 
-                        w: chart.w, 
-                        h: chart.h 
+                        type: chart.type,
+                        title: chart.title,
+                        x: chart.x,
+                        y: chart.y,
+                        w: chart.w,
+                        h: chart.h
                     },
                     configData: chart.config
                 });
             },
-            
+
             removeChart: (projectId, tabId, chartId) => {
                 set((state) => ({
-                    projects: state.projects.map(p => 
-                        p.id === projectId ? { 
-                            ...p, 
-                            tabs: p.tabs.map(tab => 
+                    projects: state.projects.map(p =>
+                        p.id === projectId ? {
+                            ...p,
+                            tabs: p.tabs.map(tab =>
                                 tab.id === tabId ? { ...tab, charts: tab.charts.filter(c => c.id !== chartId) } : tab
-                            ) 
+                            )
                         } : p
                     )
                 }));
                 socket.emit('chart:delete', { tabId, chartId });
             },
 
-            addSceneObject: (projectId, model) => {
-                const tempId = 'scene-' + Date.now();
+            addAsset: (projectId, asset) => {
+                const tempId = 'asset-' + Date.now();
                 set((state) => ({
-                    projects: state.projects.map(p => 
-                        p.id === projectId ? { ...p, scene: [...(p.scene || []), { ...model, id: tempId }] } : p
+                    projects: state.projects.map(p =>
+                        p.id === projectId ? { ...p, assets: [...(p.assets || []), { ...asset, id: tempId }] } : p
                     )
                 }));
-                socket.emit('scene:create', { projectId, data: { ...model, id: tempId } });
+                socket.emit('asset:create', { projectId, data: { ...asset, id: tempId } });
             },
 
-            removeSceneObject: (projectId, modelId) => {
-                const project = get().projects.find(p => p.id === projectId);
-                const tabsToDelete = project?.tabs.filter(t => String(t.assetId) === String(modelId)) || [];
-
+            removeAsset: (projectId, assetId) => {
                 set((state) => ({
-                    projects: state.projects.map(p => 
-                        p.id === projectId ? { 
-                            ...p, 
-                            scene: (p.scene || []).filter(s => s.id !== modelId),
-                            tabs: p.tabs.filter(t => String(t.assetId) !== String(modelId))
+                    projects: state.projects.map(p =>
+                        p.id === projectId ? { ...p, assets: p.assets.filter(s => s.id !== assetId) } : p
+                    )
+                }));
+                socket.emit('asset:delete', { assetId });
+            },
+
+            updateAsset: (projectId, assetId, updates) => {
+                set((state) => ({
+                    projects: state.projects.map(p =>
+                        p.id === projectId ? {
+                            ...p,
+                            assets: p.assets.map(s => s.id === assetId ? { ...s, ...updates } : s)
                         } : p
                     )
                 }));
-
-                // Cascade delete to linked tabs
-                tabsToDelete.forEach(tab => {
-                    if (useUIStore.getState().activeTabId === tab.id) {
-                        useUIStore.getState().setActiveTabId(null);
-                    }
-                    socket.emit('tab:delete', { projectId, tabId: tab.id });
-                });
-
-                socket.emit('scene:delete', { projectId, modelId });
+                socket.emit('asset:update', { assetId, data: updates });
             },
 
-            updateSceneObject: (projectId, modelId, updates) => {
-                set((state) => ({
-                    projects: state.projects.map(p => 
-                        p.id === projectId ? { 
-                            ...p, 
-                            scene: p.scene.map(s => s.id === modelId ? { ...s, ...updates } : s) 
-                        } : p
-                    )
-                }));
-                socket.emit('scene:update', { projectId, modelId, data: updates });
+            getAssets: (projectId) => {
+                socket.emit('asset:read_all', { projectId });
             },
-            
+
+            getAsset: (assetId) => {
+                socket.emit('asset:read', { assetId });
+            },
+
             addTab: (projectId: string, name: string, tabId?: string, assetId?: string) => {
                 const tempTabId = tabId || 'temp_' + Date.now();
                 set((state) => ({
-                    projects: state.projects.map(p => 
+                    projects: state.projects.map(p =>
                         p.id === projectId ? {
                             ...p,
                             tabs: [...p.tabs, { id: tempTabId, name, assetId, charts: [] }]
@@ -306,7 +305,7 @@ export const useProjectStore = create<ProjectStore>()(
                 console.log("All Assets in Scene:", useUIStore.getState().placedModels);
                 console.groupEnd();
             },
-            
+
             removeTab: (projectId, tabId) => {
                 set((state) => ({
                     projects: state.projects.map(p => p.id === projectId ? {
@@ -322,7 +321,7 @@ export const useProjectStore = create<ProjectStore>()(
 
                 socket.emit('tab:delete', { projectId, tabId });
             },
-            
+
             updateTabName: (_projectId, tabId, name) => {
                 socket.emit('tab:update', { tabId, data: { name } });
             },
@@ -336,21 +335,21 @@ export const useProjectStore = create<ProjectStore>()(
                 if (state.projects.find(p => p.id === project._id)) return state;
                 return { projects: [...state.projects, mapProject(project)] };
             }),
-            
+
             _handleProjectUpdated: (project) => set((state) => ({
                 projects: state.projects.map(p => p.id === project._id ? mapProject(project) : p)
             })),
-            
+
             _handleProjectDeleted: (projectId) => set((state) => ({
                 projects: state.projects.filter(p => p.id !== projectId)
             })),
-            
+
             _handleProjectRead: (data) => set((state) => {
                 console.log("project:read:response", data);
                 if (data.success && data.data) {
                     const fullProject = mapProject(data.data);
                     const mergedProject = mergeLocal3DData(fullProject, state.projects.find(p => p.id === fullProject.id));
-                    
+
                     const projectExists = state.projects.find(p => p.id === mergedProject.id);
                     if (projectExists) {
                         return { projects: state.projects.map(p => p.id === mergedProject.id ? mergedProject : p) };
@@ -359,7 +358,7 @@ export const useProjectStore = create<ProjectStore>()(
                 }
                 return state;
             }),
-            
+
             _handleTabCreated: (data) => set((state) => {
                 console.log("tab:created/response", data);
                 if (!data) return state;
@@ -370,7 +369,7 @@ export const useProjectStore = create<ProjectStore>()(
                 // If projectId is missing, try to find the correct project by name (best guess fallback)
                 let targetProjectId: string | undefined = data.projectId;
                 if (!targetProjectId) {
-                    targetProjectId = state.projects.find(p => p.tabs.some(t => 
+                    targetProjectId = state.projects.find(p => p.tabs.some(t =>
                         (String(t.id).startsWith('temp_') || String(t.id).startsWith('tab-')) && t.name === (tab.name || tab.tab?.name)
                     ))?.id;
                 }
@@ -385,31 +384,31 @@ export const useProjectStore = create<ProjectStore>()(
                             ...p.tabs.filter(t => {
                                 const tabId = tab._id || tab.id;
                                 const isRealMatch = t.id === tabId;
-                                const isOptimisticMatch = 
-                                    (String(t.id).startsWith('temp_') || String(t.id).startsWith('tab-') || String(t.id).length < 15) && 
+                                const isOptimisticMatch =
+                                    (String(t.id).startsWith('temp_') || String(t.id).startsWith('tab-') || String(t.id).length < 15) &&
                                     t.name === tab.name;
                                 return !isRealMatch && !isOptimisticMatch;
-                            }), 
+                            }),
                             mapTab(tab)
                         ]
                     } : p)
                 };
             }),
-            
+
             _handleTabCreatedLog: (projectId: string) => {
-                 const state = get();
-                 const project = state.projects.find(p => p.id === projectId);
-                 console.group("Tab Created (Server Response)");
-                 console.log("Full Tabs in Project:", project?.tabs);
-                 console.log("All Assets in Scene:", useUIStore.getState().placedModels);
-                 console.groupEnd();
+                const state = get();
+                const project = state.projects.find(p => p.id === projectId);
+                console.group("Tab Created (Server Response)");
+                console.log("Full Tabs in Project:", project?.tabs);
+                console.log("All Assets in Scene:", useUIStore.getState().placedModels);
+                console.groupEnd();
             },
-            
-             _handleTabUpdated: (data) => set((state) => {
+
+            _handleTabUpdated: (data) => set((state) => {
                 console.log("tab:updated broadcast", data);
                 const tab = data.tab || data;
                 const tabId = tab._id || tab.id;
-                
+
                 return {
                     projects: state.projects.map(p => ({
                         ...p,
@@ -417,17 +416,17 @@ export const useProjectStore = create<ProjectStore>()(
                     }))
                 };
             }),
-            
+
             _handleTabDeleted: (data) => set((state) => {
                 console.log("tab:deleted broadcast", data);
                 if (!data) return state;
-                
+
                 // Be very robust: check data.tab._id, data.tabId, data.id, or data itself
                 const tab = data.tab || data;
                 const tabId = tab._id || tab.id || data.tabId || (typeof data === 'string' ? data : undefined);
-                
+
                 if (!tabId) return state;
-                
+
                 return {
                     projects: state.projects.map(p => ({
                         ...p,
@@ -435,7 +434,7 @@ export const useProjectStore = create<ProjectStore>()(
                     }))
                 };
             }),
-            
+
             _handleChartCreated: (data) => set((state) => {
                 console.log("chart:created broadcast/response received:", data);
                 const chart = data.chart || data;
@@ -443,7 +442,7 @@ export const useProjectStore = create<ProjectStore>()(
                     console.warn("Invalid chart data received in broadcast", data);
                     return state;
                 }
-                
+
                 let targetProjectId = data.projectId || chart.projectId;
                 let targetTabId = data.tabId || chart.tabId;
 
@@ -460,14 +459,14 @@ export const useProjectStore = create<ProjectStore>()(
                                 targetProjectId = p.id;
                                 break;
                             }
-                            
+
                             // 2. Check for optimistic match (for creator Window A)
-                            const isOptimisticMatch = t.charts.some(c => 
+                            const isOptimisticMatch = t.charts.some(c =>
                                 (String(c.id).startsWith('temp_') || String(c.id).startsWith('chart-')) &&
                                 c.x === (chart.chartData?.x ?? chart.x) &&
                                 c.y === (chart.chartData?.y ?? chart.y)
                             );
-                            
+
                             if (isOptimisticMatch) {
                                 console.log(`Found optimistic match in Project: ${p.id}, Tab: ${t.id}`);
                                 targetProjectId = p.id;
@@ -488,25 +487,25 @@ export const useProjectStore = create<ProjectStore>()(
                 return {
                     projects: state.projects.map(p => p.id === targetProjectId ? {
                         ...p, tabs: p.tabs.map(t => t.id === targetTabId ? {
-                            ...t, 
+                            ...t,
                             // Try to remove a temp chart that matches this one's coordinates and type
                             charts: [
                                 ...t.charts.filter(c => {
                                     const realId = chart._id || chart.id;
                                     const isRealMatch = c.id === realId;
-                                    const isOptimisticMatch = 
-                                        (String(c.id).startsWith('temp_') || String(c.id).startsWith('chart-')) 
-                                        && c.x === (chart.chartData?.x ?? chart.x) 
+                                    const isOptimisticMatch =
+                                        (String(c.id).startsWith('temp_') || String(c.id).startsWith('chart-'))
+                                        && c.x === (chart.chartData?.x ?? chart.x)
                                         && c.y === (chart.chartData?.y ?? chart.y);
                                     return !isRealMatch && !isOptimisticMatch;
-                                }), 
+                                }),
                                 mapChart(chart)
                             ]
                         } : t)
                     } : p)
                 };
             }),
-            
+
             _handleChartUpdated: (data) => set((state) => {
                 console.log("chart:updated broadcast", data);
                 const chart = data.chart || data;
@@ -522,15 +521,15 @@ export const useProjectStore = create<ProjectStore>()(
                     }))
                 };
             }),
-            
+
             _handleChartDeleted: (data) => set((state) => {
                 console.log("chart:deleted broadcast", data);
                 if (!data) return state;
-                
+
                 // Be very robust: check data.chart._id, data.chartId, data.id, or data itself
                 const chart = data.chart || data;
                 const chartId = chart._id || chart.id || data.chartId || (typeof data === 'string' ? data : undefined);
-                
+
                 if (!chartId) return state;
 
                 return {
@@ -544,51 +543,112 @@ export const useProjectStore = create<ProjectStore>()(
                 };
             }),
 
-            _handleSceneObjectCreated: (data) => set((state) => {
-                const sceneObject = data.model || data.scene || data;
-                const projectId = data.projectId || sceneObject.projectId;
-                if (!projectId || (!sceneObject.id && !sceneObject._id)) return state;
+            _handleAssetCreated: (data) => set((state) => {
+                const asset = data.model || data.asset || data;
+                const projectId = data.projectId || asset.projectId;
+                if (!projectId || (!asset.id && !asset._id)) return state;
                 return {
                     projects: state.projects.map(p => p.id === projectId ? {
                         ...p,
-                        scene: [
-                            ...(p.scene || []).filter(s => {
-                                const sid = sceneObject._id || sceneObject.id;
-                                const isRealMatch = s.id === sid;
-                                const isOptimisticMatch = (String(s.id).startsWith('scene-')) && s.name === sceneObject.name;
+                        assets: [
+                            ...(p.assets || []).filter(s => {
+                                const id = asset._id || asset.id;
+                                const isRealMatch = s.id === id;
+                                const isOptimisticMatch = (String(s.id).startsWith('asset-')) && s.name === asset.name;
                                 return !isRealMatch && !isOptimisticMatch;
                             }),
-                            mapScene(sceneObject)
+                            mapAsset(asset)
                         ]
                     } : p)
                 };
             }),
 
-            _handleSceneObjectUpdated: (data) => set((state) => {
-                const sceneObject = data.model || data.scene || data;
-                const sid = sceneObject._id || sceneObject.id;
+            _handleAssetUpdated: (data) => set((state) => {
+                const asset = data.model || data.asset || data;
+                const id = asset._id || asset.id;
                 return {
                     projects: state.projects.map(p => ({
                         ...p,
-                        scene: (p.scene || []).map(s => s.id === sid ? mapScene(sceneObject) : s)
+                        assets: (p.assets || []).map(s => s.id === id ? mapAsset(asset) : s)
                     }))
                 };
             }),
 
-            _handleSceneObjectDeleted: (data) => set((state) => {
-                const sid = data.modelId || data.id || data;
+            _handleAssetDeleted: (data) => set((state) => {
+                const id = data.assetId || data.id || data;
                 return {
                     projects: state.projects.map(p => ({
                         ...p,
-                        scene: (p.scene || []).filter(s => s.id !== sid)
+                        assets: (p.assets || []).filter(s => s.id !== id)
                     }))
                 };
             }),
-            
+
+            _handleAssetsRead: (data) => set((state) => {
+                console.log("asset:read_all:response received", data);
+                if (!data.success) {
+                    console.error("Asset retrieval failed:", data.error || "Unknown error");
+                    return state;
+                }
+
+                // Be robust with projectId location
+                let projectId = data.projectId || (data.data && data.data.projectId);
+                let assets = Array.isArray(data.data) ? data.data : (data.data?.assets || data.data?.data || []);
+
+                // If assets is still empty but data is an array directly
+                if (assets.length === 0 && Array.isArray(data)) {
+                    assets = data;
+                }
+
+                // Fallback context: If the backend doesn't echo the projectId, grab it from the URL
+                if (!projectId && typeof window !== 'undefined') {
+                    const match = window.location.pathname.match(/\/project\/([^\/]+)/);
+                    if (match) {
+                        projectId = match[1];
+                        console.log("Inferred projectId from URL:", projectId);
+                    }
+                }
+
+                if (!projectId) {
+                    console.warn("asset:read_all:response arrived without projectId. Attempting to match with current projects...");
+                    // If we only have one project, we might assume it's that one, 
+                    // but it's safer to just log and return if we can't be sure.
+                    if (state.projects.length === 1) {
+                        return {
+                            projects: [{ ...state.projects[0], assets: assets.map(mapAsset) }]
+                        };
+                    }
+                    return state;
+                }
+
+                console.log(`Mapping ${assets.length} assets to project ${projectId}`, assets);
+
+                return {
+                    projects: state.projects.map(p => p.id === projectId ? {
+                        ...p,
+                        assets: assets.map(mapAsset)
+                    } : p)
+                };
+            }),
+
+            _handleAssetRead: (data) => set((state) => {
+                if (!data.success || !data.assetId) return state;
+                const asset = data.data;
+                const assetId = asset._id || asset.id;
+                return {
+                    projects: state.projects.map(p => ({
+                        ...p,
+                        assets: (p.assets || []).some(s => s.id === assetId)
+                            ? p.assets.map(s => s.id === assetId ? mapAsset(asset) : s)
+                            : [...p.assets, mapAsset(asset)]
+                    }))
+                };
+            }),
+
             initSocket: () => {
                 const store = get();
                 console.log("Initializing Socket Listeners...");
-                
+
                 socket.off('project:created').on('project:created', (data: any) => {
                     console.log("project:created broadcast", data);
                     store._handleProjectCreated(data);
@@ -604,7 +664,7 @@ export const useProjectStore = create<ProjectStore>()(
                     data.success && store._handleProjectDeleted(data.projectId || data.id);
                 });
                 socket.off('project:read:response').on('project:read:response', store._handleProjectRead);
-                
+
                 socket.off('tab:created').on('tab:created', store._handleTabCreated);
                 socket.off('tab:create:response').on('tab:create:response', (data: any) => {
                     console.log("tab:create:response", data);
@@ -620,7 +680,7 @@ export const useProjectStore = create<ProjectStore>()(
                     console.log("tab:delete:response", data);
                     data.success && store._handleTabDeleted(data.data || { tabId: data.tabId || data.id });
                 });
-                
+
                 socket.off('chart:created').on('chart:created', store._handleChartCreated);
                 socket.off('chart:create:response').on('chart:create:response', (data: any) => {
                     console.log("chart:create:response", data);
@@ -633,9 +693,30 @@ export const useProjectStore = create<ProjectStore>()(
                     data.success && store._handleChartDeleted(data.data || { tabId: data.tabId, chartId: data.chartId || data.id });
                 });
 
-                socket.off('scene:created').on('scene:created', store._handleSceneObjectCreated);
-                socket.off('scene:updated').on('scene:updated', store._handleSceneObjectUpdated);
-                socket.off('scene:deleted').on('scene:deleted', store._handleSceneObjectDeleted);
+                socket.off('asset:created').on('asset:created', store._handleAssetCreated);
+                socket.off('asset:updated').on('asset:updated', store._handleAssetUpdated);
+                socket.off('asset:deleted').on('asset:deleted', store._handleAssetDeleted);
+
+                socket.off('asset:create:response').on('asset:create:response', (data) => {
+                    console.log("asset:create:response", data);
+                    if (data.success) store._handleAssetCreated(data.data);
+                });
+                socket.off('asset:read_all:response').on('asset:read_all:response', (data) => {
+                    console.log("asset:read_all:response", data);
+                    store._handleAssetsRead(data);
+                });
+                socket.off('asset:read:response').on('asset:read:response', (data) => {
+                    console.log("asset:read:response", data);
+                    store._handleAssetRead(data);
+                });
+                socket.off('asset:update:response').on('asset:update:response', (data) => {
+                    console.log("asset:update:response", data);
+                    if (data.success) store._handleAssetUpdated(data.data);
+                });
+                socket.off('asset:delete:response').on('asset:delete:response', (data) => {
+                    console.log("asset:delete:response", data);
+                    if (data.success) store._handleAssetDeleted(data);
+                });
             }
         }),
         {
@@ -644,8 +725,8 @@ export const useProjectStore = create<ProjectStore>()(
             partialize: (state) => ({
                 projects: state.projects.map(p => ({
                     ...p,
-                    tabs: p.tabs.map(t => ({ 
-                        ...t, 
+                    tabs: p.tabs.map(t => ({
+                        ...t,
                         charts: t.charts.map(c => ({
                             id: c.id,
                             type: c.type,
@@ -659,14 +740,14 @@ export const useProjectStore = create<ProjectStore>()(
                             w3d: c.w3d,
                             h3d: c.h3d,
                             config: c.config
-                        })),
-                        scene: p.scene.map(s => ({
-                            id: s.id,
-                            name: s.name,
-                            path: s.path,
-                            position: s.position,
-                            rotation: s.rotation
                         }))
+                    })),
+                    assets: p.assets.map(s => ({
+                        id: s.id,
+                        name: s.name,
+                        path: s.path,
+                        position: s.position,
+                        rotation: s.rotation
                     }))
                 }))
             })

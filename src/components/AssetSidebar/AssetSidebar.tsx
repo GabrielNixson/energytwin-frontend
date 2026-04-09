@@ -29,14 +29,14 @@ interface AssetSidebarProps {
 
 const AssetSidebar = ({ isOpen: propIsOpen }: AssetSidebarProps) => {
     const { projectID } = useParams<{ projectID: string }>();
-    const { addSceneObject } = useProjectStore();
+    const { addAsset } = useProjectStore();
     const { isAssetSidebarOpen: storeIsOpen, setDraggingAsset } = useUIStore();
     const isAssetSidebarOpen = propIsOpen !== undefined ? propIsOpen : storeIsOpen;
     const [searchQuery, setSearchQuery] = useState("");
 
     const handleAddModel = (model: { name: string, path: string }) => {
         if (!projectID) return;
-        addSceneObject(projectID, {
+        addAsset(projectID, {
             name: model.name,
             path: model.path,
             position: [0, 0, 0],

@@ -11,6 +11,7 @@ export interface ChartConfig {
     gaugeMin?: number;
     gaugeMax?: number;
     gaugeEnd?: number;
+    sensorTopic?: string;
 }
 
 export interface ChartData {

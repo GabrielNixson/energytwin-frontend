@@ -51,8 +51,6 @@ interface UIStore {
   setShowLabels: (show: boolean) => void;
   showCharts: boolean;
   setShowCharts: (show: boolean) => void;
-  theme: "light" | "dark";
-  setTheme: (theme: "light" | "dark") => void;
 }
 
 export const useUIStore = create<UIStore>()(
@@ -215,10 +213,6 @@ export const useUIStore = create<UIStore>()(
       setShowLabels: (showLabels: boolean) => set({ showLabels }),
       showCharts: true,
       setShowCharts: (showCharts: boolean) => set({ showCharts }),
-
-      // Theme
-      theme: "dark",
-      setTheme: (theme: "light" | "dark") => set({ theme }),
     }),
     {
       name: "ui-store", // key in localStorage

@@ -11,14 +11,14 @@
     .chat-btn {
         width: 56px;
         height: 56px;
-        background: var(--button-primary);
+        background: #917efc;
         border-radius: 50%;
         display: flex;
         justify-content: center;
         align-items: center;
         cursor: pointer;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-        color: var(--button-primary-text);
+        color: white;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
 
@@ -40,15 +40,15 @@
         &:hover {
             transform: translateY(-4px);
             box-shadow: 0 15px 25px rgba(145, 126, 252, 0.3);
-            background: var(--accent-strong);
+            background: #816efc;
         }
     }
 
     .chat-window {
         width: 360px;
         height: 520px;
-        background: var(--background);
-        border: 1px solid var(--border-color);
+        background: #0f0f0f;
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 20px;
         display: flex;
         flex-direction: column;
@@ -61,8 +61,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            background: var(--secondary);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.02);
 
             .ai-info {
                 display: flex;
@@ -70,7 +70,7 @@
                 gap: 12px;
 
                 .ai-avatar {
-                    color: var(--button-primary);
+                    color: #917efc;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -81,13 +81,13 @@
                         margin: 0;
                         font-size: 0.9rem;
                         font-weight: 500;
-                        color: var(--text-primary);
+                        color: #ffffff;
                         letter-spacing: -0.2px;
                     }
 
                     span {
                         font-size: 0.75rem;
-                        color: var(--success);
+                        color: #10b981;
                         font-weight: 500;
                         display: flex;
                         align-items: center;
@@ -107,7 +107,7 @@
             .close-btn {
                 background: none;
                 border: none;
-                color: var(--text-secondary);
+                color: #555;
                 font-size: 1.25rem;
                 cursor: pointer;
                 padding: 4px;
@@ -117,8 +117,8 @@
                 transition: all 0.2s;
 
                 &:hover {
-                    color: var(--text-primary);
-                    background: var(--secondary);
+                    color: #fff;
+                    background: rgba(255, 255, 255, 0.05);
                     border-radius: 6px;
                 }
             }
@@ -156,8 +156,8 @@
                     align-self: flex-start;
 
                     .bubble {
-                        background: var(--secondary);
-                        color: var(--text-primary);
+                        background: rgba(255, 255, 255, 0.06);
+                        color: #e2e8f0;
                         border-bottom-left-radius: 4px;
                     }
                 }
@@ -166,10 +166,10 @@
                     align-self: flex-end;
 
                     .bubble {
-                        background: var(--accent-hover);
-                        color: var(--button-primary);
+                        background: rgba(145, 126, 252, 0.2);
+                        color: #917efc;
                         border-bottom-right-radius: 4px;
-                        border: 1px solid var(--border-color);
+                        border: 1px solid rgba(145, 126, 252, 0.2);
                         font-weight: 500;
                     }
                 }
@@ -181,20 +181,20 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            background: var(--secondary);
-            border-top: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
 
             input {
                 flex: 1;
                 background: transparent;
                 border: none;
                 padding: 12px 0;
-                color: var(--text-primary);
+                color: #fff;
                 font-size: 0.9rem;
                 outline: none;
 
                 &::placeholder {
-                    color: var(--text-secondary);
+                    color: #555;
                 }
             }
 
@@ -203,7 +203,7 @@
                 height: 32px;
                 background: transparent;
                 border: none;
-                color: var(--button-primary);
+                color: #917efc;
                 cursor: pointer;
                 display: flex;
                 align-items: center;

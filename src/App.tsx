@@ -11,35 +11,29 @@ import Auth from "./pages/Auth/Auth";
 import { useAuthStore } from "./store/useAuthStore";
 import { useProjectStore } from "./store/useProjectStore";
 import { initializeSocket, disconnectSocket, socket } from "./services/socket";
-import { useUIStore } from "./store/useUIStore";
 
 const App = () => {
   const { isAuthenticated, user } = useAuthStore();
   const { initSocket } = useProjectStore();
-  const { theme } = useUIStore();
 
   console.log("App rendering, isAuthenticated:", isAuthenticated, "userId:", user?._id);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
       console.log("Initializing socket for user:", user._id);
       initializeSocket(user._id);
       initSocket();
-      
+
       // Fetch initial data
       socket.emit('project:readAll', { userId: user._id });
 
       const handleReadAllResponse = (data: any) => {
         console.log("project:readAll:response received", data.success);
         if (data.success && data.data) {
-           useProjectStore.getState().setProjects(data.data);
+          useProjectStore.getState().setProjects(data.data);
         }
       };
-      
+
       socket.on('project:readAll:response', handleReadAllResponse);
 
       return () => {
