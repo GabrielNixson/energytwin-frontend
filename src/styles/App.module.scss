@@ -3,7 +3,7 @@
   height: 100%;
   display: flex;
   // flex-direction: column;
-  background: #0f0f0f;
+  background: var(--background);
 
 }
 
@@ -12,7 +12,7 @@
   justify-content: space-between;
   align-items: center;
 
-  box-shadow: 0px 4px 4px 0px #e5e7eb40;
+  box-shadow: 0px 4px 4px 0px var(--border-color);
   color: var(--text-primary);
   padding: 11px 14px;
 
@@ -62,14 +62,14 @@
 }
 
 .errorText {
-  color: red;
+  color: var(--danger);
   margin-top: 1rem;
 }
 
 .infoContainer {
   margin-top: 20px;
   text-align: left;
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--secondary);
   padding: 15px;
   border-radius: 8px;
 }

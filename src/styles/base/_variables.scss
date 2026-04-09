@@ -1,22 +1,48 @@
-
 /* ---------- Light Theme Tokens ---------- */
-$light-background: #FFFFFF;
-$light-secondary: #F8FAFB;
+$light-background: #f4f6fb;
+$light-secondary: #edf0f7;
 
-$light-text-primary: #0b2938;
-$light-text-secondary: #7f7f7f;
+$light-text-primary: #0d1b2a;
+$light-text-secondary: #5a6a7e;
 
-$light-button-primary: #d0ff25;
+$light-button-primary: #0ea5e9;
+$light-button-primary-text: #ffffff;
 
-$light-border-color: #f6f6f6;
+$light-accent-hover: #e0f2fe;
+$light-accent-strong: #06b6d4;
+
+$light-success: #10b981;
+$light-warning: #f59e0b;
+$light-danger: #ef4444;
+
+$light-border-color: #d1d9e6;
 
 /* ---------- Dark Theme Tokens ---------- */
-$dark-background: #0f0f17;
-$dark-secondary: #151526;
+$dark-background: #070d17;
+$dark-secondary: #0d1829;
 
-$dark-text-primary: #ffffff;
-$dark-text-secondary: #959595;
+$dark-text-primary: #e2eaf4;
+$dark-text-secondary: #7a8fa6;
 
-$dark-button-primary: #d0ff25;
+$dark-button-primary: #38bdf8;
+$dark-button-primary-text: #07111f;
 
-$dark-border-color: #26263a;
+$dark-accent-hover: #0f2035;
+$dark-accent-strong: #22d3ee;
+
+$dark-success: #34d399;
+$dark-warning: #fbbf24;
+$dark-danger: #f87171;
+
+$dark-border-color: #142032;
+
+:root {
+  --font-size-xs: 0.625rem;  /* 10px */
+  --font-size-sm: 0.75rem;   /* 12px */
+  --font-size-base: 0.875rem; /* 14px */
+  --font-size-md: 1rem;      /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.25rem;   /* 20px */
+  --font-size-2xl: 1.5rem;   /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+}

@@ -1,8 +1,5 @@
 @use "./variables" as *;
 
-/* ===============================
-   Light Theme (Default)
-================================ */
 [data-theme="light"] {
   --background: #{$light-background};
   --secondary: #{$light-secondary};
@@ -11,6 +8,14 @@
   --text-secondary: #{$light-text-secondary};
 
   --button-primary: #{$light-button-primary};
+  --button-primary-text: #{$light-button-primary-text};
+
+  --accent-hover: #{$light-accent-hover};
+  --accent-strong: #{$light-accent-strong};
+
+  --success: #{$light-success};
+  --warning: #{$light-warning};
+  --danger: #{$light-danger};
 
   --border-color: #{$light-border-color};
   --border: 1px solid var(--border-color);
@@ -18,7 +23,7 @@
 
 /* ===============================
    Dark Theme
-================================ */
+ ================================ */
 [data-theme="dark"] {
   --background: #{$dark-background};
   --secondary: #{$dark-secondary};
@@ -27,6 +32,14 @@
   --text-secondary: #{$dark-text-secondary};
 
   --button-primary: #{$dark-button-primary};
+  --button-primary-text: #{$dark-button-primary-text};
+
+  --accent-hover: #{$dark-accent-hover};
+  --accent-strong: #{$dark-accent-strong};
+
+  --success: #{$dark-success};
+  --warning: #{$dark-warning};
+  --danger: #{$dark-danger};
 
   --border-color: #{$dark-border-color};
   --border: 1px solid var(--border-color);
