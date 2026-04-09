@@ -163,7 +163,7 @@ const DroppableChartContainer = ({
 
 const Project = () => {
   const { projectID } = useParams<{ projectID: string }>();
-  const { projects, updateProjectCharts, addChart, addTab, removeTab, updateTabName, getProject, removeChart } =
+  const { projects, updateProjectCharts, addChart, addTab, removeTab, updateTabName, getProject, removeChart, getAssets } =
     useProjectStore();
   const {
     isEditMode,
@@ -266,16 +266,16 @@ const Project = () => {
 
     if (projectID) {
       getProject(projectID);
+      getAssets(projectID);
     }
-  }, [projectID, getProject]);
+  }, [projectID, getProject, getAssets]);
 
   // Ensure activeTabId is valid and handle ID transitions (temp_ -> real_id)
   useEffect(() => {
     if (currentProject) {
-      // 1. If project has NO tabs, automatically add a default "Main" tab
-      if (currentProject.tabs.length === 0 && projectID) {
-        addTab(projectID, "Main", "default");
-        setActiveTabId("default");
+      // 1. If project has NO tabs, ensure activeTabId is null
+      if (currentProject.tabs.length === 0) {
+        setActiveTabId(null);
         return;
       }
 
@@ -285,9 +285,9 @@ const Project = () => {
       if (!activeTabExists) {
         // If we were on a temp tab, maybe it got promoted to a real one with a new ID?
         if (activeTabId?.startsWith('temp_')) {
-          setActiveTabId(currentProject.tabs[currentProject.tabs.length - 1]?.id || "default");
+          setActiveTabId(currentProject.tabs[currentProject.tabs.length - 1]?.id || null);
         } else {
-          setActiveTabId(currentProject.tabs[0]?.id || "default");
+          setActiveTabId(currentProject.tabs[0]?.id || null);
         }
       }
     }

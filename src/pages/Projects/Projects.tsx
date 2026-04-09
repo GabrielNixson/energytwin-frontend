@@ -22,7 +22,7 @@ const Projects = () => {
   const handleCloseModal = () => setIsModalOpen(false);
 
   const handleAddProject = (data: { name: string; description: string }) => {
-    addProject(data);
+    addProject({ ...data, assets: [] });
     handleCloseModal();
   };
 
@@ -143,7 +143,7 @@ const Projects = () => {
       <ConfirmModal
         isOpen={confirmDelete.isOpen}
         onClose={() => setConfirmDelete({ isOpen: false })}
-        onConfirm={handleRemoveProject}
+        // onConfirm={handleRemoveProject}
         title="Delete Project"
         message={`Are you sure you want to delete "${confirmDelete.name}"? This action cannot be undone.`}
         confirmText="Delete Project"

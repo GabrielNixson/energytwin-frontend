@@ -7,7 +7,7 @@ export interface TabData {
     charts: ChartData[];
 }
 
-export interface SceneModel {
+export interface Asset {
     id: string;
     name: string;
     path: string;
@@ -22,5 +22,5 @@ export interface Project {
     createdAt: string;
     default?: boolean;
     tabs: TabData[];
-    scene: SceneModel[];
+    assets: Asset[];
 }

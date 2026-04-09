@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import styles from './ChartConfigSidebar.module.scss';
 import { ChartData, ChartConfig } from '@/types/chart.types';
 import CustomDropdown from '../CustomDropdown/CustomDropdown';
+import NestedDropdown from '../NestedDropdown/NestedDropdown';
+import influxService, { SensorParent } from '@/services/influxService';
+import { useEffect } from 'react';
 
 interface ChartConfigSidebarProps {
     chart: ChartData;
@@ -11,6 +14,15 @@ interface ChartConfigSidebarProps {
 
 const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose, onUpdate }) => {
     const [activeTab, setActiveTab] = useState<'style' | 'advanced' | 'settings'>('style');
+    const [sensorData, setSensorData] = useState<SensorParent[]>([]);
+
+    useEffect(() => {
+        const loadSensors = async () => {
+            const data = await influxService.getSensorInputs();
+            setSensorData(data);
+        };
+        loadSensors();
+    }, []);
 
     const isProgressType = ['progressBar', 'circularProgress'].includes(chart.type);
     const supportsAxes = !['progressBar', 'circularProgress', 'pie', 'gauge', 'radar'].includes(chart.type);
@@ -146,15 +158,10 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                             </p>
                             <div className={styles["input-group"]}>
                                 <label>Sensor / Topic</label>
-                                <CustomDropdown
-                                    options={[
-                                        { id: 'trans1', label: 'Main Transformer - Load' },
-                                        { id: 'inv1', label: 'Solar Inverter - Output' },
-                                        { id: 'cool1', label: 'Cooling System - Temp' },
-                                        { id: 'mqtt1', label: 'Custom MQTT Topic' }
-                                    ]}
-                                    value="trans1"
-                                    onChange={() => { }}
+                                <NestedDropdown
+                                    data={sensorData}
+                                    value={effectiveConfig.sensorTopic}
+                                    onChange={(val) => updateConfig({ sensorTopic: val })}
                                 />
                             </div>
                             <div className={styles["input-group"]}>

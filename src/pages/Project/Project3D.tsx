@@ -399,9 +399,9 @@ const Project3D = () => {
         updateProjectCharts, 
         removeChart, 
         updateTabAssetId,
-        addSceneObject,
-        removeSceneObject,
-        updateSceneObject
+        addAsset,
+        removeAsset,
+        updateAsset
     } = useProjectStore();
     const {
         selectedSubOption,
@@ -420,9 +420,9 @@ const Project3D = () => {
         setHoveredAsset
     } = useUIStore();
 
-    // Get current project and scene data
+    // Get current project and asset data
     const currentProject = projects.find(p => p.id === projectID);
-    const placedModels = currentProject?.scene || [];
+    const placedModels = currentProject?.assets || [];
     const activeTab = currentProject?.tabs.find(t => t.id === activeTabId) || currentProject?.tabs[0];
     const projectCharts = activeTab?.charts || [];
 
@@ -438,7 +438,7 @@ const Project3D = () => {
     const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
     const [transformMode, setTransformMode] = useState<'translate' | 'rotate'>('translate');
     const [isCtrlPressed, setIsCtrlPressed] = useState(false);
-
+    
     const { setNodeRef } = useDroppable({
         id: '3d-overlay-area',
     });
@@ -492,7 +492,7 @@ const Project3D = () => {
         e.preventDefault();
         if (!draggingAsset || !projectID) return;
         
-        addSceneObject(projectID, {
+        addAsset(projectID, {
             name: draggingAsset.name,
             path: draggingAsset.path,
             position: [dragPositionRef.current.x, 0, dragPositionRef.current.z],
@@ -530,7 +530,7 @@ const Project3D = () => {
         if (!contextMenu || !projectID) return;
         const model = placedModels.find(m => m.id === contextMenu.modelId);
         if (model) {
-            addSceneObject(projectID, {
+            addAsset(projectID, {
                 name: model.name,
                 path: model.path,
                 position: [model.position[0] + 2, model.position[1], model.position[2] + 2],
@@ -558,7 +558,7 @@ const Project3D = () => {
             if (e.ctrlKey) setIsCtrlPressed(true);
 
             if (e.ctrlKey && e.key === 'v' && copiedModel && projectID) {
-                addSceneObject(projectID, {
+                addAsset(projectID, {
                     ...copiedModel,
                     position: [0, 0, 0],
                     rotation: [0, 0, 0]
@@ -580,7 +580,7 @@ const Project3D = () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
-    }, [copiedModel, addSceneObject]);
+    }, [copiedModel, addAsset]);
 
     return (
         <div
@@ -852,7 +852,7 @@ const Project3D = () => {
                             }}
                             onMouseUp={() => {
                                 if (projectID && selectedModelId && selectedObject) {
-                                    updateSceneObject(projectID, selectedModelId, {
+                                    updateAsset(projectID, selectedModelId, {
                                         position: [selectedObject.position.x, selectedObject.position.y, selectedObject.position.z],
                                         rotation: [selectedObject.rotation.x, selectedObject.rotation.y, selectedObject.rotation.z]
                                     });
@@ -873,7 +873,7 @@ const Project3D = () => {
                     onClose={() => setContextMenu(null)}
                     onDelete={() => {
                         if (projectID) {
-                            removeSceneObject(projectID, contextMenu.modelId);
+                            removeAsset(projectID, contextMenu.modelId);
                             setContextMenu(null);
                         }
                     }}
