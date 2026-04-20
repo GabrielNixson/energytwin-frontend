@@ -37,8 +37,8 @@
 
     &.open {
         background: rgba(255, 255, 255, 0.08);
-        border-color: #917efc;
-        box-shadow: 0 0 0 4px rgba(145, 126, 252, 0.15);
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.15);
 
         .chevron {
             transform: rotate(180deg);
@@ -125,8 +125,8 @@
     }
 
     &.active {
-        background: rgba(145, 126, 252, 0.1);
-        color: #917efc;
+        background: rgba(var(--accent-rgb), 0.1);
+        color: var(--accent);
         font-weight: 500;
     }
 
@@ -150,8 +150,8 @@
     }
 
     &.selected {
-        background: rgba(145, 126, 252, 0.15);
-        color: #917efc;
+        background: rgba(var(--accent-rgb), 0.15);
+        color: var(--accent);
         font-weight: 600;
     }
 }

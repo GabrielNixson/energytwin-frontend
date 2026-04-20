@@ -12,6 +12,8 @@
 
   --accent-hover: #{$light-accent-hover};
   --accent-strong: #{$light-accent-strong};
+  --accent: #{$accent};
+  --accent-rgb: #{$accent-rgb};
 
   --success: #{$light-success};
   --warning: #{$light-warning};
@@ -19,6 +21,8 @@
 
   --border-color: #{$light-border-color};
   --border: 1px solid var(--border-color);
+  --tooltip-bg: #1e293b;
+  --tooltip-text: #ffffff;
 }
 
 /* ===============================
@@ -36,6 +40,8 @@
 
   --accent-hover: #{$dark-accent-hover};
   --accent-strong: #{$dark-accent-strong};
+  --accent: #{$accent};
+  --accent-rgb: #{$accent-rgb};
 
   --success: #{$dark-success};
   --warning: #{$dark-warning};
@@ -43,4 +49,6 @@
 
   --border-color: #{$dark-border-color};
   --border: 1px solid var(--border-color);
+  --tooltip-bg: #0f172a;
+  --tooltip-text: #ffffff;
 }

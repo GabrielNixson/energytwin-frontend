@@ -21,17 +21,17 @@ select {
   font-weight: normal;
   font-size: 14px;
   color: var(--text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.1019607843);
-  background-color: #050505;
+  border: var(--border);
+  background-color: var(--secondary);
   appearance: none;
   -webkit-appearance: none;
-  color: #eeeeee !important;
+  color: var(--text-primary) !important;
   
   &:focus,
   &:focus-visible,
   &:active,
   &:hover {
-    color: #eeeeee;
+    color: var(--text-primary);
     font-weight: normal;
     outline: none;
   }
@@ -46,9 +46,9 @@ select {
   &:-webkit-autofill:hover,
   &:-webkit-autofill:focus,
   &:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px #050505 inset !important;
-    box-shadow: 0 0 0 1000px #050505 inset !important;
-    -webkit-text-fill-color: #eeeeee !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--secondary) inset !important;
+    box-shadow: 0 0 0 1000px var(--secondary) inset !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
     transition: background-color 9999s ease-in-out 0s;
   }
 }
@@ -58,7 +58,7 @@ button {
   /* optional: removes all browser styles */
   display: inline-block;
   /* needed if using unset */
-  color: #0b2938;
+  color: var(--text-primary);
   /* text color */
   background-color: transparent;
   border: none;
@@ -73,7 +73,7 @@ button[type="submit"] {
   border: none;
   outline: none;
   color: #ffffff;
-  background-color: #917efc;
+  background-color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -94,7 +94,7 @@ button[type="submit"] {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(27, 27, 27);
+  background: var(--border-color);
   border-radius: 4px;
 }
 

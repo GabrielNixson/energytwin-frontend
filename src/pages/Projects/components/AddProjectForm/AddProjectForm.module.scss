@@ -28,8 +28,8 @@
 
         &:focus {
             outline: none;
-            border-color: #917efc;
-            box-shadow: 0 0 0 2px rgba(145, 126, 252, 0.2);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
         }
 
         &::placeholder {
@@ -85,7 +85,7 @@
     }
 
     .submitButton {
-        background-color: #917efc;
+        background-color: var(--accent);
         border: none;
         color: white;
 

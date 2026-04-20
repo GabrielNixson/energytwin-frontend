@@ -28,8 +28,8 @@
 
         &:focus {
             background: rgba(255, 255, 255, 0.08);
-            border-color: #917efc;
-            box-shadow: 0 0 0 2px rgba(145, 126, 252, 0.2);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
         }
 
         &::placeholder {
@@ -97,14 +97,14 @@
     }
 
     .submitButton {
-        background: #917efc;
+        background: var(--accent);
         border: none;
         color: #fff;
-        box-shadow: 0 4px 12px rgba(145, 126, 252, 0.3);
+        box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
 
         &:hover:not(:disabled) {
             background: #816ff5;
-            box-shadow: 0 6px 16px rgba(145, 126, 252, 0.4);
+            box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.4);
         }
     }
 }

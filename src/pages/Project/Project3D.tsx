@@ -162,9 +162,10 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                         position={[0, labelHeight, 0]}
                         center
                         distanceFactor={10}
+                        zIndexRange={[0, 10]}
                         style={{
                             pointerEvents: 'none',
-                            zIndex: 10
+                            zIndex: -1
                         }}
                     >
                         <div style={{
@@ -680,58 +681,18 @@ const Project3D = () => {
 
             {/* Transform Mode Toggle UI */}
             {isEditMode && selectedModelId && (
-                <div style={{
-                    position: 'absolute',
-                    bottom: '100px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    zIndex: 1000,
-                    display: 'flex',
-                    gap: '8px',
-                    background: 'rgba(20, 20, 20, 0.85)',
-                    padding: '6px',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(10px)',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                }}>
+                <div className={styles["transform-toolbar"]}>
                     <button
+                        className={`${styles["transform-btn"]} ${transformMode === 'translate' ? styles.active : ""}`}
                         onClick={(e) => { e.stopPropagation(); setTransformMode('translate'); }}
-                        style={{
-                            padding: '8px 16px',
-                            background: transformMode === 'translate' ? '#917efc' : 'rgba(255,255,255,0.05)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            fontWeight: '600',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                        }}
                     >
-                        <span style={{ fontSize: '16px' }}>⤒</span> Move (W)
+                        <span className={styles.icon}>⤒</span> Move (W)
                     </button>
                     <button
+                        className={`${styles["transform-btn"]} ${transformMode === 'rotate' ? styles.active : ""}`}
                         onClick={(e) => { e.stopPropagation(); setTransformMode('rotate'); }}
-                        style={{
-                            padding: '8px 16px',
-                            background: transformMode === 'rotate' ? '#917efc' : 'rgba(255,255,255,0.05)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            fontWeight: '600',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                        }}
                     >
-                        <span style={{ fontSize: '16px' }}>↻</span> Rotate (E)
+                        <span className={styles.icon}>↻</span> Rotate (E)
                     </button>
                 </div>
             )}
@@ -742,8 +703,8 @@ const Project3D = () => {
                     gl={{
                         antialias: true,
                         alpha: true,
-                        logarithmicDepthBuffer: true,
-                        powerPreference: "high-performance"
+                        powerPreference: "high-performance",
+                        precision: "highp",
                     }}
                     onPointerMissed={() => {
                         if (isRelocating && relocatingAssetId && projectID) {
@@ -786,7 +747,7 @@ const Project3D = () => {
 
                         <Grid
                             position={[0, -0.01, 0]}
-                            args={[1000, 1000]}
+                            args={[100, 100]}
                             cellSize={1}
                             cellThickness={0.7}
                             cellColor="#1a1a1a"        // visible but still dark

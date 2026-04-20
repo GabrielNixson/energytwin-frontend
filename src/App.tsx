@@ -10,13 +10,19 @@ import Project from "./pages/Project/Project";
 import Auth from "./pages/Auth/Auth";
 import { useAuthStore } from "./store/useAuthStore";
 import { useProjectStore } from "./store/useProjectStore";
+import { useUIStore } from "./store/useUIStore";
 import { initializeSocket, disconnectSocket, socket } from "./services/socket";
 
 const App = () => {
   const { isAuthenticated, user } = useAuthStore();
   const { initSocket } = useProjectStore();
+  const { theme } = useUIStore();
 
   console.log("App rendering, isAuthenticated:", isAuthenticated, "userId:", user?._id);
+
+  useEffect(() => {
+    document.body.setAttribute('data-theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     if (isAuthenticated && user) {

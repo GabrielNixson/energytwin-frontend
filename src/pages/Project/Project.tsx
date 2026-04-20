@@ -92,7 +92,7 @@ const DraggableChart = ({
         ? "none"
         : "grid-column 0.3s ease, grid-row 0.3s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease",
     boxShadow: isSelected
-      ? "0 0 0 2px #917efc, 0 10px 25px -5px rgba(0, 0, 0, 0.4)"
+      ? "0 0 0 2px var(--accent), 0 10px 25px -5px rgba(0, 0, 0, 0.4)"
       : undefined,
   };
 

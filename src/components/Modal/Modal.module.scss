@@ -15,8 +15,8 @@
 
 .modal {
 
-    border: 1px solid rgba(255, 255, 255, 0.1019607843);
-    background-color: #050505;
+    border: var(--border);
+    background-color: var(--background);
     border-radius: 12px;
     width: 100%;
     max-width: 500px;
@@ -33,8 +33,8 @@
     align-items: center;
     justify-content: space-between;
 
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1019607843);
-    color: #eeeeee;
+    border-bottom: var(--border);
+    color: var(--text-primary);
     .title {
         margin: 0;
         font-size: 1.15rem;

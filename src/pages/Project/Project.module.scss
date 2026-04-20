@@ -1,7 +1,7 @@
 .eyedropper-tooltip {
     position: fixed;
     pointer-events: none;
-    background: rgba(145, 126, 252, 0.95);
+    background: rgba(var(--accent-rgb), 0.95);
     color: white;
     padding: 6px 12px;
     border-radius: 8px;
@@ -34,7 +34,7 @@
     height: 100%;
     position: relative;
     display: flex;
-    background-color: #050505;
+    background-color: var(--background);
     overflow: hidden;
 
     .chart-container {
@@ -54,8 +54,8 @@
 
         &.edit-mode {
             background-image:
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+                linear-gradient(var(--border-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
             background-size: calc((100% - 80px + 20px) / 12) calc(var(--row-height, 150px) + 20px); // matches (rect.width - 2 * padding + gap) / 12 and rowHeight (grid-auto-rows + gap)
 
             .chart-item {
@@ -91,8 +91,8 @@
                 content: "";
                 position: absolute;
                 inset: 0;
-                border: 2px dashed #917efc;
-                background: rgba(145, 126, 252, 0.1);
+                border: 2px dashed var(--accent);
+                background: rgba(var(--accent-rgb), 0.1);
                 border-radius: 12px;
                 z-index: 2;
                 pointer-events: none;
@@ -136,25 +136,25 @@
             font-size: 0.85rem;
             padding: 8px 20px;
             border-radius: 12px;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #898989;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: var(--secondary);
+            color: var(--text-secondary);
+            border: var(--border);
             cursor: pointer;
             transition: all 0.2s ease;
             backdrop-filter: blur(10px);
             font-weight: 600;
 
             &:hover {
-                background-color: rgba(255, 255, 255, 0.1);
-                border-color: rgba(255, 255, 255, 0.2);
-                color: #fff;
+                background-color: var(--accent-hover);
+                border-color: var(--border-color);
+                color: var(--text-primary);
             }
 
             &.active {
-                background-color: #917efc;
-                border-color: #917efc;
+                background-color: var(--accent);
+                border-color: var(--accent);
                 color: #fff;
-                box-shadow: 0 0 20px rgba(145, 126, 252, 0.2);
+                box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.2);
             }
         }
     }
@@ -173,7 +173,7 @@
     min-width: 0;
     height: 100%;
     position: relative;
-    background: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
+    background: var(--background);
     overflow: hidden;
 
     &.eyedropper-active {
@@ -190,10 +190,10 @@
     align-items: center;
     position: relative;
     max-width: 600px;
-    background: rgba(10, 10, 10, 0.6);
+    background: var(--background);
     padding: 2px;
     border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: var(--border);
     margin-right: 12px;
     backdrop-filter: blur(12px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
@@ -227,7 +227,7 @@
             border-radius: 8px;
             font-size: 0.85rem;
             font-weight: 500;
-            color: #898989;
+            color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
@@ -237,14 +237,14 @@
             flex-shrink: 0;
 
             &:hover {
-                background: rgba(255, 255, 255, 0.05);
-                color: #fff;
+                background: var(--accent-hover);
+                color: var(--text-primary);
             }
 
             &.active {
-                background: rgba(145, 126, 252, 0.1);
-                color: #917efc;
-                border-color: rgba(145, 126, 252, 0.2);
+                background: rgba(var(--accent-rgb), 0.1);
+                color: var(--accent);
+                border-color: rgba(var(--accent-rgb), 0.2);
             }
 
             .tab-name {
@@ -282,8 +282,8 @@
             justify-content: center;
             border-radius: 8px;
             background: transparent;
-            border: 1px dashed rgba(255, 255, 255, 0.1);
-            color: #898989;
+            border: 1px dashed var(--border-color);
+            color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.2s;
             padding: 0 12px;
@@ -292,9 +292,9 @@
             flex-shrink: 0;
 
             &:hover {
-                background: rgba(255, 255, 255, 0.05);
-                border-color: #917efc;
-                color: #917efc;
+                background: var(--accent-hover);
+                border-color: var(--accent);
+                color: var(--accent);
             }
 
             .icon {
@@ -316,32 +316,78 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(10, 10, 10, 0.8);
-        color: #917efc;
+        background: var(--background);
+        color: var(--accent);
         cursor: pointer;
         z-index: 10;
         transition: all 0.2s;
         backdrop-filter: blur(4px);
 
         &:hover {
-            background: rgba(145, 126, 252, 0.15);
+            background: rgba(var(--accent-rgb), 0.15);
             color: #fff;
         }
 
         &.left {
             left: 0;
             border-radius: 12px 0 0 12px;
-            background: linear-gradient(90deg, #0a0a0a 40%, transparent);
+            background: linear-gradient(90deg, var(--background) 40%, transparent);
         }
 
         &.right {
             right: 0;
             border-radius: 0 12px 12px 0;
-            background: linear-gradient(-90deg, #0a0a0a 40%, transparent);
+            background: linear-gradient(-90deg, var(--background) 40%, transparent);
         }
 
         svg {
             animation: pulse-horizontal 2s infinite;
+        }
+    }
+}
+
+.transform-toolbar {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    gap: 8px;
+    background: var(--background);
+    padding: 6px;
+    border-radius: 12px;
+    border: var(--border);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+    .transform-btn {
+        padding: 8px 16px;
+        background: transparent;
+        color: var(--text-secondary);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .icon {
+            font-size: 16px;
+        }
+
+        &:hover {
+            background: var(--accent-hover);
+            color: var(--text-primary);
+        }
+
+        &.active {
+            background: var(--accent);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
         }
     }
 }

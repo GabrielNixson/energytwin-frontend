@@ -1,12 +1,14 @@
-import { RefreshIcon, SearchIcon, BellIcon, SettingsIcon } from "../../assets/svg/Misc";
+import { RefreshIcon, SearchIcon, BellIcon, SettingsIcon, SunIcon, MoonIcon } from "../../assets/svg/Misc";
 import styles from "./Navbar.module.scss";
 import { useLocation, useParams } from "react-router-dom";
 import { useProjectStore } from "../../store/useProjectStore";
+import { useUIStore } from "../../store/useUIStore";
 
 const Navbar = () => {
     const location = useLocation();
     const { projectID } = useParams();
     const { projects } = useProjectStore();
+    const { theme, setTheme } = useUIStore();
 
     const currentProject = projects.find(p => p.id === projectID);
 
@@ -36,6 +38,13 @@ const Navbar = () => {
                     <button className={styles["icon-btn"]} title="Notifications">
                         <BellIcon />
                         <div className={styles.badge}></div>
+                    </button>
+                    <button 
+                        className={styles["icon-btn"]} 
+                        title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+                        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    >
+                        {theme === "dark" ? <SunIcon /> : <MoonIcon />}
                     </button>
                     <button className={styles["icon-btn"]} title="Settings">
                         <SettingsIcon />

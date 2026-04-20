@@ -1,7 +1,7 @@
 .navbar-container {
     height: 72px;
-    border-bottom: 1px solid #ffffff1a;
-    background-color: #050505;
+    border-bottom: var(--border);
+    background-color: var(--background);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -9,7 +9,7 @@
     backdrop-filter: blur(20px);
     position: sticky;
     top: 0;
-    //   z-index: 50;
+    z-index: 1;
 
     .left {
         display: flex;
@@ -22,14 +22,14 @@
 
             .breadcrumb {
                 font-size: 0.75rem;
-                color: #64748b;
+                color: var(--text-secondary);
                 margin-bottom: 2px;
             }
 
             .title {
                 font-size: 1rem;
                 font-weight: 600;
-                color: #f1f5f9;
+                color: var(--text-primary);
                 margin: 0;
                 letter-spacing: -0.01em;
             }
@@ -44,26 +44,26 @@
             padding: 8px 16px;
             border-radius: 12px;
             width: 320px;
-            color: #64748b;
+            color: var(--text-secondary);
             transition: all 0.2s ease;
 
             input {
                 background: transparent;
                 border: none;
                 outline: none;
-                color: #f1f5f9;
+                color: var(--text-primary);
                 font-size: 0.85rem;
                 width: 100%;
 
                 &::placeholder {
-                    color: #475569;
+                    color: var(--text-secondary);
                 }
             }
 
             &:focus-within {
-                border-color: rgba(145, 126, 252, 0.4);
+                border-color: rgba(var(--accent-rgb), 0.4);
                 background: rgba(255, 255, 255, 0.05);
-                color: #917efc;
+                color: var(--accent);
             }
         }
     }
@@ -100,21 +100,21 @@
             gap: 8px;
 
             .icon-btn {
+                width: 38px;
+                height: 38px;
                 background: none;
                 border: none;
-                color: #898989;
-                padding: 8px;
-                cursor: pointer;
-                border-radius: 10px;
+                color: var(--text-secondary);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 transition: all 0.2s;
                 position: relative;
+                border-radius: 50%;
 
                 &:hover {
-                    background: rgba(255, 255, 255, 0.05);
-                    color: #f1f5f9;
+                    background: var(--accent-hover);
+                    color: var(--text-primary);
                 }
 
                 .badge {
@@ -123,9 +123,9 @@
                     right: 8px;
                     width: 6px;
                     height: 6px;
-                    background: #917efc;
+                    background: var(--accent);
                     border-radius: 50%;
-                    border: 2px solid #050505;
+                    border: 2px solid var(--background);
                 }
             }
         }
@@ -140,7 +140,7 @@
             background-color: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.08);
             cursor: pointer;
-            color: #898989;
+            color: var(--text-secondary);
             font-size: 0.85rem;
             font-weight: 500;
             transition: all 0.2s;
@@ -148,7 +148,7 @@
             &:hover {
                 background: rgba(255, 255, 255, 0.06);
                 border-color: rgba(255, 255, 255, 0.2);
-                color: #f1f5f9;
+                color: var(--text-primary);
             }
 
             span {

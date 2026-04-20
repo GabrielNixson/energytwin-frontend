@@ -1,8 +1,8 @@
 .chart-list-sidebar-container {
     width: 280px;
     height: 100%;
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
-    background-color: #050505;
+    border-right: var(--border);
+    background-color: var(--background);
     display: flex;
     flex-direction: column;
     padding: 0 1rem;
@@ -27,7 +27,7 @@
         h1 {
             font-size: 1.125rem;
             font-weight: 600;
-            color: #f8fafc;
+            color: var(--text-primary);
             margin-bottom: 1.25rem;
         }
 
@@ -35,16 +35,16 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: var(--secondary);
+            border: var(--border);
             border-radius: 8px;
             padding: 4px 12px;
-            color: #64748b;
+            color: var(--text-secondary);
             transition: all 0.2s ease;
 
             &:focus-within {
                 background: rgba(255, 255, 255, 0.05);
-                border-color: rgba(145, 126, 252, 0.4);
+                border-color: rgba(var(--accent-rgb), 0.4);
                 color: #94a3b8;
             }
 
@@ -57,7 +57,7 @@
                 width: 100%;
 
                 &::placeholder {
-                    color: #475569;
+                    color: var(--text-secondary);
                 }
             }
         }
@@ -67,7 +67,7 @@
         font-size: 0.625rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        color: #475569;
+        color: var(--text-secondary);
         font-weight: 700;
         margin: 10px 0;
     }
@@ -94,7 +94,7 @@
             gap: 0.875rem;
             padding: 10px 12px;
             border-radius: 8px;
-            color: #898989;
+            color: var(--text-secondary);
             cursor: pointer;
             transition: all 0.2s ease;
             position: relative;
@@ -124,23 +124,23 @@
 
             &:hover {
                 background: rgba(255, 255, 255, 0.03);
-                color: #917efc;
+                color: var(--accent);
 
                 .icon {
-                    color: #917efc;
+                    color: var(--accent);
                 }
 
                 .add {
                     opacity: 1;
                     transform: translateX(0);
-                    color: #917efc;
+                    color: var(--accent);
                 }
             }
 
             &.dragging {
                 opacity: 0.5;
-                background: rgba(145, 126, 252, 0.1);
-                border: 1px solid rgba(145, 126, 252, 0.3);
+                background: rgba(var(--accent-rgb), 0.1);
+                border: 1px solid rgba(var(--accent-rgb), 0.3);
                 z-index: 1000;
             }
 

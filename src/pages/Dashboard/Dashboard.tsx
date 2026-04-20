@@ -69,16 +69,18 @@ const Dashboard = () => {
                             />
                         </div> */}
                         {currentProject && currentProject.tabs.length > 0 && (
-                            <div className={projectStyles["tab-bar"]} >
-                                {currentProject.tabs.map(tab => (
-                                    <div
-                                        key={tab.id}
-                                        className={`${projectStyles["tab-item"]} ${activeTabId === tab.id ? projectStyles.active : ""}`}
-                                        onClick={() => setActiveTabId(tab.id)}
-                                    >
-                                        <span className={projectStyles["tab-name"]}>{tab.name}</span>
-                                    </div>
-                                ))}
+                            <div className={projectStyles["tab-bar-wrapper"]}>
+                                <div className={projectStyles["tab-bar"]} >
+                                    {currentProject.tabs.map(tab => (
+                                        <div
+                                            key={tab.id}
+                                            className={`${projectStyles["tab-item"]} ${activeTabId === tab.id ? projectStyles.active : ""}`}
+                                            onClick={() => setActiveTabId(tab.id)}
+                                        >
+                                            <span className={projectStyles["tab-name"]}>{tab.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -96,7 +98,6 @@ const Dashboard = () => {
                 gap: '20px',
                 alignContent: 'start',
                 height: '100%',
-                background: '#050505'
             }}>
                 <AnimatePresence mode="wait">
                     {activeTab?.charts && activeTab.charts.length > 0 ? (

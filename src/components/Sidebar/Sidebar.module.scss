@@ -1,7 +1,7 @@
 .sidebar-container {
   width: 280px;
   height: 100vh;
-  border-right: 1px solid #ffffff1a;
+  border-right: var(--border);
   padding: 10px 12px;
 
   display: flex;
@@ -11,7 +11,7 @@
   position: relative;
   transition: width 0.25s ease;
 
-  background: #050505;
+  background: var(--background);
 }
 
 /* Toggle button */
@@ -20,20 +20,20 @@
   position: absolute;
   top: 50px;
   right: -10px;
-  z-index: 1;
+  z-index: 2;
 
   width: 20px;
   height: 32px;
 
-  background: #0f0f0f;
-  border: 1px solid #ffffff1a;
+  background: var(--secondary);
+  border: var(--border);
   border-radius: 4px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
-  color: #ececec;
+  color: var(--text-primary);
   cursor: pointer;
 
   svg {
@@ -49,7 +49,7 @@
   gap: 8px;
   padding: 10px 8px;
   font-size: 1rem;
-  color: #917efc;
+  color: var(--accent);
   cursor: pointer;
 
   span {
@@ -72,7 +72,7 @@
     align-items: center;
     gap: 10px;
 
-    color: #898989;
+    color: var(--text-secondary);
     border-radius: 6px;
 
     cursor: pointer;
@@ -83,8 +83,8 @@
     position: relative;
 
     &.selected {
-      color: #917efc;
-      background: #1d1d1d;
+      color: var(--accent);
+  background: var(--secondary);
     }
 
     .icon {
@@ -102,7 +102,7 @@
     }
 
     &:hover {
-      background: #1d1d1d;
+  background: var(--secondary);
     }
   }
 }
@@ -119,7 +119,7 @@
   padding: 6px 8px;
   border-radius: 100px;
 
-  background: #1d1d1d;
+  background: var(--secondary);
 
   .user-img {
     width: 32px;
@@ -146,7 +146,7 @@
     .user-name {
       font-size: 0.75rem;
       font-weight: 600;
-      color: #f8fafc;
+      color: var(--text-primary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -154,7 +154,7 @@
 
     .user-email {
       font-size: 0.625rem;
-      color: #898989;
+      color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -165,7 +165,7 @@
     margin-left: auto;
     background: none;
     border: none;
-    color: #898989;
+    color: var(--text-secondary);
     cursor: pointer;
     padding: 4px;
     border-radius: 6px;
@@ -204,10 +204,10 @@
         left: 100%;
         margin-left: 10px;
         padding: 5px 10px;
-        background: #1d1d1d;
-        border: 1px solid #ffffff1a;
-        border-radius: 100px;
-        color: #fff;
+        background: var(--tooltip-bg);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        color: var(--tooltip-text);
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
@@ -223,7 +223,7 @@
 
           width: 10px;
           height: 14px;
-          background: #1d1d1d;
+          background: var(--tooltip-bg);
 
           clip-path: polygon(100% 0, 100% 100%, 0 50%);
 

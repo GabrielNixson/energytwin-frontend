@@ -56,12 +56,12 @@
             h1 {
                 font-size: 1.75rem;
                 font-weight: 600;
-                color: #eeeeee;
+                color: var(--text-primary);
                 margin-bottom: 0.25rem;
             }
 
             .subheader {
-                color: #7f7f7f;
+                color: var(--text-secondary);
                 font-size: 0.875rem;
             }
         }
@@ -71,7 +71,7 @@
                 font-size: 0.875rem;
                 padding: 10px 24px;
                 border-radius: 100px;
-                background-color: #917efc;
+                background-color: var(--accent);
                 border: none;
                 color: white;
                 cursor: pointer;
@@ -107,8 +107,8 @@
 
     .project-card {
         height: 220px;
-        background-color: #050505;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: var(--secondary);
+        border: var(--border);
         border-radius: 12px;
         padding: 1.5rem;
         transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
@@ -116,8 +116,8 @@
 
         &:hover {
             transform: translateY(-4px);
-            border-color: rgba(145, 126, 252, 0.4);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            border-color: rgba(var(--accent-rgb), 0.4);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
 
         .card-header {
@@ -130,7 +130,7 @@
                 margin: 0;
                 font-size: 1.125rem;
                 font-weight: 600;
-                color: #eeeeee;
+                color: var(--text-primary);
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -138,13 +138,13 @@
 
             .date {
                 font-size: 0.75rem;
-                color: #7f7f7f;
+                color: var(--text-secondary);
             }
         }
 
         .description {
             font-size: 0.875rem;
-            color: #a0a0a0;
+            color: var(--text-secondary);
             line-height: 1.5;
             margin-bottom: 1.5rem;
             display: -webkit-box;
@@ -160,11 +160,11 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: var(--border);
             padding-top: 1rem;
 
             .default-btn {
-                color: #a0a0a0;
+                color: var(--text-secondary);
 
                 &:hover {
                     color: #b6b5b5;
@@ -176,8 +176,8 @@
                 font-size: 0.75rem;
                 padding: 4px 10px;
                 border-radius: 4px;
-                background-color: rgba(145, 126, 252, 0.1);
-                color: #917efc;
+                background-color: rgba(var(--accent-rgb), 0.1);
+                color: var(--accent);
                 font-weight: 500;
             }
 
@@ -207,18 +207,18 @@
         padding: 5rem 0;
         grid-column: 1 / -1;
         text-align: center;
-        border: 2px dashed rgba(255, 255, 255, 0.05);
+        border: 2px dashed var(--border-color);
         border-radius: 12px;
 
         p {
-            color: #7f7f7f;
+            color: var(--text-secondary);
             margin-bottom: 1.5rem;
         }
 
         .create-btn {
-            background-color: rgba(145, 126, 252, 0.1);
-            border: 1px solid rgba(145, 126, 252, 0.2);
-            color: #917efc;
+            background-color: rgba(var(--accent-rgb), 0.1);
+            border: 1px solid rgba(var(--accent-rgb), 0.2);
+            color: var(--accent);
             padding: 8px 20px;
             border-radius: 6px;
             cursor: pointer;
@@ -226,7 +226,7 @@
             transition: all 0.2s;
 
             &:hover {
-                background-color: rgba(145, 126, 252, 0.2);
+                background-color: rgba(var(--accent-rgb), 0.2);
             }
         }
     }

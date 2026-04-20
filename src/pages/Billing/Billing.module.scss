@@ -10,7 +10,7 @@ $border-soft: rgba(255, 255, 255, 0.05);
     padding: 2rem 3rem;
     max-width: 1200px;
     margin: 0 auto;
-    color: #ffffff;
+    color: var(--text-primary);
     min-height: 100vh;
 }
 
@@ -22,10 +22,11 @@ $border-soft: rgba(255, 255, 255, 0.05);
         font-weight: 800;
         letter-spacing: -0.02em;
         margin-bottom: 0.5rem;
+        color: var(--text-primary);
     }
 
     .subtitle {
-        color: $text-dim;
+        color: var(--text-secondary);
         font-size: 1.05rem;
     }
 }
@@ -41,8 +42,8 @@ $border-soft: rgba(255, 255, 255, 0.05);
 }
 
 .section-card {
-    background: $bg-card;
-    border: 1px solid $border-soft;
+    background: var(--secondary);
+    border: var(--border);
     border-radius: 24px;
     padding: 2.25rem;
     display: flex;
@@ -65,7 +66,7 @@ $border-soft: rgba(255, 255, 255, 0.05);
         h2 {
             font-size: 1.15rem;
             font-weight: 700;
-            color: #ffffff;
+            color: var(--text-primary);
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -77,10 +78,10 @@ $border-soft: rgba(255, 255, 255, 0.05);
 .input-row {
     display: flex;
     align-items: center;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--background);
     border-radius: 16px;
     padding: 0.5rem;
-    border: 1px solid $border-soft;
+    border: var(--border);
 
     .input-box {
         flex: 1;
@@ -91,7 +92,7 @@ $border-soft: rgba(255, 255, 255, 0.05);
         label {
             font-size: 0.75rem;
             font-weight: 700;
-            color: $text-dim;
+            color: var(--text-secondary);
             text-transform: uppercase;
             margin-bottom: 0.25rem;
         }
@@ -99,7 +100,7 @@ $border-soft: rgba(255, 255, 255, 0.05);
         input {
             background: transparent;
             border: none;
-            color: #ffffff;
+            color: var(--text-primary);
             font-size: 0.95rem;
             font-weight: 500;
             outline: none;
@@ -119,7 +120,7 @@ $border-soft: rgba(255, 255, 255, 0.05);
     .divider {
         width: 1px;
         height: 30px;
-        background: $border-soft;
+        background: var(--border-color);
     }
 }
 
@@ -131,16 +132,16 @@ $border-soft: rgba(255, 255, 255, 0.05);
     label {
         font-size: 0.85rem;
         font-weight: 600;
-        color: $text-dim;
+        color: var(--text-secondary);
     }
 
     input[type="text"],
     input[type="number"] {
-        background: rgba(0, 0, 0, 0.2);
-        border: 1px solid $border-soft;
+        background: var(--background);
+        border: var(--border);
         border-radius: 14px;
         padding: 0.85rem 1.25rem;
-        color: #ffffff;
+        color: var(--text-primary);
         font-size: 1rem;
         font-weight: 500;
         transition: all 0.2s;
@@ -176,10 +177,10 @@ $border-soft: rgba(255, 255, 255, 0.05);
 
 .toggle-selector {
     display: flex;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--background);
     padding: 4px;
     border-radius: 12px;
-    border: 1px solid $border-soft;
+    border: var(--border);
 
     button {
         flex: 1;
@@ -187,11 +188,12 @@ $border-soft: rgba(255, 255, 255, 0.05);
         border: none;
         padding: 0.65rem;
         border-radius: 9px;
-        color: $text-dim;
+        color: var(--text-secondary);
         font-weight: 600;
         font-size: 0.9rem;
         cursor: pointer;
         transition: all 0.2s ease;
+        text-align: center;
 
         &.active {
             background: $primary;
@@ -235,7 +237,7 @@ $border-soft: rgba(255, 255, 255, 0.05);
 
             &:hover {
                 background: rgba(255, 255, 255, 0.03);
-                color: #ffffff;
+                color: var(--text-primary);
                 border-color: $text-dim;
             }
         }

@@ -212,7 +212,7 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
                 display: effectiveConfig.showLegend,
                 position: 'bottom' as const,
                 labels: {
-                    color: '#e2e8f0',
+                    color: '#64748b',
                     font: {
                         size: 11
                     },

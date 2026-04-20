@@ -52,7 +52,7 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 
         &.info {
-            background: linear-gradient(135deg, #917efc 0%, #7c66f5 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, #7c66f5 100%);
             box-shadow: 0 4px 14px rgba(124, 102, 245, 0.4);
         }
 
