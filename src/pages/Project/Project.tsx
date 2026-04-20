@@ -47,6 +47,9 @@ const DEFAULT_CHART_CONFIG: ChartConfig = {
   xAxisLabel: "Time",
   yAxisLabel: "Value",
   showGrid: true,
+  fieldname: "",
+  timerange: "-1h",
+  function: "last"
 };
 
 const DraggableChart = ({
