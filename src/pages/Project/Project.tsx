@@ -169,7 +169,7 @@ const Project = () => {
   const {
     isEditMode,
     is3DMode, setIs3DMode,
-    setDxfData, setDraggingChartPreview,
+    setDxfData, setDraggingChartPreview, draggingChartPreview,
     isChartSidebarOpen, setIsChartSidebarOpen,
     isAssetSidebarOpen, setIsAssetSidebarOpen,
     findSafePosition,
@@ -316,6 +316,14 @@ const Project = () => {
     return currentProject?.tabs.find((t) => t.id === activeTabId);
   }, [currentProject, activeTabId]);
 
+  // Resolve temp->real tab id transitions for write operations.
+  const resolvedActiveTabId = useMemo(() => {
+    if (!currentProject?.tabs?.length) return null;
+    if (activeTabId && currentProject.tabs.some((t) => t.id === activeTabId)) return activeTabId;
+    if (activeTabId?.startsWith("temp_")) return currentProject.tabs[currentProject.tabs.length - 1]?.id || null;
+    return currentProject.tabs[0]?.id || null;
+  }, [currentProject, activeTabId]);
+
   // Initialize charts from store based on active tab
   useEffect(() => {
     if (activeTab?.charts) {
@@ -329,11 +337,11 @@ const Project = () => {
   const saveCharts = useCallback(
     (newCharts: ChartData[]) => {
       setCharts(newCharts);
-      if (projectID && activeTabId) {
-        updateProjectCharts(projectID, activeTabId, newCharts);
+      if (projectID && resolvedActiveTabId) {
+        updateProjectCharts(projectID, resolvedActiveTabId, newCharts);
       }
     },
-    [projectID, activeTabId, updateProjectCharts],
+    [projectID, resolvedActiveTabId, updateProjectCharts],
   );
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState<Partial<ChartData> | null>(
@@ -500,13 +508,13 @@ const Project = () => {
       }
 
       setCharts(updated);
-      if (projectID && activeTabId) {
-        removeChart(projectID, activeTabId, id);
+      if (projectID && resolvedActiveTabId) {
+        removeChart(projectID, resolvedActiveTabId, id);
       }
 
       if (selectedChartId === id) setSelectedChartId(null);
     },
-    [charts, removeChart, projectID, activeTabId, selectedChartId, isAutoAlign, compactLayout],
+    [charts, removeChart, projectID, resolvedActiveTabId, selectedChartId, isAutoAlign, compactLayout],
   );
 
   // Calculate the preview layout in real-time (for dragging)
@@ -632,10 +640,40 @@ const Project = () => {
 
   const handleDragMove = (event: DragMoveEvent) => {
     const { active, over } = event;
-    const container = document.getElementById("chart-container");
-    if (!container || !gridMetrics) return;
+    // 3D Overlay Live Preview
+    if (is3DMode && active.id.toString().startsWith("sidebar-")) {
+      const startE = event.activatorEvent as MouseEvent;
+      if (startE) {
+        const absoluteX = startE.clientX + event.delta.x;
+        const absoluteY = startE.clientY + event.delta.y;
 
-    if (!over || over.id !== "chart-container") {
+        const overId = event.over?.id;
+        const overRect = event.over?.rect;
+
+        if (overId === "3d-overlay-area" && overRect) {
+          const relX = absoluteX - overRect.left;
+          const relY = absoluteY - overRect.top;
+
+          setDraggingChartPreview({
+            type: active.data.current?.type,
+            title: active.data.current?.label,
+            x: relX - 250,
+            y: relY - 175
+          });
+        } else {
+          // Fallback for screen-based if not over the area
+          setDraggingChartPreview({
+            type: active.data.current?.type,
+            title: active.data.current?.label,
+            x: absoluteX - 250,
+            y: absoluteY - 175
+          });
+        }
+      }
+    }
+
+    const container = document.getElementById("chart-container");
+    if (!container || !gridMetrics || !over || over.id !== "chart-container") {
       setDragPosition(null);
       return;
     }
@@ -694,38 +732,6 @@ const Project = () => {
     ) {
       setDragPosition(coords);
     }
-
-    // 3D Overlay Live Preview
-    if (is3DMode && active.id.toString().startsWith("sidebar-")) {
-      const startE = event.activatorEvent as MouseEvent;
-      if (startE) {
-        const absoluteX = startE.clientX + event.delta.x;
-        const absoluteY = startE.clientY + event.delta.y;
-
-        const overId = event.over?.id;
-        const overRect = event.over?.rect;
-
-        if (overId === "3d-overlay-area" && overRect) {
-          const relX = absoluteX - overRect.left;
-          const relY = absoluteY - overRect.top;
-
-          setDraggingChartPreview({
-            type: active.data.current?.type,
-            title: active.data.current?.label,
-            x: relX - 250,
-            y: relY - 175
-          });
-        } else {
-          // Fallback for screen-based if not over the area
-          setDraggingChartPreview({
-            type: active.data.current?.type,
-            title: active.data.current?.label,
-            x: absoluteX - 250,
-            y: absoluteY - 175
-          });
-        }
-      }
-    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -761,8 +767,8 @@ const Project = () => {
 
           finalLayout = resolveCollisions(newChart, withNewChart);
 
-          if (projectID && activeTabId) {
-            addChart(projectID, activeTabId, newChart);
+          if (projectID && resolvedActiveTabId) {
+            addChart(projectID, resolvedActiveTabId, newChart);
           }
         }
       } else {
@@ -781,26 +787,37 @@ const Project = () => {
       }
 
       saveCharts(finalLayout);
-    } else if (over && over.id === "3d-overlay-area" && event.activatorEvent) {
+    } else if ((over && over.id === "3d-overlay-area" && event.activatorEvent) || (is3DMode && active.id.toString().startsWith("sidebar-") && draggingChartPreview)) {
       if (active.id.toString().startsWith("sidebar-")) {
         const chartType = active.data.current?.type;
         const label = active.data.current?.label;
 
-        const e = event.activatorEvent as MouseEvent;
         const rect = event.over?.rect;
-        if (!rect) return;
+        const fallbackContainer = document.querySelector('[class*="three-container"]') as HTMLElement | null;
+        const fallbackRect = fallbackContainer?.getBoundingClientRect();
 
-        const absoluteX = e.clientX + event.delta.x;
-        const absoluteY = e.clientY + event.delta.y;
+        let relativeX = draggingChartPreview?.x ?? 0;
+        let relativeY = draggingChartPreview?.y ?? 0;
+        let containerW = rect?.width ?? fallbackRect?.width ?? window.innerWidth;
+        let containerH = rect?.height ?? fallbackRect?.height ?? window.innerHeight;
 
-        // Relative to the overlay container
-        const relativeX = absoluteX - rect.left;
-        const relativeY = absoluteY - rect.top;
+        if (event.activatorEvent) {
+          const e = event.activatorEvent as MouseEvent;
+          const absoluteX = e.clientX + event.delta.x;
+          const absoluteY = e.clientY + event.delta.y;
 
-        const containerW = rect.width;
-        const containerH = rect.height;
+          if (rect) {
+            // Relative to the 3D overlay container
+            relativeX = absoluteX - rect.left;
+            relativeY = absoluteY - rect.top;
+          } else if (fallbackRect) {
+            relativeX = absoluteX - fallbackRect.left;
+            relativeY = absoluteY - fallbackRect.top;
+          }
+        }
 
-        const currentChartsList = activeTab?.charts || [];
+        const targetTab = currentProject?.tabs.find((t) => t.id === resolvedActiveTabId);
+        const currentChartsList = targetTab?.charts || [];
 
         const safePos = findSafePosition(
           null,
@@ -814,7 +831,7 @@ const Project = () => {
         // Find a free spot in a 3-column-wide 2D grid (4 span each)
         // Use activeTab.charts for the latest source of truth to avoid stale closures
         const findBetterSpot = () => {
-          const currentChartsList = activeTab?.charts || [];
+          const currentChartsList = targetTab?.charts || [];
           let foundX = 0;
           let foundY = 0;
           let spotFound = false;
@@ -853,8 +870,8 @@ const Project = () => {
           config: DEFAULT_CHART_CONFIG
         };
 
-        if (projectID && activeTabId) {
-          addChart(projectID, activeTabId, newChart);
+        if (projectID && resolvedActiveTabId) {
+          addChart(projectID, resolvedActiveTabId, newChart);
         }
       }
     }

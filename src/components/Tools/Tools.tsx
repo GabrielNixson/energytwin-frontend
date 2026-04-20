@@ -54,8 +54,6 @@ const Tools = () => {
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
         >
-
-
             <div className={styles["tools-wrapper"]}>
                 {/* Charts Toggle */}
                 <div className={styles["tool-item-group"]}>
@@ -112,8 +110,6 @@ const Tools = () => {
                     );
                 })}
             </div>
-
-
         </div>
     );
 };

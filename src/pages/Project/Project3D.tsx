@@ -107,10 +107,12 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                         m.opacity = 1.0;
                         m.depthWrite = true;
                         m.depthTest = true;
+                        m.side = THREE.FrontSide;
                         // Precision fix: Increased factor to separate large overlapping planes
                         m.polygonOffset = true;
                         m.polygonOffsetFactor = 2;
                         m.polygonOffsetUnits = 2;
+                        m.needsUpdate = true;
                     });
                 }
             }
@@ -252,8 +254,10 @@ const PlacedModelPreview = ({ path, meshRef, opacity, scale }: { path: string, m
                     mats.forEach((m: any) => {
                         m.transparent = true;
                         m.opacity = opacity;
+                        m.side = THREE.FrontSide;
                         m.polygonOffset = true;
                         m.polygonOffsetFactor = -1; // Pull preview forward
+                        m.needsUpdate = true;
                     });
                 }
             }
