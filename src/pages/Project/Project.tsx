@@ -47,6 +47,9 @@ const DEFAULT_CHART_CONFIG: ChartConfig = {
   xAxisLabel: "Time",
   yAxisLabel: "Value",
   showGrid: true,
+  fieldname: "",
+  timerange: "-1h",
+  function: "last"
 };
 
 const DraggableChart = ({
@@ -182,6 +185,8 @@ const Project = () => {
     overlayCharts
   } = useUIStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tabBarRef = useRef<HTMLDivElement>(null);
+
 
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -258,6 +263,44 @@ const Project = () => {
 
   // Find the current project
   const currentProject = projects.find((p) => p.id === projectID);
+
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
+
+  const updateTabScroll = useCallback(() => {
+    if (tabBarRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = tabBarRef.current;
+      setShowLeftArrow(scrollLeft > 5);
+      setShowRightArrow(scrollLeft + clientWidth < scrollWidth - 5);
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = tabBarRef.current;
+    if (el) {
+      updateTabScroll();
+      el.addEventListener('scroll', updateTabScroll);
+      window.addEventListener('resize', updateTabScroll);
+      return () => {
+        el.removeEventListener('scroll', updateTabScroll);
+        window.removeEventListener('resize', updateTabScroll);
+      };
+    }
+  }, [updateTabScroll, currentProject?.tabs]);
+
+  const handleTabBarWheel = (e: React.WheelEvent) => {
+    if (tabBarRef.current) {
+      tabBarRef.current.scrollLeft += e.deltaY;
+      updateTabScroll();
+    }
+  };
+
+  const scrollTabs = (direction: 'left' | 'right') => {
+    if (tabBarRef.current) {
+      const scrollAmount = direction === 'left' ? -200 : 200;
+      tabBarRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   const [charts, setCharts] = useState<ChartData[]>([]);
 
@@ -1104,42 +1147,64 @@ const Project = () => {
       <div className={styles["project-container"]}>
         <div className={styles["tools-container"]}>
           
-          <div className={styles["tab-bar"]}>
-            {currentProject?.tabs.map((tab) => (
-              <div
-                key={tab.id}
-                className={`${styles["tab-item"]} ${activeTabId === tab.id ? styles.active : ""}`}
-                onClick={() => setActiveTabId(tab.id)}
-                onDoubleClick={() => handleRenameTab(tab.id, tab.name)}
-              >
-                <span className={styles["tab-name"]}>
-                  {tab.assetId && <span className={styles["link-icon"]} title="Linked to 3D Asset">🔗</span>}
-                  {tab.name}
-                </span>
-                {isEditMode && currentProject?.tabs.length > 1 && (
-                  <button
-                    className={styles["remove-tab-btn"]}
-                    onClick={(e) => handleRemoveTab(e, tab.id)}
-                    title="Delete Tab"
-                  >
-                    ×
-                  </button>
-                )}
+          <div className={styles["tab-bar-wrapper"]}>
+            {showLeftArrow && (
+              <div className={`${styles["scroll-indicator"]} ${styles.left}`} onClick={() => scrollTabs('left')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
               </div>
-            ))}
-            {isEditMode && is3DMode && (
-              <button
-                className={styles["add-tab-btn"]}
-                onClick={() => {
-                  setIs3DMode(true);
-                  setIsEyedropperActive(true);
-                  setEyedropperSelection(null); // Clear previous if any
-                }}
-                title="Add New Tab"
-              >
-                <span className={styles.icon}>+</span>
-                <span className={styles.text}>Add Tab</span>
-              </button>
+            )}
+
+            <div 
+              className={`${styles["tab-bar"]} ${showLeftArrow ? styles["has-left-arrow"] : ""} ${showRightArrow ? styles["has-right-arrow"] : ""}`} 
+              ref={tabBarRef} 
+              onWheel={handleTabBarWheel}
+            >
+              {currentProject?.tabs.map((tab) => (
+                <div
+                  key={tab.id}
+                  className={`${styles["tab-item"]} ${activeTabId === tab.id ? styles.active : ""}`}
+                  onClick={() => setActiveTabId(tab.id)}
+                  onDoubleClick={() => handleRenameTab(tab.id, tab.name)}
+                >
+                  <span className={styles["tab-name"]}>
+                    {tab.assetId && <span className={styles["link-icon"]} title="Linked to 3D Asset">🔗</span>}
+                    {tab.name}
+                  </span>
+                  {isEditMode && currentProject?.tabs.length > 1 && (
+                    <button
+                      className={styles["remove-tab-btn"]}
+                      onClick={(e) => handleRemoveTab(e, tab.id)}
+                      title="Delete Tab"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+              {isEditMode && is3DMode && (
+                <button
+                  className={styles["add-tab-btn"]}
+                  onClick={() => {
+                    setIs3DMode(true);
+                    setIsEyedropperActive(true);
+                    setEyedropperSelection(null); // Clear previous if any
+                  }}
+                  title="Add Tab"
+                >
+                  <span className={styles.icon}>+</span>
+                  <span className={styles.text}>Add Tab</span>
+                </button>
+              )}
+            </div>
+
+            {showRightArrow && (
+              <div className={`${styles["scroll-indicator"]} ${styles.right}`} onClick={() => scrollTabs('right')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </div>
             )}
           </div>
 

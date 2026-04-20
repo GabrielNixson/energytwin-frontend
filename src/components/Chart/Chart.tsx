@@ -1,4 +1,5 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { socket } from '@/services/socket';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -49,8 +50,60 @@ interface ChartProps {
     isEditMode?: boolean;
 }
 
-const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDelete, isEditMode = false }) => {
-    const [isExpanded, setIsExpanded] = React.useState(false);
+const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, onDelete, isEditMode = false }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [fetchedData, setFetchedData] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (!config?.fieldname) {
+            console.log(`[Chart:${id}] Skipping polling - no fieldname configured.`);
+            return;
+        }
+
+        console.log(`[Chart:${id}] Initializing Polling`, { 
+            topic: config.fieldname, 
+            range: config.timerange, 
+            agg: config.function,
+            socket: socket.connected ? 'Connected' : 'Disconnected'
+        });
+
+        const responseEvent = `energyTwin:data:res:${id}`;
+        
+        const fetchData = () => {
+            const payload = {
+                fieldname: config.fieldname,
+                timerange: config.timerange || '-1h',
+                function: config.function || 'last',
+                graphId: id
+            };
+            console.log(`[Chart:${id}] Emitting ${responseEvent}:`, payload);
+            socket.emit('energyTwin:data:req', payload);
+        };
+
+        const handleResponse = (payload: any) => {
+            console.log(`[Chart:${id}] Received response:`, payload);
+            setFetchedData(payload);
+            setIsLoading(false);
+        };
+
+        socket.on(responseEvent, handleResponse);
+        
+        // Initial fetch
+        setIsLoading(true);
+        fetchData();
+
+        // Polling every 2 seconds as requested
+        const pollInterval = setInterval(() => {
+            fetchData();
+        }, 2000);
+
+        return () => {
+            console.log(`[Chart:${id}] Cleaning up polling`);
+            clearInterval(pollInterval);
+            socket.off(responseEvent, handleResponse);
+        };
+    }, [id, config?.fieldname, config?.timerange, config?.function]);
 
     const handleResizePointerDown = useCallback((e: React.PointerEvent) => {
         e.stopPropagation();
@@ -73,24 +126,75 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
 
     const themeColor = effectiveConfig.color || '#a855f7';
 
-    const data = {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [
-            {
-                label: effectiveConfig.yAxisLabel || 'Energy Consumption',
-                data: [65, 59, 80, 81, 56, 55],
-                backgroundColor: `${themeColor}80`,
-                borderColor: themeColor,
-                borderWidth: 2,
-                tension: 0.4,
-                pointBackgroundColor: themeColor,
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-            },
-        ],
+    // Data Transformation Logic
+    const formatChartData = () => {
+        if (!fetchedData) {
+            // Default sample data
+            return {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [
+                    {
+                        label: effectiveConfig.yAxisLabel || 'Energy Consumption',
+                        data: [65, 59, 80, 81, 56, 55],
+                        backgroundColor: `${themeColor}80`,
+                        borderColor: themeColor,
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointBackgroundColor: themeColor,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    },
+                ],
+            };
+        }
+
+        let labels: string[] = [];
+        let dataPoints: number[] = [];
+
+        // Extract the field name robustly
+        const fullField = config.fieldname || '';
+        const suffixField = fullField.includes('.') ? fullField.split('.').pop() || '' : fullField;
+
+        // Handle Scenario A: Live Value
+        if (fetchedData.timestamp && Array.isArray(fetchedData.value) && !fetchedData.results) {
+            labels = fetchedData.timestamp.map((t: string) => new Date(t).toLocaleTimeString());
+            dataPoints = fetchedData.value;
+        }
+        // Handle Scenario B/C: Daily/Weekly/Monthly (Bar/Line)
+        // Check for both full field name (dotted) and suffix
+        else if (fetchedData.timestamp && (fetchedData[fullField] || fetchedData[suffixField])) {
+            labels = fetchedData.timestamp;
+            dataPoints = fetchedData[fullField] || fetchedData[suffixField];
+        }
+        // Handle Scenario D: Historical List
+        else if (fetchedData.results && Array.isArray(fetchedData.results)) {
+            labels = fetchedData.results.map((r: any) => new Date(r.time).toLocaleTimeString());
+            dataPoints = fetchedData.results.map((r: any) => r.value);
+        }
+
+        return {
+            labels: labels,
+            datasets: [
+                {
+                    label: effectiveConfig.yAxisLabel || config.fieldname || 'Data',
+                    data: dataPoints,
+                    backgroundColor: `${themeColor}80`,
+                    borderColor: themeColor,
+                    borderWidth: 2,
+                    tension: 0.4,
+                    pointBackgroundColor: themeColor,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                },
+            ],
+        };
     };
+
+    const data = formatChartData();
 
     const options = {
         responsive: true,
@@ -327,6 +431,12 @@ const Chart: React.FC<ChartProps> = ({ type, title, config, onResizeStart, onDel
             <div className={styles.chartHeader}>
                 <div className={styles.titleGroup}>
                     <span className={styles.chartTitle}>{title}</span>
+                    {config?.fieldname && (
+                        <div className={styles.liveIndicator}>
+                            <div className={styles.dot} />
+                            Live
+                        </div>
+                    )}
                     {type === 'progressBar' && (
                         <span className={styles.percentageBadge}>
                             {data.datasets[0].data[data.datasets[0].data.length - 1]}%

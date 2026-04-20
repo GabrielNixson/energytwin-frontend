@@ -36,13 +36,12 @@
             color: #666;
         }
 
-        /* Fix auto-fill styles */
         &:-webkit-autofill,
         &:-webkit-autofill:hover, 
         &:-webkit-autofill:focus {
-            -webkit-text-fill-color: #fff;
-            -webkit-box-shadow: 0 0 0px 1000px #111 inset;
-            transition: background-color 5000s ease-in-out 0s;
+            -webkit-text-fill-color: #fff !important;
+            -webkit-box-shadow: 0 0 0px 1000px #111 inset !important;
+            transition: background-color 5000s ease-in-out 0s !important;
         }
     }
 

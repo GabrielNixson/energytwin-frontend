@@ -94,7 +94,13 @@ const Sidebar = () => {
         })}
       </div>
 
-      <div className={styles["user-details-container"]}>
+      <div 
+        className={styles["user-details-container"]}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+        }}
+      >
         <div className={styles["user-img"]}>
           <img src={userImage} alt="" />
         </div>

@@ -46,9 +46,9 @@ select {
   &:-webkit-autofill:hover,
   &:-webkit-autofill:focus,
   &:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
-    box-shadow: 0 0 0 1000px transparent inset !important;
-    -webkit-text-fill-color: var(--text-primary) !important;
+    -webkit-box-shadow: 0 0 0 1000px #050505 inset !important;
+    box-shadow: 0 0 0 1000px #050505 inset !important;
+    -webkit-text-fill-color: #eeeeee !important;
     transition: background-color 9999s ease-in-out 0s;
   }
 }

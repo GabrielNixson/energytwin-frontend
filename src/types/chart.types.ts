@@ -12,6 +12,9 @@ export interface ChartConfig {
     gaugeMax?: number;
     gaugeEnd?: number;
     sensorTopic?: string;
+    fieldname?: string;
+    timerange?: string;
+    function?: string;
 }
 
 export interface ChartData {

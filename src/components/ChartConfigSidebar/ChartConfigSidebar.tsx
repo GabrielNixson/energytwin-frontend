@@ -160,21 +160,47 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                                 <label>Sensor / Topic</label>
                                 <NestedDropdown
                                     data={sensorData}
-                                    value={effectiveConfig.sensorTopic}
-                                    onChange={(val) => updateConfig({ sensorTopic: val })}
+                                    value={effectiveConfig.fieldname}
+                                    onChange={(val) => updateConfig({ fieldname: val })}
                                 />
                             </div>
+                            {effectiveConfig.function !== 'last' && (
+                                <div className={styles["input-group"]}>
+                                    <label>Time Range</label>
+                                    <CustomDropdown
+                                        options={[
+                                            { id: '-1m', label: 'Last 1 Minute' },
+                                            { id: '-5m', label: 'Last 5 Minutes' },
+                                            { id: '-15m', label: 'Last 15 Minutes' },
+                                            { id: '-30m', label: 'Last 30 Minutes' },
+                                            { id: '-1h', label: 'Last 1 Hour' },
+                                            { id: '-6h', label: 'Last 6 Hours' },
+                                            { id: '-12h', label: 'Last 12 Hours' },
+                                            { id: '-24h', label: 'Last 24 Hours' },
+                                            { id: '-7d', label: 'Last 7 Days' },
+                                            { id: '-30d', label: 'Last 30 Days' }
+                                        ]}
+                                        value={effectiveConfig.timerange || '-1h'}
+                                        onChange={(val) => updateConfig({ timerange: val })}
+                                    />
+                                </div>
+                            )}
                             <div className={styles["input-group"]}>
-                                <label>Aggregation</label>
+                                <label>Aggregation Function</label>
                                 <CustomDropdown
                                     options={[
-                                        { id: 'none', label: 'None (Real-time)' },
-                                        { id: 'avg', label: 'Average (1m)' },
-                                        { id: 'sum', label: 'Sum (Hourly)' },
-                                        { id: 'perc', label: 'Percentile (95th)' }
+                                        { id: 'last', label: 'Last State (Live)' },
+                                        { id: 'mean', label: 'Mean (Average)' },
+                                        { id: 'sum', label: 'Sum (Total)' },
+                                        { id: 'min', label: 'Minimum' },
+                                        { id: 'max', label: 'Maximum' }
                                     ]}
-                                    value="none"
-                                    onChange={() => { }}
+                                    value={effectiveConfig.function || 'last'}
+                                    onChange={(val) => {
+                                        const updates: Partial<ChartConfig> = { function: val };
+                                        if (val === 'last') updates.timerange = '-1h';
+                                        updateConfig(updates);
+                                    }}
                                 />
                             </div>
                         </div>

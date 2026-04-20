@@ -785,7 +785,7 @@ const Project3D = () => {
 
 
                         <Grid
-                            position={[0, -0.5, 0]}
+                            position={[0, -0.01, 0]}
                             args={[1000, 1000]}
                             cellSize={1}
                             cellThickness={0.7}
@@ -799,7 +799,7 @@ const Project3D = () => {
                         />
 
                         <Environment preset="city" />
-                        <axesHelper />
+                        {/* <axesHelper /> */}
                         {/* Uploaded DXF Content */}
                         <DxfLayer />
 

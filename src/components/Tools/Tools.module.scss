@@ -1,6 +1,6 @@
 .tools-container {
     position: absolute;
-    bottom: 50px;
+    bottom: 15px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10000; // Increased z-index
@@ -66,7 +66,7 @@
 
             .label {
                 position: absolute;
-                top: calc(100% + 12px);
+                bottom: calc(100% + 12px);
                 left: 50%;
                 transform: translate(-50%, 0);
                 padding: 6px 12px;
@@ -87,12 +87,12 @@
                 &::after {
                     content: "";
                     position: absolute;
-                    bottom: 100%;
+                    top: 100%;
                     left: 50%;
                     transform: translateX(-50%);
                     border-left: 6px solid transparent;
                     border-right: 6px solid transparent;
-                    border-bottom: 6px solid #1a1a1a;
+                    border-top: 6px solid #1a1a1a;
                 }
             }
 
@@ -107,7 +107,7 @@
                 &:not(.active) .label {
                     opacity: 1;
                     visibility: visible;
-                    transform: translate(-50%, 10px);
+                    transform: translate(-50%, -10px);
                 }
             }
 

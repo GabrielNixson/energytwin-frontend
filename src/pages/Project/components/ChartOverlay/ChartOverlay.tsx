@@ -8,6 +8,7 @@ interface ChartOverlayProps {
     id: string;
     type: string;
     title: string;
+    config?: ChartConfig;
     x: number;
     y: number;
     w: number;
@@ -23,9 +24,12 @@ const DEFAULT_CHART_CONFIG: ChartConfig = {
     xAxisLabel: "Time",
     yAxisLabel: "Value",
     showGrid: true,
+    fieldname: "",
+    timerange: "-1h",
+    function: "last"
 };
 
-const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, x, y, w, h, constraintsRef, onUpdate, onDelete }) => {
+const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x, y, w, h, constraintsRef, onUpdate, onDelete }) => {
     const { removeOverlayChart, updateOverlayChart, bringOverlayToFront, findSafePosition, setSelectedChartId } = useUIStore();
     const [isResizing, setIsResizing] = React.useState(false);
     const [localW, setLocalW] = React.useState(w);
@@ -116,7 +120,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, x, y, w, h
                     id={id}
                     type={type}
                     title={title}
-                    config={DEFAULT_CHART_CONFIG}
+                    config={config || DEFAULT_CHART_CONFIG}
                     onDelete={() => {
                         if (onDelete) {
                             onDelete();

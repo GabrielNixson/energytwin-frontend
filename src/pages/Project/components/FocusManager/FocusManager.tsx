@@ -72,7 +72,7 @@ const FocusManager = ({ cameraRef, projectID }: FocusManagerProps) => {
         }, 200);
 
         return () => clearTimeout(timer);
-    }, [activeTabId, scene, cameraRef, projectID, setSelectedModelId, projects]);
+    }, [activeTabId, scene, cameraRef, projectID, setSelectedModelId]);
 
     return null;
 };
