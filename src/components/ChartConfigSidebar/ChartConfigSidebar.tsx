@@ -98,10 +98,10 @@ const ChartConfigSidebar: React.FC<ChartConfigSidebarProps> = ({ chart, onClose,
                                 <div className={styles["color-input-wrapper"]}>
                                     <input
                                         type="color"
-                                        value={effectiveConfig.color || '#a855f7'}
+                                        value={effectiveConfig.color || '#7c5dfa'}
                                         onChange={(e) => updateConfig({ color: e.target.value })}
                                     />
-                                    <span>{effectiveConfig.color || '#a855f7'}</span>
+                                    <span>{effectiveConfig.color || '#7c5dfa'}</span>
                                 </div>
                             </div>
                             {supportsTooltips && renderToggle('Show Tooltips', effectiveConfig.showTooltips, (v) => updateConfig({ showTooltips: v }))}

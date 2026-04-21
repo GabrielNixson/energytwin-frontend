@@ -110,8 +110,8 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                         m.side = THREE.FrontSide;
                         // Precision fix: Increased factor to separate large overlapping planes
                         m.polygonOffset = true;
-                        m.polygonOffsetFactor = 2;
-                        m.polygonOffsetUnits = 2;
+                        m.polygonOffsetFactor = -1;
+                        m.polygonOffsetUnits = -1;
                         m.needsUpdate = true;
                     });
                 }
@@ -173,7 +173,7 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                             backdropFilter: 'blur(12px)',
                             padding: '4px 10px',
                             borderRadius: '6px',
-                            border: '1px solid rgba(145, 126, 252, 0.6)',
+                            border: '1px solid rgba(124, 93, 250, 0.6)',
                             color: '#fff',
                             fontSize: '11px',
                             fontWeight: '700',
@@ -746,7 +746,7 @@ const Project3D = () => {
 
 
                         <Grid
-                            position={[0, -0.01, 0]}
+                            position={[0, -0.1, 0]}
                             args={[100, 100]}
                             cellSize={1}
                             cellThickness={0.7}

@@ -18,7 +18,7 @@ const GaugeChart: React.FC<GaugeChartProps> = ({
     min = 20, 
     max = 80, 
     end = 100, 
-    color = '#a855f7' 
+    color = '#7c5dfa' 
 }) => {
     // Threshold calculation
     const warningHighThreshold = max * 0.9;

@@ -124,7 +124,7 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
         gaugeEnd: 1000,
     };
 
-    const themeColor = effectiveConfig.color || '#a855f7';
+    const themeColor = effectiveConfig.color || '#7c5dfa';
 
     // Data Transformation Logic
     const formatChartData = () => {

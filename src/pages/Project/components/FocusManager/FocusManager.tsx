@@ -60,16 +60,28 @@ const FocusManager = ({ cameraRef, projectID }: FocusManagerProps) => {
 
                     const maxDim = Math.max(size.x, size.y, size.z);
                     const distance = (maxDim / 2) / Math.tan(THREE.MathUtils.degToRad(50 / 2));
-                    const safeDistance = distance * 2.0;
+                    const safeDistance = distance * 2.5; // Slightly further for better context
+
+                    // Create a vector representing "in front" of the object in its local space
+                    // We'll aim for a position that is slightly elevated and forward
+                    const localOffset = new THREE.Vector3(0, maxDim * 0.2, safeDistance);
+                    
+                    // Transform this local offset into world space based on object's rotation
+                    const worldQuaternion = new THREE.Quaternion();
+                    target.getWorldQuaternion(worldQuaternion);
+                    const worldOffset = localOffset.applyQuaternion(worldQuaternion);
+                    
+                    // Final camera position is object center + world-space offset
+                    const camPos = center.clone().add(worldOffset);
 
                     cameraRef.current.setLookAt(
-                        center.x + (maxDim * 0.4), center.y + (maxDim * 0.6), center.z + safeDistance,
+                        camPos.x, camPos.y, camPos.z,
                         center.x, center.y, center.z,
                         true
                     );
                 }
             }
-        }, 200);
+        }, 100);
 
         return () => clearTimeout(timer);
     }, [activeTabId, scene, cameraRef, projectID, setSelectedModelId]);

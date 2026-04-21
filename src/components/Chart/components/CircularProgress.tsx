@@ -8,7 +8,7 @@ interface CircularProgressProps {
     color?: string;
 }
 
-const CircularProgress: React.FC<CircularProgressProps> = ({ value = 36, showPercentage = true, color = "#a855f7" }) => {
+const CircularProgress: React.FC<CircularProgressProps> = ({ value = 36, showPercentage = true, color = "#7c5dfa" }) => {
     const data = {
         datasets: [
             {

@@ -53,11 +53,6 @@
         transition: all 0.5s linear;
 
         &.edit-mode {
-            background-image:
-                linear-gradient(var(--border-color) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
-            background-size: calc((100% - 80px + 20px) / 12) calc(var(--row-height, 150px) + 20px); // matches (rect.width - 2 * padding + gap) / 12 and rowHeight (grid-auto-rows + gap)
-
             .chart-item {
                 cursor: grab;
 

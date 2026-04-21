@@ -7,7 +7,7 @@ interface ProgressBarProps {
     color?: string;
 }
 
-const ProgressBar: React.FC<ProgressBarProps> = ({ value = 65, color = "#a855f7" }) => {
+const ProgressBar: React.FC<ProgressBarProps> = ({ value = 65, color = "#7c5dfa" }) => {
     const safeValue = Math.min(100, Math.max(0, value));
 
     return (

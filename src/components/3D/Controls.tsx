@@ -8,18 +8,19 @@ const Controls = forwardRef<CameraControls, { enabled?: boolean }>(({ enabled = 
       enabled={enabled}
       truckSpeed={2}
       dollySpeed={1.5}
-      smoothTime={0.25}
+      smoothTime={0.3}
 
       // Infinite Zoom & Flexibility like Blender
-      minDistance={0}
-      maxDistance={Infinity}
+      minDistance={1}
+      maxDistance={150}
+      minZoom={10}
       minPolarAngle={0}
-      maxPolarAngle={Math.PI / 2.1}     // Allow looking from bottom
+      maxPolarAngle={Math.PI / 2.1}
       minAzimuthAngle={-Infinity}
       maxAzimuthAngle={Infinity}
 
       dollyToCursor
-      infinityDolly={true}
+      infinityDolly={false}
     />
   );
 });
