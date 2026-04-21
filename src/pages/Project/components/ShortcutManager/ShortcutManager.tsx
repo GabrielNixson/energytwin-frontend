@@ -27,15 +27,36 @@ const ShortcutManager = ({ cameraRef, selectedModelId, setIsOrthoManual }: Short
                 setIsOrthoManual((prev: boolean) => !prev);
             }
 
-            // Focus Selection (.)
+            // Focus Selection (.) - Maintains current angle
             if (e.key === '.') {
                 e.preventDefault();
                 if (selectedModelId) {
                     const target = scene.getObjectByName(selectedModelId);
                     if (target) {
-                        cameraRef.current.fitToBox(target, true, { 
-                            paddingLeft: 1, paddingRight: 1, paddingTop: 1, paddingBottom: 1 
-                        });
+                        const box = new THREE.Box3().setFromObject(target);
+                        const center = new THREE.Vector3();
+                        const size = new THREE.Vector3();
+                        box.getCenter(center);
+                        box.getSize(size);
+
+                        // Calculate current camera state
+                        const azimuth = cameraRef.current.azimuthAngle;
+                        const polar = cameraRef.current.polarAngle;
+                        
+                        // Determine safe viewing distance based on object size
+                        const maxDim = Math.max(size.x, size.y, size.z);
+                        const distance = maxDim * 2.5;
+
+                        // Calculate new camera position using existing angles but new distance and center
+                        const x = center.x + distance * Math.sin(azimuth) * Math.sin(polar);
+                        const y = center.y + distance * Math.cos(polar);
+                        const z = center.z + distance * Math.cos(azimuth) * Math.sin(polar);
+
+                        cameraRef.current.setLookAt(
+                            x, y, z,
+                            center.x, center.y, center.z,
+                            true
+                        );
                     }
                 }
             }

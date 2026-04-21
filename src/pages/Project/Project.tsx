@@ -1183,7 +1183,7 @@ const Project = () => {
                   )}
                 </div>
               ))}
-              {isEditMode && is3DMode && (
+              {/* {isEditMode && is3DMode && (
                 <button
                   className={styles["add-tab-btn"]}
                   onClick={() => {
@@ -1196,7 +1196,7 @@ const Project = () => {
                   <span className={styles.icon}>+</span>
                   <span className={styles.text}>Add Tab</span>
                 </button>
-              )}
+              )} */}
             </div>
 
             {showRightArrow && (
