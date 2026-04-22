@@ -32,28 +32,23 @@ const ModelContextMenu: React.FC<ModelContextMenuProps> = ({ x, y, onClose, onDe
             >
                 {onLinkToTab && (
                     <button onClick={() => { onLinkToTab(); onClose(); }}>
-                        <div className={styles.icon}>🔗</div>
                         Link to Active Tab
                     </button>
                 )}
                 {onRelocate && (
                     <button onClick={() => { onRelocate(); onClose(); }}>
-                        <div className={styles.icon}>📍</div>
                         Relocate Asset
                     </button>
                 )}
                 
                 <button onClick={() => { onDuplicate(); onClose(); }}>
-                    <div className={styles.icon}>📁</div>
                     Duplicate
                 </button>
                 <button onClick={() => { onCopy(); onClose(); }}>
-                    <div className={styles.icon}>✂️</div>
                     Copy
                 </button>
                 <div className={styles.divider} />
                 <button className={styles.danger} onClick={() => { onDelete(); onClose(); }}>
-                    <div className={styles.icon}>🗑️</div>
                     Delete
                 </button>
             </div>

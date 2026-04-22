@@ -18,7 +18,7 @@ const App = () => {
   const { initSocket } = useProjectStore();
   const { theme } = useUIStore();
 
-  console.log("App rendering, isAuthenticated:", isAuthenticated, "userId:", user?._id);
+  // console.log("App rendering, isAuthenticated:", isAuthenticated, "userId:", user?._id);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);

@@ -13,7 +13,7 @@ const Controls = forwardRef<CameraControls, { enabled?: boolean }>(({ enabled = 
       // Infinite Zoom & Flexibility like Blender
       // Visual Constraints
       minDistance={5}
-      maxDistance={150}
+      maxDistance={300}
       minZoom={5}
       maxZoom={100}
       minPolarAngle={0}

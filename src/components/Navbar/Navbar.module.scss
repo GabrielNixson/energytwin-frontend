@@ -92,6 +92,10 @@
                 box-shadow: 0 0 8px #22c55e;
                 animation: pulse 2s infinite;
             }
+
+            span {
+                color: #565656;
+            }
         }
 
         .action-icons {
@@ -136,20 +140,14 @@
             align-items: center;
             gap: 6px;
             padding: 8px 16px;
-            border-radius: 12px;
-            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 100px;
+            background-color: rgba(var(--accent-rgb), 0.1);
             border: 1px solid rgba(255, 255, 255, 0.08);
             cursor: pointer;
-            color: var(--text-secondary);
+            color: var(--accent);
             font-size: 0.85rem;
             font-weight: 500;
             transition: all 0.2s;
-
-            &:hover {
-                background: rgba(255, 255, 255, 0.06);
-                border-color: rgba(255, 255, 255, 0.2);
-                color: var(--text-primary);
-            }
 
             span {
                 text-transform: capitalize;
