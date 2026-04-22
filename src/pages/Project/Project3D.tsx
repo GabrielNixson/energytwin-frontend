@@ -150,7 +150,11 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                         onContextMenu(e);
                     } else {
                         // Prevent menu during pans
-                        e.preventDefault();
+                        if (e.nativeEvent && typeof e.nativeEvent.preventDefault === 'function') {
+                            e.nativeEvent.preventDefault();
+                        } else if (typeof e.preventDefault === 'function') {
+                            e.preventDefault();
+                        }
                         e.stopPropagation();
                     }
                 }}
@@ -169,12 +173,12 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                         }}
                     >
                         <div style={{
-                            background: 'rgba(28, 28, 32, 0.95)',
+                            background: 'var(--surface)',
                             backdropFilter: 'blur(12px)',
                             padding: '4px 10px',
                             borderRadius: '6px',
-                            border: '1px solid rgba(124, 93, 250, 0.6)',
-                            color: '#fff',
+                            border: '1px solid var(--accent)',
+                            color: 'var(--text-primary)',
                             fontSize: '11px',
                             fontWeight: '700',
                             whiteSpace: 'nowrap',
@@ -187,7 +191,7 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                             letterSpacing: '0.02em'
                         }}>
                             <span style={{ fontSize: '13px' }}>📍</span>
-                            {linkedTabName.toUpperCase()}
+                            {(linkedTabName || name || "Asset").toUpperCase()}
                         </div>
                     </Html>
                 )}
@@ -524,7 +528,9 @@ const Project3D = () => {
     };
 
     const handleModelContextMenu = (e: any, modelId: string) => {
-        const domEvent = e.nativeEvent;
+        const domEvent = e.nativeEvent || e;
+        if (domEvent.preventDefault) domEvent.preventDefault();
+        
         // Use direct window coordinates for precision with fixed overlay
         setContextMenu({
             x: domEvent.clientX,
@@ -556,6 +562,17 @@ const Project3D = () => {
 
     const handleLinkToActiveTab = () => {
         if (!contextMenu || !projectID || !activeTabId) return;
+
+        // Check if asset is already linked to another tab
+        const currentProject = projects.find(p => p.id === projectID);
+        const existingLinkTab = currentProject?.tabs.find(t => t.assetId === contextMenu.modelId);
+
+        if (existingLinkTab && existingLinkTab.id !== activeTabId) {
+            alert(`This asset is already linked to the "${existingLinkTab.name}" tab. An asset can only be linked to one tab.`);
+            setContextMenu(null);
+            return;
+        }
+
         updateTabAssetId(projectID, activeTabId, contextMenu.modelId);
         setContextMenu(null);
     };
@@ -687,13 +704,27 @@ const Project3D = () => {
                         className={`${styles["transform-btn"]} ${transformMode === 'translate' ? styles.active : ""}`}
                         onClick={(e) => { e.stopPropagation(); setTransformMode('translate'); }}
                     >
-                        <span className={styles.icon}>⤒</span> Move (W)
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="5 9 2 12 5 15" />
+                            <polyline points="9 5 12 2 15 5" />
+                            <polyline points="15 19 12 22 9 19" />
+                            <polyline points="19 9 22 12 19 15" />
+                            <line x1="2" y1="12" x2="22" y2="12" />
+                            <line x1="12" y1="2" x2="12" y2="22" />
+                        </svg>
+                        Move (W)
                     </button>
                     <button
                         className={`${styles["transform-btn"]} ${transformMode === 'rotate' ? styles.active : ""}`}
                         onClick={(e) => { e.stopPropagation(); setTransformMode('rotate'); }}
                     >
-                        <span className={styles.icon}>↻</span> Rotate (E)
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 2v6h-6" />
+                            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                            <path d="M3 22v-6h6" />
+                            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                        </svg>
+                        Rotate (E)
                     </button>
                 </div>
             )}
@@ -707,6 +738,7 @@ const Project3D = () => {
                         powerPreference: "high-performance",
                         precision: "highp",
                     }}
+                    onContextMenu={(e) => e.preventDefault()}
                     onPointerMissed={() => {
                         // Prevent deselection if we were just transforming something or relocating
                         if (isTransforming || (isRelocating && relocatingAssetId)) {
@@ -724,7 +756,6 @@ const Project3D = () => {
                         }
                         setSelectedModelId(null);
                         setSelectedObject(null);
-                        setActiveTabId(null);
                     }}
                 >
                     <ShortcutManager

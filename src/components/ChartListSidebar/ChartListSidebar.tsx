@@ -27,8 +27,10 @@ interface ChartItemProps {
 }
 
 const DraggableChartItem = ({ chart }: ChartItemProps) => {
+    const { isEditMode } = useUIStore();
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: `sidebar-${chart.type}`,
+        disabled: !isEditMode, // Disable drag if not in edit mode
         data: {
             type: chart.type,
             label: chart.label,

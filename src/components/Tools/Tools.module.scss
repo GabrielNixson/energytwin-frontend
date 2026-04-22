@@ -3,221 +3,162 @@
     bottom: 15px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 10000; // Increased z-index
-    padding: 6px;
+    z-index: 10000;
+    padding: 5px;
 
-    background: var(--background);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: var(--border);
-    border-radius: 20px;
-    box-shadow:
-        0 4px 6px -1px rgba(0, 0, 0, 0.2),
-        0 20px 50px -10px rgba(0, 0, 0, 0.8),
-        0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+    background: var(--glass-background);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.2),
+        0 1px 1px rgba(255, 255, 255, 0.15) inset, // Top highlight
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    animation: toolsAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-    .tools-wrapper {
+@keyframes toolsAppear {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0) scale(1);
+    }
+}
+
+.tools-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .tool-item-group {
+        position: relative;
         display: flex;
         align-items: center;
-        gap: 6px;
-
-        .tool-item-group {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .tool-button {
-            position: relative;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            background: transparent;
-            border-radius: 14px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            border: none;
-            cursor: pointer;
-            padding: 0;
-
-            .icon {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: transform 0.2s ease;
-            }
-
-            .chevron {
-                position: absolute;
-                bottom: 2px;
-                right: 2px;
-                color: #475569;
-                font-size: 8px;
-                transition: transform 0.2s ease, color 0.2s ease;
-
-                &.open {
-                    transform: rotate(180deg);
-                    color: var(--accent);
-                }
-            }
-
-            .label {
-                position: absolute;
-                bottom: calc(100% + 12px);
-                left: 50%;
-                transform: translate(-50%, 0);
-                background: var(--tooltip-bg);
-                color: var(--tooltip-text);
-                font-size: 0.75rem;
-                font-weight: 700;
-                white-space: nowrap;
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-                pointer-events: none;
-                border: var(--border);
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
-                z-index: 10001;
-
-                padding: 5px 10px;
-                border-radius: 6px;
-
-                &::after {
-                    content: "";
-                    position: absolute;
-                    top: 100%;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    border-left: 6px solid transparent;
-                    border-right: 6px solid transparent;
-                    border-top: 6px solid var(--tooltip-bg);
-                }
-            }
-
-            &:hover {
-                background: var(--secondary);
-                color: var(--text-primary);
-
-                .icon {
-                    transform: scale(1.05);
-                }
-
-                &:not(.active) .label {
-                    opacity: 1;
-                    visibility: visible;
-                    transform: translate(-50%, -10px);
-                }
-            }
-
-            &.active {
-                background: rgba(var(--accent-rgb), 0.15);
-                color: var(--accent);
-            }
-
-            &:active {
-                transform: scale(0.95);
-            }
-        }
     }
 
-    .sub-menu {
-        position: absolute;
-        bottom: calc(100% + 12px);
-        margin-bottom: 8px;
+    .tool-button {
+        position: relative;
+        width: 42px;
+        height: 42px;
         display: flex;
-        flex-direction: column;
-        gap: 6px;
-        padding: 6px;
-        background: var(--background);
-        backdrop-filter: blur(24px);
-        border: var(--border);
-        border-radius: 16px;
-        box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.6);
-        animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 10005;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-primary);
+        background: transparent;
+        border-radius: 11px;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        cursor: pointer;
+        padding: 0;
 
-        &::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border-left: 8px solid transparent;
-            border-right: 8px solid transparent;
-            border-top: 8px solid rgba(255, 255, 255, 0.15);
-            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
-            pointer-events: none;
-        }
-
-        .sub-tool-button {
-            position: relative;
-            width: 40px;
-            height: 40px;
+        .icon {
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--text-secondary);
-            background: transparent;
-            border-radius: 12px;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            opacity: 0.85; // Brighter icon
+
+            svg {
+                filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+            }
+        }
+
+        .label {
+            position: absolute;
+            bottom: calc(100% + 14px);
+            left: 50%;
+            transform: translate(-50%, 5px);
+            background: rgba(18, 18, 24, 0.95);
+            backdrop-filter: blur(8px);
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            z-index: 10001;
+            padding: 5px 12px;
+            border-radius: 8px;
+            letter-spacing: 0.02em;
+
+            &::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                border-left: 6px solid transparent;
+                border-right: 6px solid transparent;
+                border-top: 6px solid rgba(255, 255, 255, 0.08);
+            }
+        }
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
 
             .icon {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            &:hover {
-                background: rgba(255, 255, 255, 0.08);
-                color: #f8fafc;
-
-                .label {
-                    opacity: 1;
-                    visibility: visible;
-                    transform: translate(12px, -50%);
-                }
-            }
-
-            &.active {
-                background: rgba(var(--accent-rgb), 0.25);
-                color: var(--accent);
+                opacity: 1;
+                transform: translateY(-2px);
             }
 
             .label {
-                position: absolute;
-                left: 100%;
-                top: 50%;
-                transform: translate(0, -50%);
-                padding: 6px 12px;
-                border-radius: 8px;
-                background: var(--tooltip-bg);
-                color: var(--tooltip-text);
-                font-size: 0.75rem;
-                font-weight: 700;
-                white-space: nowrap;
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.2s;
-                pointer-events: none;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                margin-left: 0;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+                opacity: 1;
+                visibility: visible;
+                transform: translate(-50%, 0);
             }
+        }
+
+        &.active {
+            background: rgba(var(--accent-rgb), 0.15);
+            color: var(--accent);
+            box-shadow: 
+                0 0 0 1px rgba(var(--accent-rgb), 0.2) inset,
+                0 4px 15px -2px rgba(var(--accent-rgb), 0.2);
+
+            .icon {
+                opacity: 1;
+                transform: scale(1.1);
+                stroke-width: 2.5px;
+            }
+        }
+
+        &:active {
+            transform: scale(0.92);
         }
     }
 }
 
-@keyframes slideUp {
+// Submenu styling if needed (currently not used in simplified UI but good to keep)
+.sub-menu {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 5px;
+    background: rgba(18, 18, 24, 0.85);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    animation: subMenuScale 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 10005;
+}
+
+@keyframes subMenuScale {
     from {
         opacity: 0;
-        transform: translateY(15px) scale(0.9);
+        transform: translateY(10px) scale(0.9);
     }
-
     to {
         opacity: 1;
         transform: translateY(0) scale(1);

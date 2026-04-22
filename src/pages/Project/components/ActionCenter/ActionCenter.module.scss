@@ -1,147 +1,125 @@
-.action-center {
-    position: relative;
-    z-index: 1000;
-    pointer-events: auto;
-}
-
-.glass-pill {
-    background: var(--background);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: var(--border);
-    border-radius: 100px;
-    padding: 6px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow: 
-        0 4px 24px -1px rgba(0, 0, 0, 0.3),
-        0 0 0 1px rgba(255, 255, 255, 0.05);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-    &:hover {
-        background: var(--secondary);
-        border-color: var(--border-color);
-        box-shadow: 
-            0 8px 32px -1px rgba(0, 0, 0, 0.4),
-            0 0 0 1px rgba(255, 255, 255, 0.08);
-    }
-}
-
 .mode-switch {
     display: flex;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 3px;
+    border-radius: 10px;
     position: relative;
-    background: var(--secondary);
-    border-radius: 100px;
-    padding: 2px;
-    gap: 4px;
+    gap: 2px;
 }
 
 .mode-btn {
-    position: relative;
-    z-index: 2;
+    background: transparent;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 20px;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-radius: 100px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
 
     svg {
-        transition: transform 0.3s ease;
+        opacity: 0.75;
+        transition: all 0.3s ease;
     }
 
     &:hover {
         color: var(--text-primary);
         
         svg {
-            transform: scale(1.1);
+            opacity: 1;
         }
     }
 
     &.active {
-        color: #ffffff;
-        text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        color: #fff;
+        
+        svg {
+            opacity: 1;
+        }
     }
 }
 
 .mode-indicator {
     position: absolute;
-    top: 2px;
-    left: 2px;
-    width: calc(50% - 2px);
-    height: calc(100% - 4px);
-    background: linear-gradient(135deg, var(--accent) 0%, #7a61ff 100%);
-    border-radius: 100px;
-    z-index: 1;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 2px 10px rgba(var(--accent-rgb), 0.4);
+    top: 3px;
+    left: 3px;
+    width: calc(50% - 4px);
+    height: calc(100% - 6px);
+    background: var(--accent);
+    border-radius: 7px;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.4);
 }
 
 .divider {
     width: 1px;
     height: 24px;
-    background: var(--border-color);
-    margin: 0 4px;
+    background: var(--glass-border);
+    margin: 0 8px;
 }
 
 .visibility-group {
     display: flex;
-    gap: 8px;
-    padding-right: 8px;
+    gap: 4px;
 }
 
 .toggle-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 14px;
-    border: 1px solid transparent;
-    border-radius: 100px;
-    background: var(--secondary);
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.25s ease;
+    position: relative;
+
+    .status-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--glass-border);
+        transition: all 0.3s ease;
+    }
 
     &:hover {
-        background: var(--accent-hover);
+        background: rgba(0, 0, 0, 0.05);
         color: var(--text-primary);
     }
 
     &.active {
         background: rgba(var(--accent-rgb), 0.1);
-        border-color: rgba(var(--accent-rgb), 0.2);
         color: var(--accent);
 
         .status-dot {
             background: var(--accent);
-            box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.6);
-            transform: scale(1);
+            box-shadow: 0 0 8px var(--accent);
         }
+
+        svg {
+            stroke: var(--accent);
+        }
+    }
+
+    svg {
+        transition: all 0.3s ease;
     }
 }
 
-.status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
-    transform: scale(0.8);
-}
-
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .btn-text {
         display: none;
     }
+    
     .toggle-btn {
         padding: 8px;
     }

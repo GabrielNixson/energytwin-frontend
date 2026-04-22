@@ -1,14 +1,12 @@
 .sidebar {
   width: 320px;
   height: 100vh;
-  background: rgba(13, 14, 18, 0.95);
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
+  background: var(--surface);
+  border-left: var(--border);
+  backdrop-filter: blur(24px);
   display: flex;
   flex-direction: column;
-  position: fixed;
-  right: 0;
-  top: 0;
+  position: relative; // Changed from fixed
   z-index: 1000;
   animation: slideIn 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
@@ -24,8 +22,8 @@
 }
 
 .header {
-  padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 24px 20px;
+  border-bottom: var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -33,7 +31,7 @@
   h3 {
     margin: 0;
     font-size: 1.1rem;
-    color: #fff;
+    color: var(--text-primary);
     font-weight: 600;
   }
 
@@ -67,11 +65,12 @@
   margin-bottom: 24px;
 
   h4 {
-    color: #94a3b8;
-    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    font-weight: 700;
   }
 }
 
@@ -80,20 +79,21 @@
 
   label {
     display: block;
-    color: #e2e8f0;
-    font-size: 0.9rem;
-    margin-bottom: 8px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    font-weight: 500;
   }
 
   input,
   select {
     width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 10px 12px;
-    color: #fff;
-    font-size: 0.9rem;
+    background: var(--background);
+    border: var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
     transition: all 0.2s ease;
 
     &:focus {
@@ -107,9 +107,9 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+    background: var(--background);
+    border: var(--border);
+    border-radius: 10px;
     padding: 8px 12px;
 
     input[type="color"] {
@@ -133,9 +133,9 @@
     }
 
     span {
-      font-family: monospace;
-      font-size: 0.9rem;
-      color: #94a3b8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
     }
   }
 }
@@ -177,20 +177,20 @@
   display: flex;
   align-items: center;
   padding: 0 10px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--background);
+  border-bottom: var(--border);
 
   button {
     flex: 1;
     padding: 12px 5px;
     background: none;
     border: none;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
     position: relative;
-    transition: color 0.2s ease;
+    transition: all 0.2s ease;
     text-align: center;
 
     &.active {
@@ -204,11 +204,13 @@
         width: 100%;
         height: 2px;
         background: var(--accent);
+        box-shadow: 0 -2px 10px rgba(var(--accent-rgb), 0.3);
       }
     }
 
     &:hover:not(.active) {
-      color: #fff;
+      color: var(--text-primary);
+      background: var(--secondary);
     }
   }
 }
@@ -220,8 +222,9 @@
   margin-bottom: 20px;
 
   label {
-    color: #e2e8f0;
-    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
   }
 
   .switch {
@@ -243,7 +246,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: rgba(255, 255, 255, 0.1);
+      background-color: var(--secondary);
       transition: .4s;
       border-radius: 20px;
 

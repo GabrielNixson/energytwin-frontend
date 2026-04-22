@@ -30,7 +30,8 @@ const DEFAULT_CHART_CONFIG: ChartConfig = {
 };
 
 const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x, y, w, h, constraintsRef, onUpdate, onDelete }) => {
-    const { removeOverlayChart, updateOverlayChart, bringOverlayToFront, findSafePosition, setSelectedChartId } = useUIStore();
+    const { removeOverlayChart, updateOverlayChart, bringOverlayToFront, findSafePosition, setSelectedChartId, isEditMode, selectedChartId } = useUIStore();
+    const isSelected = selectedChartId === id;
     const [isResizing, setIsResizing] = React.useState(false);
     const [localW, setLocalW] = React.useState(w);
     const [localH, setLocalH] = React.useState(h);
@@ -48,7 +49,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
     return (
         <motion.div
             ref={itemRef}
-            drag={!isResizing}
+            drag={isEditMode && !isResizing}
             dragMomentum={false}
             dragConstraints={constraintsRef}
             dragElastic={0} // Tight containment
@@ -100,7 +101,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
                 width: localW,
                 height: localH,
                 zIndex: 1000, 
-                cursor: isResizing ? 'nwse-resize' : 'grab',
+                cursor: !isEditMode ? 'default' : (isResizing ? 'nwse-resize' : 'grab'),
                 pointerEvents: 'auto',
             }}
             whileDrag={{ cursor: 'grabbing', scale: 1.02 }}
@@ -108,14 +109,33 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
             <div style={{
                 width: '100%',
                 height: '100%',
-                background: 'rgba(15, 15, 20, 0.7)',
-                backdropFilter: 'blur(12px)',
+                background: 'var(--glass-background)',
+                backdropFilter: 'blur(16px)',
                 borderRadius: '16px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
+                border: isSelected ? '2px solid var(--accent)' : '1px solid var(--glass-border)',
+                boxShadow: isSelected ? '0 0 20px rgba(var(--accent-rgb), 0.3)' : '0 12px 40px rgba(0, 0, 0, 0.15)',
                 overflow: 'hidden',
-                position: 'relative'
+                position: 'relative',
+                transition: 'border 0.2s ease, box-shadow 0.2s ease'
             }}>
+                {isSelected && (
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        border: '2px solid var(--accent)',
+                        borderRadius: '16px',
+                        pointerEvents: 'none',
+                        zIndex: 10,
+                        animation: 'overlayOutlinePulse 2s infinite'
+                    }} />
+                )}
+                <style>{`
+                    @keyframes overlayOutlinePulse {
+                        0% { opacity: 1; transform: scale(1); }
+                        50% { opacity: 0.6; transform: scale(1.01); }
+                        100% { opacity: 1; transform: scale(1); }
+                    }
+                `}</style>
                 <Chart
                     id={id}
                     type={type}
@@ -131,62 +151,70 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
                     isEditMode={false} // 3D Overlay handles its own resizing and deletion
                 />
 
-                {/* Resize Handle Override */}
-                <div
-                    style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        right: 0,
-                        width: '20px',
-                        height: '20px',
-                        cursor: 'nwse-resize',
-                        zIndex: 10,
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        borderTopLeftRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '10px',
-                        color: 'rgba(255, 255, 255, 0.4)'
-                    }}
-                    onPointerDown={(e) => {
-                        e.stopPropagation();
-                        setIsResizing(true);
-                        
-                        const startW = w;
-                        const startH = h;
-                        const startX = e.clientX;
-                        const startY = e.clientY;
-
-                        // Use locals to keep track of values since state updates won't be seen by onUp due to closure
-                        let currentW = startW;
-                        let currentH = startH;
-
-                        const onMove = (moveEvent: PointerEvent) => {
-                            currentW = Math.max(300, startW + (moveEvent.clientX - startX));
-                            currentH = Math.max(300, startH + (moveEvent.clientY - startY));
-                            setLocalW(currentW);
-                            setLocalH(currentH);
-                        };
-
-                        const onUp = () => {
-                            setIsResizing(false);
-                            window.removeEventListener('pointermove', onMove);
-                            window.removeEventListener('pointerup', onUp);
+                {isEditMode && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            right: 0,
+                            width: '32px', // Larger hit area
+                            height: '32px',
+                            cursor: 'nwse-resize',
+                            zindex: 100,
+                            display: 'flex',
+                            alignItems: 'flex-end',
+                            justifyContent: 'flex-end',
+                            padding: '0 4px 4px 0',
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            background: 'linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.05) 50%)',
+                            borderBottomRightRadius: '16px'
+                        }}
+                        onPointerDown={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+                            setIsResizing(true);
                             
-                            if (onUpdate) {
-                                onUpdate({ x, y, w: currentW, h: currentH });
-                            } else {
-                                updateOverlayChart(id, { w: currentW, h: currentH });
-                            }
-                        };
+                            const startW = localW;
+                            const startH = localH;
+                            const startX = e.clientX;
+                            const startY = e.clientY;
 
-                        window.addEventListener('pointermove', onMove);
-                        window.addEventListener('pointerup', onUp);
-                    }}
-                >
-                    ◢
-                </div>
+                            let currentW = startW;
+                            let currentH = startH;
+
+                            const onMove = (moveEvent: PointerEvent) => {
+                                moveEvent.stopPropagation();
+                                currentW = Math.max(300, startW + (moveEvent.clientX - startX));
+                                currentH = Math.max(250, startH + (moveEvent.clientY - startY));
+                                
+                                // Use requestAnimationFrame for smoother UI updates
+                                requestAnimationFrame(() => {
+                                    setLocalW(currentW);
+                                    setLocalH(currentH);
+                                });
+                            };
+
+                            const onUp = (upEvent: PointerEvent) => {
+                                setIsResizing(false);
+                                (e.currentTarget as HTMLDivElement).releasePointerCapture(upEvent.pointerId);
+                                window.removeEventListener('pointermove', onMove);
+                                window.removeEventListener('pointerup', onUp);
+                                
+                                if (onUpdate) {
+                                    onUpdate({ x, y, w: currentW, h: currentH });
+                                } else {
+                                    updateOverlayChart(id, { w: currentW, h: currentH });
+                                }
+                            };
+
+                            window.addEventListener('pointermove', onMove);
+                            window.addEventListener('pointerup', onUp);
+                        }}
+                    >
+                        ◢
+                    </div>
+                )}
             </div>
         </motion.div>
     );

@@ -7,7 +7,7 @@
     display: block;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #94a3b8;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     margin-bottom: 8px;
@@ -17,15 +17,15 @@
     width: 100%;
     height: 44px;
     padding: 0 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--background);
+    border: var(--border);
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    color: #e2e8f0;
+    color: var(--text-primary);
     font-size: 0.95rem;
     user-select: none;
 
@@ -36,7 +36,7 @@
     }
 
     &.open {
-        background: rgba(255, 255, 255, 0.08);
+        background: var(--background);
         border-color: var(--accent);
         box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.15);
 
@@ -53,13 +53,13 @@
     text-overflow: ellipsis;
     
     .path-separator {
-        color: #64748b;
+        color: var(--text-secondary);
         margin: 0 6px;
         font-size: 0.8rem;
     }
 
     .parent-name {
-        color: #94a3b8;
+        color: var(--text-secondary);
     }
 }
 
@@ -81,11 +81,11 @@
     left: 0;
     width: 480px; /* Wider for 2-column */
     max-width: calc(100vw - 40px);
-    background: rgba(15, 23, 42, 0.95);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--surface);
+    backdrop-filter: blur(24px);
+    border: var(--border);
     border-radius: 14px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-soft);
     z-index: 1000;
     display: flex;
     overflow: hidden;
@@ -94,7 +94,7 @@
 
 .parents-list {
     width: 200px;
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: var(--border);
     padding: 8px;
     max-height: 320px;
     overflow-y: auto;
@@ -117,11 +117,11 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 2px;
-    color: #94a3b8;
+    color: var(--text-secondary);
 
     &:hover, &.active {
-        background: rgba(255, 255, 255, 0.05);
-        color: #e2e8f0;
+        background: var(--background);
+        color: var(--text-primary);
     }
 
     &.active {
@@ -142,11 +142,11 @@
     cursor: pointer;
     transition: all 0.2s ease;
     margin-bottom: 2px;
-    color: #e2e8f0;
+    color: var(--text-primary);
 
     &:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: #fff;
+        background: var(--background);
+        color: var(--text-primary);
     }
 
     &.selected {

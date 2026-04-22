@@ -1,5 +1,5 @@
 .navbar-container {
-    height: 72px;
+    height: 64px;
     border-bottom: var(--border);
     background-color: var(--background);
     display: flex;
@@ -39,8 +39,8 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: var(--surface);
+            border: 1px solid var(--glass-border);
             padding: 8px 16px;
             border-radius: 12px;
             width: 320px;
@@ -142,7 +142,7 @@
             padding: 8px 16px;
             border-radius: 100px;
             background-color: rgba(var(--accent-rgb), 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--glass-border);
             cursor: pointer;
             color: var(--accent);
             font-size: 0.85rem;

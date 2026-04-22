@@ -327,7 +327,7 @@ const Project = () => {
       // 2. Ensure current activeTabId exists in the project's tabs OR is explicitly null
       const activeTabExists = currentProject.tabs.find((t) => t.id === activeTabId);
 
-      if (activeTabId !== null && !activeTabExists) {
+      if (!activeTabExists) {
         // If we were on a temp tab, maybe it got promoted to a real one with a new ID?
         if (activeTabId?.startsWith('temp_')) {
           setActiveTabId(currentProject.tabs[currentProject.tabs.length - 1]?.id || null);
@@ -346,10 +346,10 @@ const Project = () => {
   // Handle Eyedropper selection -> Open Tab Modal
   useEffect(() => {
     if (eyedropperSelection) {
-      setTabModalMode({ 
-        type: "add", 
+      setTabModalMode({
+        type: "add",
         initialName: eyedropperSelection.name,
-        assetId: eyedropperSelection.id 
+        assetId: eyedropperSelection.id
       });
       setIsTabModalOpen(true);
       // selection is cleared in handleTabModalSubmit or cancel
@@ -1069,11 +1069,10 @@ const Project = () => {
 
   const handleTabModalSubmit = (name: string) => {
     // Check for duplicate names
-    const isDuplicate = currentProject?.tabs.some(t => 
-      t.name.trim().toLowerCase() === name.trim().toLowerCase() && 
+    const isDuplicate = currentProject?.tabs.some(t =>
+      t.name.trim().toLowerCase() === name.trim().toLowerCase() &&
       t.id !== tabModalMode.tabId
     );
-
     if (isDuplicate) {
       setConfirmConfig({
         isOpen: true,
@@ -1084,6 +1083,23 @@ const Project = () => {
         type: "warning"
       });
       return;
+    }
+
+    // Check for duplicate asset linking
+    const targetAssetId = tabModalMode.assetId || eyedropperSelection?.id;
+    if (targetAssetId) {
+      const existingLinkTab = currentProject?.tabs.find(t => t.assetId === targetAssetId);
+      if (existingLinkTab && existingLinkTab.id !== tabModalMode.tabId) {
+        setConfirmConfig({
+          isOpen: true,
+          title: "Asset Already Linked",
+          message: `This asset is already linked to the "${existingLinkTab.name}" tab. An asset can only be linked to one tab.`,
+          onConfirm: () => { },
+          confirmText: "Okay",
+          type: "warning"
+        });
+        return;
+      }
     }
 
     if (tabModalMode.type === "add" && projectID) {
@@ -1148,9 +1164,8 @@ const Project = () => {
       }}
     >
       <div className={styles["project-container"]}>
-        <div className={styles["tools-container"]}>
-          
-          <div className={styles["tab-bar-wrapper"]}>
+        <div className={styles["top-hud"]}>
+          <div className={`${styles["tab-bar-wrapper"]} ${(isChartSidebarOpen || isAssetSidebarOpen) ? styles.shifted : ""}`}>
             {showLeftArrow && (
               <div className={`${styles["scroll-indicator"]} ${styles.left}`} onClick={() => scrollTabs('left')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1159,17 +1174,28 @@ const Project = () => {
               </div>
             )}
 
-            <div 
-              className={`${styles["tab-bar"]} ${showLeftArrow ? styles["has-left-arrow"] : ""} ${showRightArrow ? styles["has-right-arrow"] : ""}`} 
-              ref={tabBarRef} 
+            <div
+              className={`${styles["tab-bar"]} ${showLeftArrow ? styles["has-left-arrow"] : ""} ${showRightArrow ? styles["has-right-arrow"] : ""}`}
+              ref={tabBarRef}
               onWheel={handleTabBarWheel}
             >
               {currentProject?.tabs.map((tab) => (
                 <div
                   key={tab.id}
                   className={`${styles["tab-item"]} ${activeTabId === tab.id ? styles.active : ""}`}
-                  onClick={() => setActiveTabId(tab.id)}
-                  onDoubleClick={() => handleRenameTab(tab.id, tab.name)}
+                  style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    setActiveTabId(tab.id);
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveTabId(tab.id);
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    handleRenameTab(tab.id, tab.name);
+                  }}
                 >
                   <span className={styles["tab-name"]}>
                     {tab.assetId && <span className={styles["link-icon"]} title="Linked to 3D Asset">🔗</span>}
@@ -1186,20 +1212,6 @@ const Project = () => {
                   )}
                 </div>
               ))}
-              {/* {isEditMode && is3DMode && (
-                <button
-                  className={styles["add-tab-btn"]}
-                  onClick={() => {
-                    setIs3DMode(true);
-                    setIsEyedropperActive(true);
-                    setEyedropperSelection(null); // Clear previous if any
-                  }}
-                  title="Add Tab"
-                >
-                  <span className={styles.icon}>+</span>
-                  <span className={styles.text}>Add Tab</span>
-                </button>
-              )} */}
             </div>
 
             {showRightArrow && (
@@ -1211,136 +1223,165 @@ const Project = () => {
             )}
           </div>
 
-          <ActionCenter />
-
-          {is3DMode && (
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              accept=".dxf"
-              onChange={handleFileChange}
-            />
-          )}
-          <button
-            className={`${styles["btn"]} ${is3DMode ? styles.active : ""}`}
-            onClick={() => setIs3DMode(!is3DMode)}
+          <motion.div
+            className={styles["tools-container"]}
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: "spring", damping: 20, stiffness: 100, delay: 0.3 }}
           >
-            {is3DMode ? "Switch to 2D" : "Switch to 3D"}
-          </button>
+            <div className={styles["mode-toggle-group"]}>
+              <button
+                className={`${styles["btn"]} ${!is3DMode ? styles.active : ""}`}
+                onClick={() => setIs3DMode(false)}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <path d="M3 9h18" />
+                  <path d="M9 21V9" />
+                </svg>
+                2D Dashboard
+              </button>
+              <button
+                className={`${styles["btn"]} ${is3DMode ? styles.active : ""}`}
+                onClick={() => setIs3DMode(true)}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                  <line x1="12" y1="22.08" x2="12" y2="12" />
+                </svg>
+                3D Energy Twin
+              </button>
+            </div>
+
+            <div className={styles["divider"]} />
+
+            <ActionCenter />
+
+            {is3DMode && (
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                accept=".dxf"
+                onChange={handleFileChange}
+              />
+            )}
+          </motion.div>
         </div>
 
-        {/* Unified Sidebar Layer */}
-        {!selectedChartId && (
-          <div style={{ display: 'flex', height: '100%', pointerEvents: 'none' }}>
-            <div style={{ pointerEvents: 'auto', display: 'flex', height: '100%' }}>
-              <ChartListSidebar
-                isOpen={isChartSidebarOpen}
-              />
-              <AssetSidebar 
-                isOpen={isAssetSidebarOpen}
-              />
-            </div>
-          </div>
-        )}
+        <div className={styles["main-workspace"]}>
 
-        <AnimatePresence>
-          {(() => {
-            if (!(isEditMode || is3DMode) || !selectedChartId) return null;
-            
-            // Find the chart in either the active tab's charts or global overlay charts
-            const allAvailableCharts = [...charts, ...overlayCharts];
-            const foundChart = allAvailableCharts.find(c => c.id === selectedChartId);
-            
-            if (!foundChart) return null;
+          {/* Sidebars in flex flow */}
+          <ChartListSidebar
+            isOpen={isChartSidebarOpen}
+          />
+          <AssetSidebar
+            isOpen={isAssetSidebarOpen}
+          />
 
-            return (
+          <AnimatePresence mode="wait">
+            {!is3DMode ? (
               <motion.div
-                key="config-sidebar"
-                initial={{ x: 400, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                exit={{ x: 400, opacity: 0 }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                style={{ position: 'fixed', right: 0, top: 0, height: '100%', zIndex: 1100 }}
+                key="2d-view"
+                layout
+                initial={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                style={{
+                  flex: 1,
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
+                }}
               >
-                <ChartConfigSidebar
-                  chart={{
-                    ...foundChart,
-                    config: foundChart.config || DEFAULT_CHART_CONFIG
-                  }}
-                  onClose={() => setSelectedChartId(null)}
-                  onUpdate={handleUpdateChart}
-                />
-              </motion.div>
-            );
-          })()}
-        </AnimatePresence>
-
-        <AnimatePresence mode="wait">
-          {!is3DMode ? (
-            <motion.div
-              key="2d-view"
-              initial={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
-              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-              style={{
-                flex: 1,
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                minHeight: 0,
-              }}
-            >
-              <DroppableChartContainer
-                isEditMode={isEditMode}
-                onClick={handleDeselectAll}
-              >
-                {previewCharts.map((chart) => (
-                  <DraggableChart
-                    key={chart.id}
-                    chart={chart}
-                    isEditMode={isEditMode}
-                    onResizeStart={handleResizeStart}
-                    onDelete={handleRemoveChart}
-                    onClick={onChartClick}
-                    isSelected={selectedChartId === chart.id}
-                    disabled={
-                      resizingChartId !== null && chart.id !== resizingChartId
-                    }
-                    isResizing={resizingChartId === chart.id}
+                <DroppableChartContainer
+                  isEditMode={isEditMode}
+                  onClick={handleDeselectAll}
+                >
+                  {previewCharts.map((chart) => (
+                    <DraggableChart
+                      key={chart.id}
+                      chart={chart}
+                      isEditMode={isEditMode}
+                      onResizeStart={handleResizeStart}
+                      onDelete={handleRemoveChart}
+                      onClick={onChartClick}
+                      isSelected={selectedChartId === chart.id}
+                      disabled={
+                        resizingChartId !== null && chart.id !== resizingChartId
+                      }
+                      isResizing={resizingChartId === chart.id}
+                    />
+                  ))}
+                  {/* Spacer to provide infinite scroll buffer */}
+                  <div
+                    style={{
+                      gridRowStart: maxGridRow,
+                      gridColumn: "1 / span 12",
+                      height: "1px",
+                      pointerEvents: "none",
+                    }}
                   />
-                ))}
-                {/* Spacer to provide infinite scroll buffer */}
-                <div
-                  style={{
-                    gridRowStart: maxGridRow,
-                    gridColumn: "1 / span 12",
-                    height: "1px",
-                    pointerEvents: "none",
-                  }}
-                />
-              </DroppableChartContainer>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="3d-view"
-              initial={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
-              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-              className={styles["three-container"]}
-            >
-              <Suspense
-                fallback={
-                  <div style={{ color: "white" }}>Loading 3D Scene...</div>
-                }
+                </DroppableChartContainer>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="3d-view"
+                layout
+                initial={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                exit={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
+                transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+                className={styles["three-container"]}
+                onClick={() => setSelectedChartId(null)}
               >
-                <Project3D />
-              </Suspense>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <Suspense
+                  fallback={
+                    <div style={{ color: "white" }}>Loading 3D Scene...</div>
+                  }
+                >
+                  <Project3D />
+                </Suspense>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {(() => {
+              if (!(isEditMode || is3DMode) || !selectedChartId) return null;
+
+              // Find the chart in either the active tab's charts or global overlay charts
+              const allAvailableCharts = [...charts, ...overlayCharts];
+              const foundChart = allAvailableCharts.find(c => c.id === selectedChartId);
+
+              if (!foundChart) return null;
+
+              return (
+                <motion.div
+                  key="config-sidebar"
+                  layout
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: 320, opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                  style={{ height: '100%', zIndex: 1100, flexShrink: 0, overflow: 'hidden' }}
+                >
+                  <ChartConfigSidebar
+                    chart={{
+                      ...foundChart,
+                      config: foundChart.config || DEFAULT_CHART_CONFIG
+                    }}
+                    onClose={() => setSelectedChartId(null)}
+                    onUpdate={handleUpdateChart}
+                  />
+                </motion.div>
+              );
+            })()}
+          </AnimatePresence>
+        </div>
       </div>
 
       <DragOverlay

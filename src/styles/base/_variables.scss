@@ -3,11 +3,11 @@ $accent: #7c5dfa;
 $accent-rgb: 124, 93, 250;
 
 /* ---------- Light Theme Tokens ---------- */
-$light-background: #f4f6fb;
-$light-secondary: #edf0f7;
+$light-background: #fcfcfd; // Even softer background
+$light-secondary: #f4f6f9;
 
-$light-text-primary: #0d1b2a;
-$light-text-secondary: #5a6a7e;
+$light-text-primary: #2d3748; // Softer than slate 700 but clean
+$light-text-secondary: #718096;
 
 $light-button-primary: #7c5dfa;
 $light-button-primary-text: #ffffff;

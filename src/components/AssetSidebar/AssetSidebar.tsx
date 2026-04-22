@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useUIStore } from '@/store/useUIStore';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useParams } from 'react-router-dom';
@@ -30,9 +30,11 @@ interface AssetSidebarProps {
 const AssetSidebar = ({ isOpen: propIsOpen }: AssetSidebarProps) => {
     const { projectID } = useParams<{ projectID: string }>();
     const { addAsset } = useProjectStore();
-    const { isAssetSidebarOpen: storeIsOpen, setDraggingAsset } = useUIStore();
+    const { isAssetSidebarOpen: storeIsOpen, setDraggingAsset, setIsAssetSidebarOpen } = useUIStore();
     const isAssetSidebarOpen = propIsOpen !== undefined ? propIsOpen : storeIsOpen;
     const [searchQuery, setSearchQuery] = useState("");
+    const [userModels, setUserModels] = useState<Array<{ name: string, path: string }>>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleAddModel = (model: { name: string, path: string }) => {
         if (!projectID) return;
@@ -59,7 +61,34 @@ const AssetSidebar = ({ isOpen: propIsOpen }: AssetSidebarProps) => {
         setDraggingAsset(null);
     };
 
-    const filteredCategories = assets.map(category => ({
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // In a real app, you'd upload this to a server/S3. 
+        // Here we'll create a local URL for the session.
+        const url = URL.createObjectURL(file);
+        const newModel = {
+            name: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
+            path: url
+        };
+        
+        setUserModels(prev => [...prev, newModel]);
+        
+        // Reset input
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const combinedAssets = [
+        ...assets,
+        ...(userModels.length > 0 ? [{
+            id: 'user-uploads',
+            name: 'My Uploads',
+            models: userModels
+        }] : [])
+    ];
+
+    const filteredCategories = combinedAssets.map(category => ({
         ...category,
         models: category.models.filter(m => 
             m.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -72,14 +101,42 @@ const AssetSidebar = ({ isOpen: propIsOpen }: AssetSidebarProps) => {
             onClick={(e) => e.stopPropagation()}
         >
             <div className={styles.header}>
-                <h1>Assets</h1>
-                <div className={styles["search-box"]}>
-                    <SearchIcon />
-                    <input
-                        type="text"
-                        placeholder="Search assets..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                <div className={styles["title-row"]}>
+                    <h1>Assets</h1>
+                    <button 
+                        className={styles["close-btn"]}
+                        onClick={() => setIsAssetSidebarOpen(false)}
+                    >✕</button>
+                </div>
+                
+                <div className={styles["action-row"]}>
+                    <div className={styles["search-box"]}>
+                        <SearchIcon />
+                        <input
+                            type="text"
+                            placeholder="Search assets..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    
+                    <button 
+                        className={styles["upload-btn"]}
+                        onClick={() => fileInputRef.current?.click()}
+                        title="Upload Custom Asset (.glb)"
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                    </button>
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        style={{ display: 'none' }} 
+                        accept=".glb,.gltf"
+                        onChange={handleFileUpload}
                     />
                 </div>
             </div>
