@@ -53,13 +53,6 @@
         margin-bottom: 2.5rem;
 
         .title {
-            h1 {
-                font-size: 1.75rem;
-                font-weight: 600;
-                color: var(--text-primary);
-                margin-bottom: 0.25rem;
-            }
-
             .subheader {
                 color: var(--text-secondary);
                 font-size: 0.875rem;
@@ -83,6 +76,7 @@
                 }
             }
         }
+
     }
 
     .defaultIndicator {

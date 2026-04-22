@@ -182,6 +182,7 @@ const Project = () => {
     hoveredAsset,
     isEyedropperActive, setIsEyedropperActive,
     selectedChartId, setSelectedChartId,
+    setSelectedModelId,
     overlayCharts
   } = useUIStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -323,10 +324,10 @@ const Project = () => {
         return;
       }
 
-      // 2. Ensure current activeTabId exists in the project's tabs
+      // 2. Ensure current activeTabId exists in the project's tabs OR is explicitly null
       const activeTabExists = currentProject.tabs.find((t) => t.id === activeTabId);
 
-      if (!activeTabExists) {
+      if (activeTabId !== null && !activeTabExists) {
         // If we were on a temp tab, maybe it got promoted to a real one with a new ID?
         if (activeTabId?.startsWith('temp_')) {
           setActiveTabId(currentProject.tabs[currentProject.tabs.length - 1]?.id || null);
@@ -408,7 +409,9 @@ const Project = () => {
     setIsAssetSidebarOpen(false);
     setIsEyedropperActive(false);
     setEyedropperSelection(null);
-  }, [setSelectedChartId, setIsChartSidebarOpen, setIsAssetSidebarOpen, setIsEyedropperActive, setEyedropperSelection]);
+    setSelectedModelId(null);
+    setActiveTabId(null);
+  }, [setSelectedChartId, setIsChartSidebarOpen, setIsAssetSidebarOpen, setIsEyedropperActive, setEyedropperSelection, setSelectedModelId, setActiveTabId]);
 
   const [gridMetrics, setGridMetrics] = useState<{
     colWidth: number;
@@ -1327,7 +1330,6 @@ const Project = () => {
               exit={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
               transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
               className={styles["three-container"]}
-              onClick={handleDeselectAll}
             >
               <Suspense
                 fallback={

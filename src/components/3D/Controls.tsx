@@ -11,9 +11,11 @@ const Controls = forwardRef<CameraControls, { enabled?: boolean }>(({ enabled = 
       smoothTime={0.3}
 
       // Infinite Zoom & Flexibility like Blender
-      minDistance={1}
+      // Visual Constraints
+      minDistance={5}
       maxDistance={150}
-      minZoom={10}
+      minZoom={5}
+      maxZoom={100}
       minPolarAngle={0}
       maxPolarAngle={Math.PI / 2.1}
       minAzimuthAngle={-Infinity}

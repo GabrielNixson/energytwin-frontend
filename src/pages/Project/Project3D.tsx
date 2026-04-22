@@ -365,6 +365,7 @@ const Project3D = () => {
         overlayCharts,
         draggingChartPreview,
         activeTabId,
+        setActiveTabId,
         isEyedropperActive,
         setIsEyedropperActive,
         setEyedropperSelection,
@@ -377,7 +378,7 @@ const Project3D = () => {
     // Get current project and asset data
     const currentProject = projects.find(p => p.id === projectID);
     const placedModels = currentProject?.assets || [];
-    const activeTab = currentProject?.tabs.find(t => t.id === activeTabId) || currentProject?.tabs[0];
+    const activeTab = currentProject?.tabs.find(t => t.id === activeTabId);
     const projectCharts = activeTab?.charts || [];
 
     // Filter overlayCharts to only show those NOT in projectCharts (avoiding double rendering)
@@ -707,6 +708,11 @@ const Project3D = () => {
                         precision: "highp",
                     }}
                     onPointerMissed={() => {
+                        // Prevent deselection if we were just transforming something or relocating
+                        if (isTransforming || (isRelocating && relocatingAssetId)) {
+                             return;
+                        }
+
                         if (isRelocating && relocatingAssetId && projectID) {
                             updateAsset(projectID, relocatingAssetId, {
                                 position: [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z],
@@ -718,6 +724,7 @@ const Project3D = () => {
                         }
                         setSelectedModelId(null);
                         setSelectedObject(null);
+                        setActiveTabId(null);
                     }}
                 >
                     <ShortcutManager
@@ -813,6 +820,11 @@ const Project3D = () => {
                                         }
                                         setSelectedModelId(model.id);
                                         setSelectedObject(obj);
+
+                                        // Automatically switch to the linked tab if it exists
+                                        if (linkedTab) {
+                                            setActiveTabId(linkedTab.id);
+                                        }
                                     }}
                                 />
                             );
@@ -879,7 +891,8 @@ const Project3D = () => {
                                         rotation: [selectedObject.rotation.x, selectedObject.rotation.y, selectedObject.rotation.z]
                                     });
                                 }
-                                setIsTransforming(false);
+                                // Small delay to prevent onPointerMissed from firing immediately
+                                setTimeout(() => setIsTransforming(false), 100);
                             }}
                         />)}
 
