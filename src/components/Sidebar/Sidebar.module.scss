@@ -74,6 +74,7 @@
 
     color: var(--text-secondary);
     border-radius: 6px;
+    border: 1px solid transparent;
 
     cursor: pointer;
     text-transform: capitalize;
@@ -84,7 +85,21 @@
 
     &.selected {
       color: var(--accent);
-  background: var(--secondary);
+      background: var(--accent-hover);
+      border: 1px solid rgba(var(--accent-rgb), 0.2);
+
+      &::before {
+        content: "";
+        position: absolute;
+        left: -13px;
+        /* -12px padding + 1px border */
+        top: 50%;
+        transform: translateY(-50%);
+        height: 60%;
+        width: 4px;
+        background: var(--accent);
+        border-radius: 0 4px 4px 0;
+      }
     }
 
     .icon {
@@ -102,7 +117,7 @@
     }
 
     &:hover {
-  background: var(--secondary);
+      background: var(--secondary);
     }
   }
 }

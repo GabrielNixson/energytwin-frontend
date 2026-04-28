@@ -15,7 +15,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 24px 40px;
-    z-index: 1200;
+    z-index: 1;
     background: transparent;
     pointer-events: none;
 
@@ -35,9 +35,13 @@
     box-shadow: var(--shadow-soft);
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    max-width: calc(100% - 400px);
+    max-width: 600px;
     position: relative;
     pointer-events: auto;
+
+    &.shifted {
+        margin-left: 260px;
+    }
 }
 
 .tab-bar {

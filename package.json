@@ -1,9 +1,9 @@
 {
-  "name": "energymodule",
+  "name": "energyTwin",
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "description": "Remote module for energymodule",
+  "description": "Remote module for energyTwin",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

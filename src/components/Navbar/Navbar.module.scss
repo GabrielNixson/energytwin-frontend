@@ -6,10 +6,10 @@
     justify-content: space-between;
     align-items: center;
     padding: 0 40px;
-    backdrop-filter: blur(20px);
+    // backdrop-filter: blur(20px);
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 2;
 
     .left {
         display: flex;
@@ -152,7 +152,26 @@
             span {
                 text-transform: capitalize;
             }
+
+            &.refreshing {
+                .icon {
+                    animation: spin 1s linear infinite;
+                }
+
+                pointer-events: none;
+                opacity: 0.8;
+            }
         }
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
     }
 }
 

@@ -119,6 +119,18 @@ const AIChat = ({ projectId, tabId }: AIChatProps) => {
         setMessage("");
     };
 
+    const handleStop = () => {
+        chatSocket.emit("stop", { chatId });
+        setIsLoading(false);
+        setChatHistory(prev => {
+            const lastMessage = prev[prev.length - 1];
+            if (lastMessage && lastMessage.role === 'ai' && lastMessage.isStreaming) {
+                return [...prev.slice(0, -1), { ...lastMessage, isStreaming: false }];
+            }
+            return prev;
+        });
+    };
+
     return (
         <div className={styles["AIChat-container"]}>
             <AnimatePresence>
@@ -151,32 +163,52 @@ const AIChat = ({ projectId, tabId }: AIChatProps) => {
                                     </div>
                                 </div>
                             ))}
+                            {isLoading && !chatHistory[chatHistory.length - 1]?.isStreaming && (
+                                <div className={`${styles["message"]} ${styles.thinking}`}>
+                                    <div className={styles.bubble}>
+                                        <div className={styles.dot} />
+                                        <div className={styles.dot} />
+                                        <div className={styles.dot} />
+                                    </div>
+                                </div>
+                            )}
                             <div ref={messagesEndRef} />
                         </div>
 
                         <div className={styles["input-area"]}>
                             <input 
                                 type="text" 
-                                placeholder={isLoading ? "AI is thinking..." : "Ask Plixy..."}
+                                placeholder={isLoading ? "Plixy is thinking..." : "Ask Plixy..."}
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                                disabled={isLoading}
                             />
-                            <button 
-                                className={`${styles["send-btn"]} ${isLoading ? styles.loading : ""}`} 
-                                onClick={handleSend}
-                                disabled={isLoading || !message.trim()}
-                            >
-                                <span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="22" y1="2" x2="11" y2="13"></line>
-                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                            </svg></span>
-                            </button>
+                            {isLoading ? (
+                                <button 
+                                    className={styles["stop-btn"]} 
+                                    onClick={handleStop}
+                                    title="Stop generation"
+                                >
+                                    <div className={styles["stop-icon"]} />
+                                </button>
+                            ) : (
+                                <button 
+                                    className={styles["send-btn"]} 
+                                    onClick={handleSend}
+                                    disabled={!message.trim()}
+                                    title="Send message"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                    </svg>
+                                </button>
+                            )}
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
+
 
             <motion.div 
                 className={styles["chat-btn"]} 

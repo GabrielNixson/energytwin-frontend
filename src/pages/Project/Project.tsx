@@ -315,20 +315,28 @@ const Project = () => {
     }
   }, [projectID, getProject, getAssets]);
 
-  // Ensure activeTabId is valid and handle ID transitions (temp_ -> real_id)
+  const lastProjectId = useRef<string | null>(null);
+
   useEffect(() => {
     if (currentProject) {
-      // 1. If project has NO tabs, ensure activeTabId is null
+      // 1. Handle project switching: auto-select first tab if none active
+      if (projectID !== lastProjectId.current) {
+        if (!activeTabId && currentProject.tabs.length > 0) {
+          setActiveTabId(currentProject.tabs[0].id);
+        }
+        lastProjectId.current = projectID || null;
+      }
+
+      // 2. Handle tab deletion or stale IDs
       if (currentProject.tabs.length === 0) {
-        setActiveTabId(null);
+        if (activeTabId !== null) setActiveTabId(null);
         return;
       }
 
-      // 2. Ensure current activeTabId exists in the project's tabs OR is explicitly null
       const activeTabExists = currentProject.tabs.find((t) => t.id === activeTabId);
-
-      if (!activeTabExists) {
-        // If we were on a temp tab, maybe it got promoted to a real one with a new ID?
+      
+      if (!activeTabExists && activeTabId !== null) {
+        // If the previously active tab was removed, select the last temp tab or the first available tab
         if (activeTabId?.startsWith('temp_')) {
           setActiveTabId(currentProject.tabs[currentProject.tabs.length - 1]?.id || null);
         } else {
@@ -336,7 +344,8 @@ const Project = () => {
         }
       }
     }
-  }, [currentProject?.tabs, activeTabId, projectID, addTab]);
+  }, [currentProject?.tabs, activeTabId, projectID]);
+
 
   // Collapse sidebar automatically when entering a project
   useEffect(() => {
@@ -1165,7 +1174,11 @@ const Project = () => {
     >
       <div className={styles["project-container"]}>
         <div className={styles["top-hud"]}>
-          <div className={`${styles["tab-bar-wrapper"]} ${(isChartSidebarOpen || isAssetSidebarOpen) ? styles.shifted : ""}`}>
+          <div 
+            className={`${styles["tab-bar-wrapper"]} ${(isChartSidebarOpen || isAssetSidebarOpen) ? styles.shifted : ""}`}
+            onClick={handleDeselectAll}
+          >
+
             {showLeftArrow && (
               <div className={`${styles["scroll-indicator"]} ${styles.left}`} onClick={() => scrollTabs('left')}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1184,6 +1197,7 @@ const Project = () => {
                   key={tab.id}
                   className={`${styles["tab-item"]} ${activeTabId === tab.id ? styles.active : ""}`}
                   style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                  title={tab.name}
                   onPointerDown={(e) => {
                     e.stopPropagation();
                     setActiveTabId(tab.id);
@@ -1336,8 +1350,9 @@ const Project = () => {
                 exit={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
                 transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
                 className={styles["three-container"]}
-                onClick={() => setSelectedChartId(null)}
+                onClick={handleDeselectAll}
               >
+
                 <Suspense
                   fallback={
                     <div style={{ color: "white" }}>Loading 3D Scene...</div>

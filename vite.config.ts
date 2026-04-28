@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     federation({
-      name: "energymodule",
+      name: "energyTwin",
       filename: "remoteEntry.js",
 
       exposes: {
@@ -77,5 +77,5 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
     cors: true,
   },
-  
+
 }));

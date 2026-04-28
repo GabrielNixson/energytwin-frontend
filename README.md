@@ -1,4 +1,4 @@
-# Energymodule
+# energyTwin
 
 Remote Module Federation application for the Unified Automation Portal.
 
@@ -50,7 +50,7 @@ http://localhost:5002/assets/remoteEntry.js
 ## 🏗️ Project Structure
 
 ```
-energymodule/
+energyTwin/
 ├── src/
 │   ├── assets/         # Images, icons, fonts
 │   │
@@ -92,5 +92,5 @@ This project uses SCSS with a modular architecture and CSS Bundling for Module F
 ## 📝 Notes
 
 - Port: 5002
-- Module Name: energymodule
+- Module Name: energyTwin
 - Exposed Components: ./App

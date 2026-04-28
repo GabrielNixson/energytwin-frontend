@@ -73,20 +73,20 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
                 }, 50);
 
                 if (!itemRef.current || !constraintsRef.current) return;
-                
+
                 // Precise absolute coordinate detection via Ref
                 const rect = itemRef.current.getBoundingClientRect();
                 const parentRect = constraintsRef.current.getBoundingClientRect();
-                
+
                 // Final visual position relative to parent
                 const visualX = rect.left - parentRect.left;
                 const visualY = rect.top - parentRect.top;
-                
+
                 const containerW = parentRect.width;
                 const containerH = parentRect.height;
 
                 const finalPos = findSafePosition(id, visualX, visualY, w, h, containerW, containerH);
-                
+
                 if (onUpdate) {
                     onUpdate({ ...finalPos, w, h });
                 } else {
@@ -100,7 +100,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
                 position: 'absolute',
                 width: localW,
                 height: localH,
-                zIndex: 1000, 
+                zIndex: 1000,
                 cursor: !isEditMode ? 'default' : (isResizing ? 'nwse-resize' : 'grab'),
                 pointerEvents: 'auto',
             }}
@@ -174,7 +174,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
                             e.preventDefault();
                             (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
                             setIsResizing(true);
-                            
+
                             const startW = localW;
                             const startH = localH;
                             const startX = e.clientX;
@@ -187,7 +187,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
                                 moveEvent.stopPropagation();
                                 currentW = Math.max(300, startW + (moveEvent.clientX - startX));
                                 currentH = Math.max(250, startH + (moveEvent.clientY - startY));
-                                
+
                                 // Use requestAnimationFrame for smoother UI updates
                                 requestAnimationFrame(() => {
                                     setLocalW(currentW);
@@ -200,7 +200,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
                                 (e.currentTarget as HTMLDivElement).releasePointerCapture(upEvent.pointerId);
                                 window.removeEventListener('pointermove', onMove);
                                 window.removeEventListener('pointerup', onUp);
-                                
+
                                 if (onUpdate) {
                                     onUpdate({ x, y, w: currentW, h: currentH });
                                 } else {
