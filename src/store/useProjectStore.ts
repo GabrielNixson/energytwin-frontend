@@ -330,11 +330,31 @@ export const useProjectStore = create<ProjectStore>()(
                 socket.emit('tab:delete', { projectId, tabId });
             },
 
-            updateTabName: (_projectId, tabId, name) => {
+            updateTabName: (projectId, tabId, name) => {
+                set((state) => ({
+                    projects: state.projects.map(p =>
+                        p.id === projectId ? {
+                            ...p,
+                            tabs: p.tabs.map(tab =>
+                                tab.id === tabId ? { ...tab, name } : tab
+                            )
+                        } : p
+                    )
+                }));
                 socket.emit('tab:update', { tabId, data: { name } });
             },
 
-            updateTabAssetId: (_projectId, tabId, assetId) => {
+            updateTabAssetId: (projectId, tabId, assetId) => {
+                set((state) => ({
+                    projects: state.projects.map(p =>
+                        p.id === projectId ? {
+                            ...p,
+                            tabs: p.tabs.map(tab =>
+                                tab.id === tabId ? { ...tab, assetId } : tab
+                            )
+                        } : p
+                    )
+                }));
                 socket.emit('tab:update', { tabId, data: { assetId } });
             },
 

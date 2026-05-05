@@ -171,7 +171,7 @@ const Project = () => {
   const { projects, updateProjectCharts, addChart, addTab, removeTab, updateTabName, getProject, removeChart, getAssets } =
     useProjectStore();
   const {
-    isEditMode,
+    isEditMode, setIsEditMode,
     is3DMode, setIs3DMode,
     setDxfData, setDraggingChartPreview, draggingChartPreview,
     isChartSidebarOpen, setIsChartSidebarOpen,
@@ -1353,22 +1353,56 @@ const Project = () => {
                   isEditMode={isEditMode}
                   onClick={handleDeselectAll}
                 >
-                  {previewCharts.map((chart) => (
-                    <DraggableChart
-                      key={chart.id}
-                      chart={chart}
-                      isEditMode={isEditMode}
-                      onResizeStart={handleResizeStart}
-                      onDelete={handleRemoveChart}
-                      onSettingsClick={onChartClick}
-                      onContextMenu={handleChartContextMenu}
-                      isSelected={selectedChartId === chart.id}
-                      disabled={
-                        resizingChartId !== null && chart.id !== resizingChartId
-                      }
-                      isResizing={resizingChartId === chart.id}
-                    />
-                  ))}
+                  {previewCharts.length === 0 ? (
+                    <div className={styles["empty-state"]}>
+                      <div className={styles["empty-icon"]}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10" />
+                          <path d="M3 10h18" />
+                          <path d="M12 18h9" />
+                          <path d="M12 14h9" />
+                          <path d="M16 22l5-5" />
+                          <path d="M21 22l-5-5" />
+                        </svg>
+                      </div>
+                      <h3>No widgets yet</h3>
+                      <p>
+                        Your dashboard is looking a bit empty. Start by switching to the 3D Energy Twin to add and position your widgets.
+                      </p>
+                      <button 
+                        className={styles["add-widget-btn"]}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIs3DMode(true);
+                          setIsChartSidebarOpen(true);
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                          <line x1="12" y1="22.08" x2="12" y2="12" />
+                        </svg>
+                        Switch to 3D Energy Twin
+                      </button>
+                    </div>
+                  ) : (
+                    previewCharts.map((chart) => (
+                      <DraggableChart
+                        key={chart.id}
+                        chart={chart}
+                        isEditMode={isEditMode}
+                        onResizeStart={handleResizeStart}
+                        onDelete={handleRemoveChart}
+                        onSettingsClick={onChartClick}
+                        onContextMenu={handleChartContextMenu}
+                        isSelected={selectedChartId === chart.id}
+                        disabled={
+                          resizingChartId !== null && chart.id !== resizingChartId
+                        }
+                        isResizing={resizingChartId === chart.id}
+                      />
+                    ))
+                  )}
                   {/* Spacer to provide infinite scroll buffer */}
                   <div
                     style={{
