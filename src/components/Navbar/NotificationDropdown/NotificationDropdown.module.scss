@@ -1,7 +1,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 4999;
+  z-index: 19999;
   background: transparent;
 }
 
@@ -16,7 +16,7 @@
   border: 1px solid var(--glass-border);
   border-radius: 16px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-  z-index: 5000;
+  z-index: 20000;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -70,7 +70,7 @@
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: transparent;
   }
@@ -92,19 +92,19 @@
 
   &:hover {
     background: rgba(255, 255, 255, 0.03);
-    
+
     .icon {
       transform: scale(1.05);
     }
   }
 
-    &.unread {
+  &.unread {
     background: rgba(var(--accent-rgb), 0.03);
 
     &:hover {
       background: rgba(var(--accent-rgb), 0.06);
     }
-    
+
     &::before {
       content: "";
       position: absolute;

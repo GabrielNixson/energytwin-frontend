@@ -4,7 +4,7 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 2000;
+    z-index: 30000;
 }
 
 .menu {
@@ -22,7 +22,9 @@
     flex-direction: column;
     gap: 1px;
     animation: menuFadeIn 0.15s ease-out;
-    transform-origin: top left;
+    transform: translateY(-100%);
+    transform-origin: bottom left;
+    margin-top: -10px;
 }
 
 @keyframes menuFadeIn {

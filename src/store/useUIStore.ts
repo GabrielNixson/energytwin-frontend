@@ -25,10 +25,10 @@ interface UIStore {
   setDraggingAsset: (asset: { name: string, path: string, position: [number, number, number] } | null) => void;
   selectedModelId: string | null;
   setSelectedModelId: (id: string | null) => void;
-  overlayCharts: Array<{ id: string, type: string, title: string, x: number, y: number, w: number, h: number, config?: any }>;
+  overlayCharts: Array<{ id: string, type: string, title: string, x: number, y: number, w: number, h: number, anchorX?: 'left' | 'right', anchorY?: 'top' | 'bottom', config?: any }>;
   addOverlayChart: (chart: { type: string, title: string, x: number, y: number, w: number, h: number, config?: any }) => void;
   removeOverlayChart: (id: string) => void;
-  updateOverlayChart: (id: string, updates: Partial<{ x: number, y: number, w: number, h: number, config: any }>) => void;
+  updateOverlayChart: (id: string, updates: Partial<{ x: number, y: number, w: number, h: number, anchorX: 'left' | 'right', anchorY: 'top' | 'bottom', config: any }>) => void;
   bringOverlayToFront: (id: string) => void;
   findSafePosition: (id: string | null, x: number, y: number, w: number, h: number, containerW: number, containerH: number, externalCharts?: any[]) => { x: number, y: number };
   draggingChartPreview: { type: string, title: string, x: number, y: number } | null;
@@ -149,12 +149,16 @@ export const useUIStore = create<UIStore>()(
         const charts = [...state.overlayCharts.filter(c => c.id !== id), ...(externalCharts || [])];
 
         const checkOverlap = (nx: number, ny: number) => {
-          return charts.some(c => (
-            nx < (c.x3d || c.x) + (c.w3d || c.w) &&
-            nx + w > (c.x3d || c.x) &&
-            ny < (c.y3d || c.y) + (c.h3d || c.h) &&
-            ny + h > (c.y3d || c.y)
-          ));
+          return charts.some(c => {
+            const visualX = c.anchorX === 'right' ? (containerW - c.x - c.w) : c.x;
+            const visualY = c.anchorY === 'bottom' ? (containerH - c.y - c.h) : c.y;
+            return (
+              nx < visualX + c.w &&
+              nx + w > visualX &&
+              ny < visualY + c.h &&
+              ny + h > visualY
+            );
+          });
         };
 
         let attempts = 0;

@@ -52,7 +52,20 @@ export default defineConfig(({ mode }) => ({
     port: 5003,
     strictPort: true,
     cors: true,
-    open: true
+    open: true,
+    proxy: {
+      '/otlp': {
+        target: 'http://185.100.212.76:4318',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/otlp/, ''),
+      },
+      '/sentry-proxy': {
+        target: 'https://sentry.aalai.ai',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/sentry-proxy/, ''),
+      },
+    }
   },
 
   css: {

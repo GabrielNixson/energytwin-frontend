@@ -66,12 +66,13 @@ const DraggableChart = ({
   isEditMode: boolean;
   onResizeStart: (id: string, e: React.MouseEvent) => void;
   onDelete: (id: string) => void;
-  onClick?: (e: React.MouseEvent, id: string) => void;
+  onSettingsClick?: (e: React.MouseEvent, id: string) => void;
   disabled?: boolean;
   isGhost?: boolean;
   isHidden?: boolean;
   isResizing?: boolean;
   isSelected?: boolean;
+  onContextMenu?: (e: React.MouseEvent, id: string) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -109,18 +110,14 @@ const DraggableChart = ({
       className={`${styles["chart-item"]} ${chart.isGhost ? styles.ghost : ""} ${isResizing ? styles.resizing : ""}`}
       {...attributes}
       {...dragListeners}
-      onMouseDown={(e) => {
-        dragDownPos.current = { x: e.clientX, y: e.clientY };
-      }}
       onClick={(e) => {
-        e.stopPropagation(); // Prevent bubbling to container background click
-        const dist = Math.sqrt(
-          Math.pow(e.clientX - dragDownPos.current.x, 2) +
-          Math.pow(e.clientY - dragDownPos.current.y, 2)
-        );
-        if (dist < 15) { // Only select if it was a real click, not a drag (15px threshold)
-          onClick?.(e, chart.id);
-        }
+        e.stopPropagation();
+      }}
+      onContextMenu={(e) => {
+        if (!isEditMode) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onContextMenu?.(e, chart.id);
       }}
     >
       <Chart
@@ -134,6 +131,10 @@ const DraggableChart = ({
           onResizeStart(chart.id, e);
         }}
         onDelete={() => onDelete(chart.id)}
+        onSettingsClick={() => {
+          const e = { stopPropagation: () => { } } as any; // Mock event for compatibility if needed
+          onSettingsClick?.(e, chart.id);
+        }}
         isEditMode={isEditMode}
       />
     </div>
@@ -202,13 +203,28 @@ const Project = () => {
     return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
   }, [isEyedropperActive]);
 
+  // Scroll to active tab when it changes
+  useEffect(() => {
+    if (activeTabId && tabBarRef.current) {
+      // Small delay to ensure the DOM is updated with the active class
+      const timer = setTimeout(() => {
+        const activeTabElement = tabBarRef.current?.querySelector(`.${styles.active}`);
+        if (activeTabElement) {
+          activeTabElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'center'
+          });
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTabId]);
+
   const [isTabModalOpen, setIsTabModalOpen] = useState(false);
-  const [tabModalMode, setTabModalMode] = useState<{
-    type: "add" | "rename";
-    tabId?: string;
-    initialName?: string;
-    assetId?: string;
-  }>({ type: "add" });
+  const [tabModalMode, setTabModalMode] = useState<{ type: 'add' | 'rename', tabId?: string, initialName?: string }>({ type: 'add' });
+  const [chartContextMenu, setChartContextMenu] = useState<{ x: number, y: number, id: string } | null>(null);
+
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -334,7 +350,7 @@ const Project = () => {
       }
 
       const activeTabExists = currentProject.tabs.find((t) => t.id === activeTabId);
-      
+
       if (!activeTabExists && activeTabId !== null) {
         // If the previously active tab was removed, select the last temp tab or the first available tab
         if (activeTabId?.startsWith('temp_')) {
@@ -412,14 +428,16 @@ const Project = () => {
   // Resizing state
   const [resizingChartId, setResizingChartId] = useState<string | null>(null);
 
-  const handleDeselectAll = useCallback(() => {
+  const handleDeselectAll = useCallback((excludeTab = false) => {
     setSelectedChartId(null);
     setIsChartSidebarOpen(false);
     setIsAssetSidebarOpen(false);
     setIsEyedropperActive(false);
     setEyedropperSelection(null);
     setSelectedModelId(null);
-    setActiveTabId(null);
+    if (!excludeTab) {
+      setActiveTabId(null);
+    }
   }, [setSelectedChartId, setIsChartSidebarOpen, setIsAssetSidebarOpen, setIsEyedropperActive, setEyedropperSelection, setSelectedModelId, setActiveTabId]);
 
   const [gridMetrics, setGridMetrics] = useState<{
@@ -847,41 +865,31 @@ const Project = () => {
         const chartType = active.data.current?.type;
         const label = active.data.current?.label;
 
-        const rect = event.over?.rect;
-        const fallbackContainer = document.querySelector('[class*="three-container"]') as HTMLElement | null;
-        const fallbackRect = fallbackContainer?.getBoundingClientRect();
+        const container = document.getElementById("3d-overlay-area") || document.querySelector('[class*="three-container"]');
+        const rect = container?.getBoundingClientRect();
 
-        let relativeX = draggingChartPreview?.x ?? 0;
-        let relativeY = draggingChartPreview?.y ?? 0;
-        let containerW = rect?.width ?? fallbackRect?.width ?? window.innerWidth;
-        let containerH = rect?.height ?? fallbackRect?.height ?? window.innerHeight;
+        let relativeX = 0;
+        let relativeY = 0;
 
-        if (event.activatorEvent) {
+        if (dragPosition && rect) {
+          relativeX = dragPosition.x - rect.left;
+          relativeY = dragPosition.y - rect.top;
+        } else if (event.activatorEvent && rect) {
           const e = event.activatorEvent as MouseEvent;
-          const absoluteX = e.clientX + event.delta.x;
-          const absoluteY = e.clientY + event.delta.y;
-
-          if (rect) {
-            // Relative to the 3D overlay container
-            relativeX = absoluteX - rect.left;
-            relativeY = absoluteY - rect.top;
-          } else if (fallbackRect) {
-            relativeX = absoluteX - fallbackRect.left;
-            relativeY = absoluteY - fallbackRect.top;
-          }
+          relativeX = (e.clientX + event.delta.x) - rect.left;
+          relativeY = (e.clientY + event.delta.y) - rect.top;
         }
+        
+        const containerW = rect?.width ?? window.innerWidth;
+        const containerH = rect?.height ?? window.innerHeight;
 
         const targetTab = currentProject?.tabs.find((t) => t.id === resolvedActiveTabId);
         const currentChartsList = targetTab?.charts || [];
 
-        const safePos = findSafePosition(
-          null,
-          relativeX - 250,
-          relativeY - 175,
-          500, 350,
-          containerW, containerH,
-          currentChartsList // Pass existing charts to avoid overlap
-        );
+        const safePos = {
+          x: relativeX,
+          y: relativeY
+        };
 
         // Find a free spot in a 3-column-wide 2D grid (4 span each)
         // Use activeTab.charts for the latest source of truth to avoid stale closures
@@ -910,6 +918,14 @@ const Project = () => {
 
         const spot = findBetterSpot();
 
+        // Calculate anchor based on viewport quadrants
+        const anchorX = safePos.x > (containerW / 2) ? 'right' : 'left';
+        const anchorY = safePos.y > (containerH / 2) ? 'bottom' : 'top';
+
+        // Calculate relative position to anchor
+        const x3d = anchorX === 'right' ? (containerW - safePos.x - 500) : safePos.x;
+        const y3d = anchorY === 'bottom' ? (containerH - safePos.y - 350) : safePos.y;
+
         const newChart: ChartData = {
           id: `chart-${Date.now()}`,
           type: chartType,
@@ -918,10 +934,12 @@ const Project = () => {
           y: spot.y,
           w: 4,
           h: 2,
-          x3d: safePos.x,
-          y3d: safePos.y,
+          x3d,
+          y3d,
           w3d: 500,
           h3d: 350,
+          anchorX,
+          anchorY,
           config: DEFAULT_CHART_CONFIG
         };
 
@@ -1063,10 +1081,18 @@ const Project = () => {
         setResizingChartId(null);
         initialResizeData.current = null;
         handleDeselectAll();
+        setChartContextMenu(null);
       }
     };
+    const handleClick = () => {
+      setChartContextMenu(null);
+    };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("mousedown", handleClick);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("mousedown", handleClick);
+    };
   }, [handleDeselectAll]);
 
   const onChartClick = (e: React.MouseEvent, id: string) => {
@@ -1075,6 +1101,12 @@ const Project = () => {
     setSelectedChartId(id);
   };
 
+
+  const handleChartContextMenu = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setChartContextMenu({ x: e.clientX, y: e.clientY, id });
+  };
 
   const handleTabModalSubmit = (name: string) => {
     // Check for duplicate names
@@ -1159,132 +1191,24 @@ const Project = () => {
     return isEditMode ? Math.max(lowestPoint + 20, 40) : lowestPoint + 2;
   }, [previewCharts, isEditMode]);
 
+  const isConfigOpen = (isEditMode || is3DMode) && !!selectedChartId;
+
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragMove={handleDragMove}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
-      autoScroll={{
-        acceleration: 10,
-        threshold: { x: 100, y: 100 },
-      }}
-    >
-      <div className={styles["project-container"]}>
-        <div className={styles["top-hud"]}>
-          <div 
-            className={`${styles["tab-bar-wrapper"]} ${(isChartSidebarOpen || isAssetSidebarOpen) ? styles.shifted : ""}`}
-            onClick={handleDeselectAll}
-          >
+    <div className={styles["project-container"]}>
 
-            {showLeftArrow && (
-              <div className={`${styles["scroll-indicator"]} ${styles.left}`} onClick={() => scrollTabs('left')}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m15 18-6-6 6-6" />
-                </svg>
-              </div>
-            )}
-
-            <div
-              className={`${styles["tab-bar"]} ${showLeftArrow ? styles["has-left-arrow"] : ""} ${showRightArrow ? styles["has-right-arrow"] : ""}`}
-              ref={tabBarRef}
-              onWheel={handleTabBarWheel}
-            >
-              {currentProject?.tabs.map((tab) => (
-                <div
-                  key={tab.id}
-                  className={`${styles["tab-item"]} ${activeTabId === tab.id ? styles.active : ""}`}
-                  style={{ pointerEvents: 'auto', cursor: 'pointer' }}
-                  title={tab.name}
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    setActiveTabId(tab.id);
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveTabId(tab.id);
-                  }}
-                  onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    handleRenameTab(tab.id, tab.name);
-                  }}
-                >
-                  <span className={styles["tab-name"]}>
-                    {tab.assetId && <span className={styles["link-icon"]} title="Linked to 3D Asset">🔗</span>}
-                    {tab.name}
-                  </span>
-                  {isEditMode && currentProject?.tabs.length > 1 && (
-                    <button
-                      className={styles["remove-tab-btn"]}
-                      onClick={(e) => handleRemoveTab(e, tab.id)}
-                      title="Delete Tab"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {showRightArrow && (
-              <div className={`${styles["scroll-indicator"]} ${styles.right}`} onClick={() => scrollTabs('right')}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
-              </div>
-            )}
-          </div>
-
-          <motion.div
-            className={styles["tools-container"]}
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ type: "spring", damping: 20, stiffness: 100, delay: 0.3 }}
-          >
-            <div className={styles["mode-toggle-group"]}>
-              <button
-                className={`${styles["btn"]} ${!is3DMode ? styles.active : ""}`}
-                onClick={() => setIs3DMode(false)}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <path d="M3 9h18" />
-                  <path d="M9 21V9" />
-                </svg>
-                2D Dashboard
-              </button>
-              <button
-                className={`${styles["btn"]} ${is3DMode ? styles.active : ""}`}
-                onClick={() => setIs3DMode(true)}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                  <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                  <line x1="12" y1="22.08" x2="12" y2="12" />
-                </svg>
-                3D Energy Twin
-              </button>
-            </div>
-
-            <div className={styles["divider"]} />
-
-            <ActionCenter />
-
-            {is3DMode && (
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: "none" }}
-                accept=".dxf"
-                onChange={handleFileChange}
-              />
-            )}
-          </motion.div>
-        </div>
-
-        <div className={styles["main-workspace"]}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+        autoScroll={{
+          acceleration: 10,
+          threshold: { x: 100, y: 100 },
+        }}
+      >
+        <div className={`${styles["main-workspace"]} ${isConfigOpen ? styles["is-config-open"] : ""}`}>
 
           {/* Sidebars in flex flow */}
           <ChartListSidebar
@@ -1293,6 +1217,120 @@ const Project = () => {
           <AssetSidebar
             isOpen={isAssetSidebarOpen}
           />
+
+          <div className={styles["content-area"]}>
+            <div className={`${styles["top-hud"]} ${isConfigOpen ? styles["is-config-open"] : ""}`}>
+              <div
+                className={styles["tab-bar-wrapper"]}
+                onClick={() => handleDeselectAll()}
+              >
+
+                {showLeftArrow && (
+                  <div className={`${styles["scroll-indicator"]} ${styles.left}`} onClick={() => scrollTabs('left')}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m15 18-6-6 6-6" />
+                    </svg>
+                  </div>
+                )}
+
+                <div
+                  className={`${styles["tab-bar"]} ${showLeftArrow ? styles["has-left-arrow"] : ""} ${showRightArrow ? styles["has-right-arrow"] : ""}`}
+                  ref={tabBarRef}
+                  onWheel={handleTabBarWheel}
+                  onClick={() => handleDeselectAll()}
+                >
+                  {currentProject?.tabs.map((tab) => (
+                    <div
+                      key={tab.id}
+                      className={`${styles["tab-item"]} ${activeTabId === tab.id ? styles.active : ""}`}
+                      style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                      title={tab.name}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (activeTabId === tab.id) {
+                          setActiveTabId(null);
+                        } else {
+                          setActiveTabId(tab.id);
+                        }
+                        handleDeselectAll(true);
+                      }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        handleRenameTab(tab.id, tab.name);
+                      }}
+                    >
+                      <span className={styles["tab-name"]}>
+                        {tab.assetId && <span className={styles["link-icon"]} title="Linked to 3D Asset">🔗</span>}
+                        {tab.name}
+                      </span>
+                      {isEditMode && currentProject?.tabs.length > 1 && (
+                        <button
+                          className={styles["remove-tab-btn"]}
+                          onClick={(e) => handleRemoveTab(e, tab.id)}
+                          title="Delete Tab"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {showRightArrow && (
+                  <div className={`${styles["scroll-indicator"]} ${styles.right}`} onClick={() => scrollTabs('right')}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              <motion.div
+                className={styles["tools-container"]}
+                initial={{ y: -50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ type: "spring", damping: 20, stiffness: 100, delay: 0.3 }}
+              >
+                <div className={styles["mode-toggle-group"]}>
+                  <button
+                    className={`${styles["btn"]} ${!is3DMode ? styles.active : ""}`}
+                    onClick={() => setIs3DMode(false)}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <path d="M3 9h18" />
+                      <path d="M9 21V9" />
+                    </svg>
+                    2D Dashboard
+                  </button>
+                  <button
+                    className={`${styles["btn"]} ${is3DMode ? styles.active : ""}`}
+                    onClick={() => setIs3DMode(true)}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                      <line x1="12" y1="22.08" x2="12" y2="12" />
+                    </svg>
+                    3D Energy Twin
+                  </button>
+                </div>
+
+                <div className={styles["divider"]} />
+
+                <ActionCenter />
+
+                {is3DMode && (
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    style={{ display: "none" }}
+                    accept=".dxf"
+                    onChange={handleFileChange}
+                  />
+                )}
+              </motion.div>
+            </div>
 
           <AnimatePresence mode="wait">
             {!is3DMode ? (
@@ -1322,7 +1360,8 @@ const Project = () => {
                       isEditMode={isEditMode}
                       onResizeStart={handleResizeStart}
                       onDelete={handleRemoveChart}
-                      onClick={onChartClick}
+                      onSettingsClick={onChartClick}
+                      onContextMenu={handleChartContextMenu}
                       isSelected={selectedChartId === chart.id}
                       disabled={
                         resizingChartId !== null && chart.id !== resizingChartId
@@ -1358,11 +1397,14 @@ const Project = () => {
                     <div style={{ color: "white" }}>Loading 3D Scene...</div>
                   }
                 >
-                  <Project3D />
+                  <Project3D 
+                    isConfigOpen={isConfigOpen}
+                  />
                 </Suspense>
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
 
           <AnimatePresence>
             {(() => {
@@ -1391,43 +1433,84 @@ const Project = () => {
                     }}
                     onClose={() => setSelectedChartId(null)}
                     onUpdate={handleUpdateChart}
+                    onDelete={handleRemoveChart}
                   />
                 </motion.div>
               );
             })()}
           </AnimatePresence>
-        </div>
-      </div>
 
-      <DragOverlay
-        modifiers={activeId?.startsWith("sidebar-") ? [snapCenterToCursor] : []}
-      >
-        {activeId ? (
-          <div
-            className={styles["drag-overlay"]}
-            style={{
-              width:
-                activeId.startsWith("sidebar-") || !gridMetrics
-                  ? "300px"
-                  : `${activeChart?.w ? activeChart.w * gridMetrics.colWidth + (activeChart.w - 1) * 20 : 300}px`,
-              height:
-                activeId.startsWith("sidebar-") || !gridMetrics
-                  ? "200px"
-                  : `${(activeChart?.h ?? 3) * 170 - 20}px`,
-            }}
-          >
-            {activeChart && activeChart.type && activeChart.title ? (
-              <Chart
-                id="overlay"
-                type={activeChart.type}
-                title={activeChart.title}
-                config={activeChart.config || DEFAULT_CHART_CONFIG}
-                isEditMode={true}
-              />
-            ) : null}
-          </div>
-        ) : null}
-      </DragOverlay>
+          {/* Chart Context Menu */}
+          {chartContextMenu && (
+            <div 
+              className={styles["context-menu"]}
+              style={{ top: chartContextMenu.y, left: chartContextMenu.x }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div 
+                className={styles["menu-item"]}
+                onClick={() => {
+                  onChartClick({ stopPropagation: () => {} } as any, chartContextMenu.id);
+                  setChartContextMenu(null);
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                Configure
+              </div>
+              <div 
+                className={styles["menu-item"]}
+                onClick={() => {
+                  if (window.confirm('Delete this chart?')) {
+                    handleRemoveChart(chartContextMenu.id);
+                  }
+                  setChartContextMenu(null);
+                }}
+                style={{ color: '#ef4444' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+                Delete
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DragOverlay
+          modifiers={activeId?.startsWith("sidebar-") ? [snapCenterToCursor] : []}
+        >
+          {activeId ? (
+            <div
+              className={styles["drag-overlay"]}
+              style={{
+                width:
+                  activeId.startsWith("sidebar-") || !gridMetrics
+                    ? "300px"
+                    : `${activeChart?.w ? activeChart.w * gridMetrics.colWidth + (activeChart.w - 1) * 20 : 300}px`,
+                height:
+                  activeId.startsWith("sidebar-") || !gridMetrics
+                    ? "200px"
+                    : `${(activeChart?.h ?? 3) * 170 - 20}px`,
+              }}
+            >
+              {activeChart && activeChart.type && activeChart.title ? (
+                <Chart
+                  id="overlay"
+                  type={activeChart.type}
+                  title={activeChart.title}
+                  config={activeChart.config || DEFAULT_CHART_CONFIG}
+                  isEditMode={true}
+                />
+              ) : null}
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
       <AddTabModal
         isOpen={isTabModalOpen}
         onClose={() => {
@@ -1441,15 +1524,12 @@ const Project = () => {
         existingNames={currentProject?.tabs.map(t => t.name)}
       />
 
-      {/* Hide Chat in 3D Mode */}
       {!is3DMode && (
         <AIChat
           projectId={projectID}
           tabId={activeTabId}
         />
       )}
-
-      {/* Asset Sidebar moved to unified layer above */}
 
       <ConfirmModal
         isOpen={confirmConfig.isOpen}
@@ -1461,7 +1541,6 @@ const Project = () => {
         type={confirmConfig.type}
       />
 
-      {/* Global Asset Hover Tooltip (Eyedropper Mode) */}
       {isEyedropperActive && hoveredAsset && typeof document !== "undefined" && createPortal(
         <div
           className={styles["eyedropper-tooltip"]}
@@ -1475,7 +1554,7 @@ const Project = () => {
         </div>,
         document.body
       )}
-    </DndContext>
+    </div>
   );
 };
 

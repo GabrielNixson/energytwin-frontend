@@ -16,6 +16,10 @@ interface ChartOverlayProps {
     constraintsRef: React.RefObject<HTMLDivElement>;
     onUpdate?: (updates: any) => void;
     onDelete?: () => void;
+    onContextMenu?: (e: React.MouseEvent) => void;
+    isConfigOpen?: boolean;
+    anchorX?: 'left' | 'right';
+    anchorY?: 'top' | 'bottom';
 }
 
 const DEFAULT_CHART_CONFIG: ChartConfig = {
@@ -29,13 +33,14 @@ const DEFAULT_CHART_CONFIG: ChartConfig = {
     function: "last"
 };
 
-const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x, y, w, h, constraintsRef, onUpdate, onDelete }) => {
-    const { removeOverlayChart, updateOverlayChart, bringOverlayToFront, findSafePosition, setSelectedChartId, isEditMode, selectedChartId } = useUIStore();
+const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x, y, w, h, constraintsRef, onUpdate, onDelete, onContextMenu, isConfigOpen, anchorX = 'left', anchorY = 'top' }) => {
+    const { removeOverlayChart, updateOverlayChart, bringOverlayToFront, setSelectedChartId, isEditMode, selectedChartId } = useUIStore();
     const isSelected = selectedChartId === id;
     const [isResizing, setIsResizing] = React.useState(false);
     const [localW, setLocalW] = React.useState(w);
     const [localH, setLocalH] = React.useState(h);
     const itemRef = React.useRef<HTMLDivElement>(null);
+    const grabOffset = React.useRef({ x: 0, y: 0 });
     const isDraggingRef = React.useRef(false);
 
     // Sync local dimensions when props change (from external updates)
@@ -46,65 +51,108 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
         }
     }, [w, h, isResizing]);
 
+    // Calculate absolute coordinates based on anchors for the animate prop
+    // This translates the stored relative coordinates into absolute pixel offsets from top-left
+    const { visualX, visualY } = React.useMemo(() => {
+        if (!constraintsRef.current) return { visualX: 0, visualY: 0 };
+        const parentRect = constraintsRef.current.getBoundingClientRect();
+        return {
+            visualX: anchorX === 'left' ? x : (parentRect.width - x - localW),
+            visualY: anchorY === 'top' ? y : (parentRect.height - y - localH)
+        };
+    }, [x, y, anchorX, anchorY, localW, localH, constraintsRef]);
+
     return (
         <motion.div
             ref={itemRef}
             drag={isEditMode && !isResizing}
             dragMomentum={false}
             dragConstraints={constraintsRef}
-            dragElastic={0} // Tight containment
-            onDragStart={() => {
+            dragElastic={0}
+            onDragStart={(_, info) => {
                 isDraggingRef.current = true;
+                if (itemRef.current) {
+                    const rect = itemRef.current.getBoundingClientRect();
+                    grabOffset.current = {
+                        x: info.point.x - rect.left,
+                        y: info.point.y - rect.top
+                    };
+                }
             }}
             onPointerDown={(e) => {
                 e.stopPropagation();
                 bringOverlayToFront(id);
             }}
-            onTap={() => {
-                // Only select if we weren't just dragging
-                if (!isDraggingRef.current) {
-                    setSelectedChartId(id);
+            onContextMenu={(e) => {
+                if (onContextMenu) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onContextMenu(e);
                 }
             }}
-            onDragEnd={() => {
-                // Delay clearing the flag so onTap (which fires slightly after DragEnd) sees it
-                setTimeout(() => {
-                    isDraggingRef.current = false;
-                }, 50);
+            onDragEnd={(_, info) => {
+                isDraggingRef.current = false;
 
-                if (!itemRef.current || !constraintsRef.current) return;
+                if (!constraintsRef.current) return;
 
-                // Precise absolute coordinate detection via Ref
-                const rect = itemRef.current.getBoundingClientRect();
                 const parentRect = constraintsRef.current.getBoundingClientRect();
-
-                // Final visual position relative to parent
-                const visualX = rect.left - parentRect.left;
-                const visualY = rect.top - parentRect.top;
-
                 const containerW = parentRect.width;
                 const containerH = parentRect.height;
 
-                const finalPos = findSafePosition(id, visualX, visualY, w, h, containerW, containerH);
+                // Final absolute pixel position relative to parent container
+                const finalVisualX = info.point.x - parentRect.left - grabOffset.current.x;
+                const finalVisualY = info.point.y - parentRect.top - grabOffset.current.y;
+
+                // Determine new anchors based on chart center vs container center
+                const newAnchorX = (finalVisualX + localW / 2) > (containerW / 2) ? 'right' : 'left';
+                const newAnchorY = (finalVisualY + localH / 2) > (containerH / 2) ? 'bottom' : 'top';
+
+                // Calculate relative coordinates for storage
+                const storedX = newAnchorX === 'right' ? (containerW - finalVisualX - localW) : finalVisualX;
+                const storedY = newAnchorY === 'bottom' ? (containerH - finalVisualY - localH) : finalVisualY;
 
                 if (onUpdate) {
-                    onUpdate({ ...finalPos, w, h });
+                    onUpdate({ 
+                        x: storedX, 
+                        y: storedY, 
+                        w: localW, 
+                        h: localH,
+                        anchorX: newAnchorX,
+                        anchorY: newAnchorY
+                    });
                 } else {
-                    updateOverlayChart(id, finalPos);
+                    updateOverlayChart(id, { 
+                        x: storedX, 
+                        y: storedY,
+                        anchorX: newAnchorX,
+                        anchorY: newAnchorY
+                    });
                 }
             }}
-            initial={{ opacity: 0, scale: 0.9, x, y }}
-            animate={{ opacity: 1, scale: 1, x, y }}
-            transition={{ duration: 0.2 }}
+            initial={false}
+            animate={{ 
+                opacity: 1, 
+                scale: 1,
+                x: visualX,
+                y: visualY
+            }}
+            transition={{ 
+                opacity: { duration: 0.2 },
+                scale: { duration: 0.2 },
+                x: { duration: 0 },
+                y: { duration: 0 }
+            }}
             style={{
                 position: 'absolute',
+                top: 0,
+                left: 0,
                 width: localW,
                 height: localH,
-                zIndex: 1000,
+                zIndex: (isConfigOpen && isSelected) ? 2000 : 1000,
                 cursor: !isEditMode ? 'default' : (isResizing ? 'nwse-resize' : 'grab'),
                 pointerEvents: 'auto',
             }}
-            whileDrag={{ cursor: 'grabbing', scale: 1.02 }}
+            whileDrag={{ cursor: 'grabbing' }}
         >
             <div style={{
                 width: '100%',
@@ -148,7 +196,10 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
                             removeOverlayChart(id);
                         }
                     }}
-                    isEditMode={false} // 3D Overlay handles its own resizing and deletion
+                    onSettingsClick={() => {
+                        setSelectedChartId(id);
+                    }}
+                    isEditMode={isEditMode}
                 />
 
                 {isEditMode && (
@@ -157,10 +208,10 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
                             position: 'absolute',
                             bottom: 0,
                             right: 0,
-                            width: '32px', // Larger hit area
+                            width: '32px',
                             height: '32px',
                             cursor: 'nwse-resize',
-                            zindex: 100,
+                            zIndex: 100,
                             display: 'flex',
                             alignItems: 'flex-end',
                             justifyContent: 'flex-end',
@@ -188,7 +239,6 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({ id, type, title, config, x,
                                 currentW = Math.max(300, startW + (moveEvent.clientX - startX));
                                 currentH = Math.max(250, startH + (moveEvent.clientY - startY));
 
-                                // Use requestAnimationFrame for smoother UI updates
                                 requestAnimationFrame(() => {
                                     setLocalW(currentW);
                                     setLocalH(currentH);

@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Billing from "./pages/Billing/Billing";
+import Admin from "./pages/Admin/Admin";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Projects from "./pages/Projects/Projects";
 import Navbar from "./components/Navbar/Navbar";
@@ -17,6 +18,10 @@ const App = () => {
   const { isAuthenticated, user } = useAuthStore();
   const { initSocket } = useProjectStore();
   const { theme } = useUIStore();
+  // throw new Error("Test Sentry Error");
+  // throw new Error("Warning Error");
+  // console.warn("Test warning from frontend");
+
 
   // console.log("App rendering, isAuthenticated:", isAuthenticated, "userId:", user?._id);
 
@@ -65,6 +70,7 @@ const App = () => {
                 <Route path="project/:projectID" element={<Project />} />
                 <Route path="billing" element={<Billing />} />
                 <Route path="/billing" element={<Billing />} />
+                <Route path="admin" element={<Admin />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </>
             )}

@@ -25,11 +25,13 @@ export interface ChartData {
     y: number;
     w: number;
     h: number;
-    // 3D Overlay positions (absolute pixels)
+    // 3D Overlay positions (pixels relative to anchor)
     x3d?: number;
     y3d?: number;
     w3d?: number;
     h3d?: number;
+    anchorX?: 'left' | 'right';
+    anchorY?: 'top' | 'bottom';
     isGhost?: boolean;
     isHidden?: boolean;
     config: ChartConfig;

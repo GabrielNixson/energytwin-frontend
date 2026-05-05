@@ -345,7 +345,7 @@ const DxfLayer = () => {
 import FocusManager from './components/FocusManager/FocusManager';
 import ShortcutManager from './components/ShortcutManager/ShortcutManager';
 
-const Project3D = () => {
+const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
     const { projectID } = useParams<{ projectID: string }>();
     if (!projectID) return null; // Ensure projectID exists 
 
@@ -392,7 +392,7 @@ const Project3D = () => {
     // mousePointer is used for dragging and 3D interactions
     const mousePointer = useMemo(() => new THREE.Vector2(), []);
     const dragPositionRef = useRef(new THREE.Vector3());
-    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, modelId: string } | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, id: string, type: 'asset' | 'chart' } | null>(null);
     const [isTransforming, setIsTransforming] = useState(false);
     const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
     const [transformMode, setTransformMode] = useState<'translate' | 'rotate'>('translate');
@@ -527,21 +527,21 @@ const Project3D = () => {
         return null;
     };
 
-    const handleModelContextMenu = (e: any, modelId: string) => {
+    const handleModelContextMenu = (e: any, id: string, type: 'asset' | 'chart' = 'asset') => {
         const domEvent = e.nativeEvent || e;
         if (domEvent.preventDefault) domEvent.preventDefault();
         
-        // Use direct window coordinates for precision with fixed overlay
         setContextMenu({
             x: domEvent.clientX,
             y: domEvent.clientY,
-            modelId: modelId
+            id: id,
+            type: type
         });
     };
 
     const handleDuplicate = () => {
-        if (!contextMenu || !projectID) return;
-        const model = placedModels.find(m => m.id === contextMenu.modelId);
+        if (!contextMenu || !projectID || contextMenu.type !== 'asset') return;
+        const model = placedModels.find(m => m.id === contextMenu.id);
         if (model) {
             addAsset(projectID, {
                 name: model.name,
@@ -553,19 +553,19 @@ const Project3D = () => {
     };
 
     const handleCopy = () => {
-        if (!contextMenu) return;
-        const model = placedModels.find(m => m.id === contextMenu.modelId);
+        if (!contextMenu || contextMenu.type !== 'asset') return;
+        const model = placedModels.find(m => m.id === contextMenu.id);
         if (model) {
             setCopiedModel({ name: model.name, path: model.path });
         }
     };
 
     const handleLinkToActiveTab = () => {
-        if (!contextMenu || !projectID || !activeTabId) return;
+        if (!contextMenu || !projectID || !activeTabId || contextMenu.type !== 'asset') return;
 
         // Check if asset is already linked to another tab
         const currentProject = projects.find(p => p.id === projectID);
-        const existingLinkTab = currentProject?.tabs.find(t => t.assetId === contextMenu.modelId);
+        const existingLinkTab = currentProject?.tabs.find(t => t.assetId === contextMenu.id);
 
         if (existingLinkTab && existingLinkTab.id !== activeTabId) {
             alert(`This asset is already linked to the "${existingLinkTab.name}" tab. An asset can only be linked to one tab.`);
@@ -573,7 +573,7 @@ const Project3D = () => {
             return;
         }
 
-        updateTabAssetId(projectID, activeTabId, contextMenu.modelId);
+        updateTabAssetId(projectID, activeTabId, contextMenu.id);
         setContextMenu(null);
     };
 
@@ -615,8 +615,8 @@ const Project3D = () => {
     }, [isEditMode, setSelectedModelId]);
 
     const handleRelocate = () => {
-        if (!contextMenu) return;
-        setRelocatingAssetId(contextMenu.modelId);
+        if (!contextMenu || contextMenu.type !== 'asset') return;
+        setRelocatingAssetId(contextMenu.id);
         setIsRelocating(true);
         setContextMenu(null);
     };
@@ -629,6 +629,7 @@ const Project3D = () => {
                     setNodeRef(node);
                 }
             }}
+            id="3d-overlay-area"
             className={`${styles["three-container"]} ${isEyedropperActive ? styles["eyedropper-active"] : ""} ${isRelocating ? styles["relocating-active"] : ""}`}
             style={{ width: '100%', height: '100%', position: 'relative' }}
             onDragOver={handleDragOver}
@@ -656,7 +657,9 @@ const Project3D = () => {
                                     x3d: updates.x !== undefined ? updates.x : c.x3d,
                                     y3d: updates.y !== undefined ? updates.y : c.y3d,
                                     w3d: updates.w !== undefined ? updates.w : c.w3d,
-                                    h3d: updates.h !== undefined ? updates.h : c.h3d
+                                    h3d: updates.h !== undefined ? updates.h : c.h3d,
+                                    anchorX: updates.anchorX !== undefined ? updates.anchorX : c.anchorX,
+                                    anchorY: updates.anchorY !== undefined ? updates.anchorY : c.anchorY,
                                 } : c
                             );
                             updateProjectCharts(projectID, activeTab.id, newCharts);
@@ -667,6 +670,10 @@ const Project3D = () => {
                             removeChart(projectID, activeTab.id, chart.id);
                         }
                     }}
+                    isConfigOpen={isConfigOpen}
+                    onContextMenu={(e) => {
+                        handleModelContextMenu(e, chart.id, 'chart');
+                    }}
                 />
             ))}
 
@@ -675,6 +682,9 @@ const Project3D = () => {
                 <ChartOverlay
                     key={chart.id}
                     {...chart}
+                    h={chart.h}
+                    anchorX={chart.anchorX}
+                    anchorY={chart.anchorY}
                     constraintsRef={containerRef}
                 />
             ))}
@@ -938,20 +948,23 @@ const Project3D = () => {
                     y={contextMenu.y}
                     onClose={() => setContextMenu(null)}
                     onDelete={() => {
-                        if (projectID) {
-                            removeAsset(projectID, contextMenu.modelId);
-                            setContextMenu(null);
+                        if (contextMenu.type === 'asset') {
+                            if (projectID) removeAsset(projectID, contextMenu.id);
+                        } else {
+                            if (projectID && activeTabId) removeChart(projectID, activeTabId, contextMenu.id);
                         }
+                        setContextMenu(null);
                     }}
                     onDuplicate={handleDuplicate}
                     onCopy={handleCopy}
-                    onLinkToTab={handleLinkToActiveTab}
-                    onRelocate={handleRelocate}
-                    autoRotate={placedModels.find(m => m.id === contextMenu.modelId)?.autoRotate}
+                    onLinkToTab={contextMenu.type === 'asset' ? handleLinkToActiveTab : undefined}
+                    onRelocate={contextMenu.type === 'asset' ? handleRelocate : undefined}
+                    onConfigure={contextMenu.type === 'chart' ? () => setSelectedChartId(contextMenu.id) : undefined}
+                    autoRotate={contextMenu.type === 'asset' ? placedModels.find(m => m.id === contextMenu.id)?.autoRotate : undefined}
                     onToggleAutoRotate={() => {
-                        if (projectID) {
-                            const model = placedModels.find(m => m.id === contextMenu.modelId);
-                            updateAsset(projectID, contextMenu.modelId, {
+                        if (projectID && contextMenu.type === 'asset') {
+                            const model = placedModels.find(m => m.id === contextMenu.id);
+                            updateAsset(projectID, contextMenu.id, {
                                 autoRotate: !model?.autoRotate
                             });
                         }

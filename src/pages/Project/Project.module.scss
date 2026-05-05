@@ -15,13 +15,21 @@
     justify-content: space-between;
     align-items: center;
     padding: 24px 40px;
-    z-index: 1;
+    z-index: 10000;
     background: transparent;
     pointer-events: none;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
-    &>* {
-        pointer-events: auto;
-    }
+}
+
+.content-area {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .tab-bar-wrapper {
@@ -60,32 +68,53 @@
     &::-webkit-scrollbar {
         display: none;
     }
+
+    &.has-left-arrow {
+        padding-left: 44px;
+    }
+
+    &.has-right-arrow {
+        padding-right: 44px;
+    }
 }
 
 .tab-item {
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     gap: 10px;
-    border: 1px solid transparent;
-    flex-shrink: 0;
+    padding: 0 16px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
     white-space: nowrap;
+    transition: all 0.2s ease;
+    // min-width: 120px;
+    // max-width: 200px;
+    user-select: none;
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
 
     &:hover {
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.08);
         color: var(--text-primary);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    &:not(.active) {
+        opacity: 0.8;
     }
 
     &.active {
         background: rgba(var(--accent-rgb), 0.15);
         color: var(--accent);
         border-color: rgba(var(--accent-rgb), 0.3);
+        z-index: 2;
     }
 
     .tab-name {
@@ -96,6 +125,7 @@
         display: flex;
         align-items: center;
         gap: 6px;
+        pointer-events: none;
     }
 }
 
@@ -258,16 +288,28 @@
     height: 100%;
     position: relative;
     outline: none;
-    
+    touch-action: none;
+
     &.eyedropper-active {
         cursor: crosshair !important;
     }
 }
 
 @keyframes outlinePulse {
-    0% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.005); }
-    100% { opacity: 1; transform: scale(1); }
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.7;
+        transform: scale(1.005);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .scroll-indicator {
@@ -368,5 +410,69 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(var(--accent-rgb), 0.4);
         filter: brightness(1.1);
+    }
+}
+
+.eyedropper-tooltip {
+    background: var(--surface);
+    backdrop-filter: blur(12px);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    pointer-events: none;
+    z-index: 10000;
+    transform: translate(15px, 15px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+.context-menu {
+    position: fixed;
+    background: var(--surface);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 6px;
+    min-width: 180px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    z-index: 20000;
+    animation: menuFadeIn 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes menuFadeIn {
+    from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--accent);
+    }
+
+    &.delete {
+        color: #ef4444;
+        &:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+    }
+
+    svg {
+        opacity: 0.7;
     }
 }

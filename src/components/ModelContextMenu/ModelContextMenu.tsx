@@ -11,11 +11,12 @@ interface ModelContextMenuProps {
     onCopy: () => void;
     onLinkToTab?: () => void;
     onRelocate?: () => void;
+    onConfigure?: () => void;
     autoRotate?: boolean;
     onToggleAutoRotate?: () => void;
 }
 
-const ModelContextMenu: React.FC<ModelContextMenuProps> = ({ x, y, onClose, onDelete, onDuplicate, onCopy, onLinkToTab, onRelocate, autoRotate, onToggleAutoRotate }) => {
+const ModelContextMenu: React.FC<ModelContextMenuProps> = ({ x, y, onClose, onDelete, onDuplicate, onCopy, onLinkToTab, onRelocate, onConfigure, autoRotate, onToggleAutoRotate }) => {
     return createPortal(
         <div 
             className={styles.overlay} 
@@ -33,6 +34,11 @@ const ModelContextMenu: React.FC<ModelContextMenuProps> = ({ x, y, onClose, onDe
                 {onLinkToTab && (
                     <button onClick={() => { onLinkToTab(); onClose(); }}>
                         Link to Active Tab
+                    </button>
+                )}
+                {onConfigure && (
+                    <button onClick={() => { onConfigure(); onClose(); }}>
+                        Configure
                     </button>
                 )}
                 {onRelocate && (

@@ -6,6 +6,7 @@ import userImage from "./user.jpg";
 import {
   OverviewIcon,
   ServicesIcon,
+  AdminIcon,
 } from "./SidebarIcons";
 
 import { LogoIcon } from "../../assets/svg/LogoSvg";
@@ -53,6 +54,7 @@ const Sidebar = () => {
     { label: "overview", route: "/", icon: OverviewIcon },
     { label: "projects", route: "projects", icon: ServicesIcon },
     { label: "Billing", route: "billing", icon: BillingIcon },
+    { label: "Admin", route: "admin", icon: AdminIcon },
   ];
 
   useEffect(() => {
@@ -74,8 +76,8 @@ const Sidebar = () => {
     <div
       className={`${styles["sidebar-container"]} ${isSidebarCollapsed && !isHovered ? styles.collapsed : ""
         }`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      // onMouseEnter={handleMouseEnter}
+      // onMouseLeave={handleMouseLeave}
     >
       <div
         className={styles["visibility-toggle"]}
@@ -116,7 +118,7 @@ const Sidebar = () => {
         })}
       </div>
 
-      <div 
+      <div
         className={styles["user-details-container"]}
         onClick={(e) => {
           e.stopPropagation();

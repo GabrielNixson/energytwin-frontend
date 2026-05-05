@@ -254,6 +254,14 @@ export const useProjectStore = create<ProjectStore>()(
             },
 
             removeAsset: (projectId, assetId) => {
+                const project = get().projects.find(p => p.id === projectId);
+                if (project) {
+                    const linkedTabs = project.tabs.filter(t => t.assetId === assetId);
+                    linkedTabs.forEach(t => {
+                        get().removeTab(projectId, t.id);
+                    });
+                }
+
                 set((state) => ({
                     projects: state.projects.map(p =>
                         p.id === projectId ? { ...p, assets: p.assets.filter(s => s.id !== assetId) } : p
@@ -574,15 +582,27 @@ export const useProjectStore = create<ProjectStore>()(
                 };
             }),
 
-            _handleAssetDeleted: (data) => set((state) => {
+            _handleAssetDeleted: (data) => {
                 const id = data.assetId || data.id || data;
-                return {
+
+                const state = get();
+                state.projects.forEach(p => {
+                    const linkedTabs = p.tabs.filter(t => t.assetId === id);
+                    linkedTabs.forEach(t => {
+                        if (useUIStore.getState().activeTabId === t.id) {
+                            useUIStore.getState().setActiveTabId(null);
+                        }
+                    });
+                });
+
+                set((state) => ({
                     projects: state.projects.map(p => ({
                         ...p,
+                        tabs: p.tabs.filter(t => t.assetId !== id),
                         assets: (p.assets || []).filter(s => s.id !== id)
                     }))
-                };
-            }),
+                }));
+            },
 
             _handleAssetsRead: (data) => set((state) => {
                 console.log("asset:read_all:response received", data);

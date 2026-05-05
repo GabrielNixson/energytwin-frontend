@@ -8,7 +8,7 @@ const Controls = forwardRef<CameraControls, { enabled?: boolean }>(({ enabled = 
       enabled={enabled}
       truckSpeed={2}
       dollySpeed={1.5}
-      smoothTime={0.3}
+      smoothTime={0.4}
 
       // Infinite Zoom & Flexibility like Blender
       // Visual Constraints

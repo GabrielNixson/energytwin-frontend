@@ -163,7 +163,7 @@ const Auth = () => {
               </motion.button>
             </form>
 
-            <div className={styles.divider}>
+            {/* <div className={styles.divider}>
               <span>Or continue with</span>
             </div>
 
@@ -207,7 +207,7 @@ const Auth = () => {
                 </svg>
                 <span>Microsoft</span>
               </button>
-            </div>
+            </div> */}
 
             <div className={styles.toggleText}>
               {isLogin ? "New to EnergyTwin? " : "Already have an account? "}

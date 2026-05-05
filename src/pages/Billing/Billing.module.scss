@@ -7,9 +7,10 @@ $text-dim: #8e8e9e;
 $border-soft: rgba(255, 255, 255, 0.05);
 
 .billing-container {
+    width: 100%;
     padding: 2rem 3rem;
-    max-width: 1200px;
-    margin: 0 auto;
+    // max-width: 1200px;
+    // margin: 0 auto;
     color: var(--text-primary);
     min-height: 100vh;
 }
