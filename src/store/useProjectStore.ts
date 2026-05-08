@@ -17,7 +17,7 @@ interface ProjectStore {
     addTab: (projectId: string, name: string, tabId?: string, assetId?: string) => void;
     removeTab: (projectId: string, tabId: string) => void;
     updateTabName: (projectId: string, tabId: string, name: string) => void;
-    updateTabAssetId: (projectId: string, tabId: string, assetId: string | null) => void;
+    updateTabAssetId: (projectId: string, tabId: string, assetId: string | undefined) => void;
 
     // Asset management per project
     addAsset: (projectId: string, asset: Omit<Asset, 'id'>) => void;
@@ -81,14 +81,16 @@ const mapChart = (c: any): ChartData => ({
     id: c._id || c.id,
     type: c.type || c.chartData?.type,
     title: c.title || c.chartData?.title,
-    x: c.chartData?.x ?? c.x,
-    y: c.chartData?.y ?? c.y,
-    w: c.chartData?.w ?? c.w,
-    h: c.chartData?.h ?? c.h,
+    x: c.chartData?.x ?? c.x ?? 0,
+    y: Math.min(c.chartData?.y ?? c.y ?? 0, 1000),
+    w: c.chartData?.w ?? c.w ?? 4,
+    h: c.chartData?.h ?? c.h ?? 2,
     x3d: (c.x3d !== undefined ? c.x3d : c.chartData?.x3d),
     y3d: (c.y3d !== undefined ? c.y3d : c.chartData?.y3d),
     w3d: (c.w3d !== undefined ? c.w3d : c.chartData?.w3d),
     h3d: (c.h3d !== undefined ? c.h3d : c.chartData?.h3d),
+    anchorX: c.anchorX || c.chartData?.anchorX,
+    anchorY: c.anchorY || c.chartData?.anchorY,
     config: c.configData || c.config || {}
 });
 
@@ -223,7 +225,13 @@ export const useProjectStore = create<ProjectStore>()(
                         x: chart.x,
                         y: chart.y,
                         w: chart.w,
-                        h: chart.h
+                        h: chart.h,
+                        x3d: chart.x3d,
+                        y3d: chart.y3d,
+                        w3d: chart.w3d,
+                        h3d: chart.h3d,
+                        anchorX: chart.anchorX,
+                        anchorY: chart.anchorY
                     },
                     configData: chart.config
                 });
@@ -344,7 +352,7 @@ export const useProjectStore = create<ProjectStore>()(
                 socket.emit('tab:update', { tabId, data: { name } });
             },
 
-            updateTabAssetId: (projectId, tabId, assetId) => {
+            updateTabAssetId: (projectId: string, tabId: string, assetId: string | undefined) => {
                 set((state) => ({
                     projects: state.projects.map(p =>
                         p.id === projectId ? {

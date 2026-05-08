@@ -11,7 +11,7 @@
     gap: 0.6rem;
 
     label {
-        font-size: 0.85rem;
+        font-size: var(--fs-base);
         font-weight: 600;
         color: var(--text-secondary);
         letter-spacing: 0.02em;
@@ -24,7 +24,7 @@
         border: var(--border);
         border-radius: 12px;
         color: var(--text-primary);
-        font-size: 0.95rem;
+        font-size: var(--font-size-body-lg);
         outline: none;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         font-family: inherit;
@@ -52,7 +52,7 @@
 
     .errorMessage {
         color: #ef4444;
-        font-size: 0.75rem;
+        font-size: var(--font-size-body-sm);
         font-weight: 600;
         margin-top: 0.25rem;
         display: flex;
@@ -74,7 +74,7 @@
     button {
         padding: 0.85rem 1.75rem;
         border-radius: 12px;
-        font-size: 0.95rem;
+        font-size: var(--font-size-body-lg);
         font-weight: 600;
         cursor: pointer;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);

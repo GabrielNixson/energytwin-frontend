@@ -35,14 +35,14 @@
             gap: 12px;
 
             .chartTitle {
-                font-size: 0.95rem;
+                font-size: var(--font-size-body-lg);
                 font-weight: 700;
                 color: var(--text-primary);
                 letter-spacing: -0.01em;
             }
 
             .percentageBadge {
-                font-size: 0.85rem;
+                font-size: var(--fs-base);
                 font-weight: 700;
                     background: rgba(var(--accent-rgb), 0.1);
                     color: #e2e8f0;
@@ -55,7 +55,7 @@
                 display: flex;
                 align-items: center;
                 gap: 6px;
-                font-size: 10px;
+                font-size: var(--fs-3xs);
                 font-weight: 700;
                 color: #10b981;
                 text-transform: uppercase;
@@ -112,7 +112,7 @@
                 border: none;
                 color: #fc1010;
                 cursor: pointer;
-                font-size: 1rem;
+                font-size: var(--font-size-body-lg);
                 padding: 4px;
                 border-radius: 4px;
                 display: flex;

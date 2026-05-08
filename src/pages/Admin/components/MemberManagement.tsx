@@ -4,6 +4,7 @@ import { adminService } from '../../../services/adminService';
 import { motion } from 'framer-motion';
 import Modal from '../../../components/Modal/Modal';
 import CustomDropdown from '../../../components/CustomDropdown/CustomDropdown';
+import Loading from '../../../components/Loading/Loading';
 import ConfirmModal from '../../../components/ConfirmModal/ConfirmModal';
 
 const statusOptions = [
@@ -92,12 +93,19 @@ const MemberManagement = () => {
   };
 
   if (loading && members.length === 0) {
-    return <div className="placeholder-content">Loading members...</div>;
+    return <Loading message="Retrieving members..." />;
   }
 
   return (
-    <div className="member-management">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div className="member-management" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '1rem',
+        padding: '1.5rem 0 1rem 0',
+        borderBottom: '1px solid var(--border-color)'
+      }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Team Members</h2>
         <button className="primary-btn" onClick={handleOpenAddModal}>+ Invite Member</button>
       </div>

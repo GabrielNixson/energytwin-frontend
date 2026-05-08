@@ -16,12 +16,12 @@
 
 .label {
     color: #94a3b8;
-    font-size: 14px;
+    font-size: var(--font-size-body);
 }
 
 .percentage {
     color: #f1f5f9;
-    font-size: 18px;
+    font-size: var(--fs-xl);
     font-weight: 700;
 }
 

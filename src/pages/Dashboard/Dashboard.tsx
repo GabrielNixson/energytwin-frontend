@@ -50,7 +50,7 @@ const Dashboard = () => {
         [currentProject, activeTabId]);
 
     return (
-        <div className={projectStyles["project-container"]} style={{ flexDirection: 'column', overflow: 'hidden' }}>
+        <div className={projectStyles["project-container"]} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div className={styles.header}>
                 <div className={styles["header-content"]}>
                     <div className={styles["top-row"]}>
@@ -97,7 +97,6 @@ const Dashboard = () => {
                 gridAutoRows: '150px',
                 gap: '20px',
                 alignContent: 'start',
-                height: '100%',
             }}>
                 <AnimatePresence mode="wait">
                     {activeTab?.charts && activeTab.charts.length > 0 ? (

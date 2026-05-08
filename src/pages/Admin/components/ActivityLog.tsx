@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityLogEntry } from '../../../types/admin.types';
 import { adminService } from '../../../services/adminService';
 import { motion } from 'framer-motion';
+import Loading from '../../../components/Loading/Loading';
 
 const ActivityLog = () => {
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
@@ -30,12 +31,16 @@ const ActivityLog = () => {
   };
 
   if (loading) {
-    return <div className="placeholder-content">Loading logs...</div>;
+    return <Loading message="Fetching activity logs..." />;
   }
 
   return (
-    <div className="activity-log">
-      <div style={{ marginBottom: '2rem' }}>
+    <div className="activity-log" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ 
+        marginBottom: '1rem',
+        padding: '1.5rem 0 1rem 0',
+        borderBottom: '1px solid var(--border-color)'
+      }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>System Activity</h2>
         <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Track administrative changes across the organization.</p>
       </div>

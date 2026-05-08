@@ -3,6 +3,7 @@ import { Role, Permission, MemberRole } from '../../../types/admin.types';
 import { adminService } from '../../../services/adminService';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../../../components/Modal/Modal';
+import Loading from '../../../components/Loading/Loading';
 import ConfirmModal from '../../../components/ConfirmModal/ConfirmModal';
 
 const DEFAULT_PERMISSIONS: Permission[] = [
@@ -145,76 +146,85 @@ const RoleManagement = () => {
   };
 
   if (loading && roles.length === 0) {
-    return <div className="placeholder-content">Loading roles...</div>;
+    return <Loading message="Syncing roles..." />;
   }
 
   return (
-    <div className="role-management">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div className="role-management" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '1rem',
+        padding: '1.5rem 0 1rem 0',
+        borderBottom: '1px solid var(--border-color)'
+      }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Roles & Permissions</h2>
         <button className="primary-btn" onClick={handleOpenCreateModal}>+ Create Role</button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
-        {roles.map((role) => (
-          <motion.div 
-            key={role.id}
-            style={{ 
-              background: 'var(--secondary)', 
-              borderRadius: '16px', 
-              padding: '1.25rem',
-              border: '1px solid var(--border-color)',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-              <div>
-                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#7c5dfa' }}>{role.name}</h3>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>{role.description}</p>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+          {roles.map((role) => (
+            <motion.div 
+              key={role.id}
+              style={{ 
+                background: 'var(--secondary)', 
+                borderRadius: '16px', 
+                padding: '1.25rem',
+                border: '1px solid var(--border-color)',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#7c5dfa' }}>{role.name}</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>{role.description}</p>
+                </div>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button className="action-btn" onClick={() => handleOpenEditModal(role)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+                  <button className="action-btn" style={{ color: '#ef4444' }} onClick={() => handleDeleteClick(role)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.4rem' }}>
-                <button className="action-btn" onClick={() => handleOpenEditModal(role)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                </button>
-                <button className="action-btn" style={{ color: '#ef4444' }} onClick={() => handleDeleteClick(role)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
-              </div>
-            </div>
 
-            <div style={{ marginTop: '1rem', flex: 1 }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                {role.permissions.filter(p => p.enabled).slice(0, 3).map((perm) => (
-                  <span 
-                    key={perm.id} 
-                    style={{ 
-                      fontSize: '0.7rem', 
-                      padding: '0.2rem 0.6rem', 
-                      background: 'rgba(124, 93, 250, 0.1)', 
-                      color: '#7c5dfa', 
-                      borderRadius: '100px',
-                      border: '1px solid rgba(124, 93, 250, 0.15)',
-                      fontWeight: 600,
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {perm.name}
-                  </span>
-                ))}
-                {role.permissions.filter(p => p.enabled).length > 3 && (
-                  <HoverableMore remaining={role.permissions.filter(p => p.enabled).slice(3)} />
-                )}
-                {role.permissions.filter(p => p.enabled).length === 0 && (
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic', opacity: 0.7 }}>No active permissions</div>
-                )}
+              <div style={{ marginTop: '1rem', flex: 1 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {role.permissions.filter(p => p.enabled).slice(0, 3).map((perm) => (
+                    <span 
+                      key={perm.id} 
+                      style={{ 
+                        fontSize: '0.7rem', 
+                        padding: '0.2rem 0.6rem', 
+                        background: 'rgba(124, 93, 250, 0.1)', 
+                        color: '#7c5dfa', 
+                        borderRadius: '100px',
+                        border: '1px solid rgba(124, 93, 250, 0.15)',
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {perm.name}
+                    </span>
+                  ))}
+                  {role.permissions.filter(p => p.enabled).length > 3 && (
+                    <HoverableMore remaining={role.permissions.filter(p => p.enabled).slice(3)} />
+                  )}
+                  {role.permissions.filter(p => p.enabled).length === 0 && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic', opacity: 0.7 }}>No active permissions</div>
+                  )}
+                </div>
               </div>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          ))}
+        </div>
       </div>
 
       <Modal 

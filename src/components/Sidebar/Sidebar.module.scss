@@ -20,7 +20,7 @@
   position: absolute;
   top: 50px;
   right: -10px;
-  z-index: 2;
+  z-index: 3;
 
   width: 20px;
   height: 32px;
@@ -48,7 +48,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 8px;
-  font-size: 1rem;
+  font-size: var(--font-size-body-lg);
   color: var(--accent);
   cursor: pointer;
 
@@ -111,6 +111,7 @@
     }
 
     span {
+      font-size: var(--fs-md);
       font-weight: 600;
       white-space: nowrap;
       transition: all 0.2s ease;
@@ -159,7 +160,7 @@
     min-width: 0;
 
     .user-name {
-      font-size: 0.75rem;
+      font-size: var(--font-size-body-sm);
       font-weight: 600;
       color: var(--text-primary);
       white-space: nowrap;
@@ -168,7 +169,7 @@
     }
 
     .user-email {
-      font-size: 0.625rem;
+      font-size: var(--fs-2xs);
       color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
@@ -227,7 +228,7 @@
         visibility: hidden;
         pointer-events: none;
         z-index: 100;
-        font-size: 12px;
+        font-size: var(--font-size-body-sm);
 
         &::before {
           content: "";

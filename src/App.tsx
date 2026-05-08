@@ -21,6 +21,7 @@ const App = () => {
   // throw new Error("Test Sentry Error");
   // throw new Error("Warning Error");
   // console.warn("Test warning from frontend");
+  // throw new Error("Something went wrong");
 
 
   // console.log("App rendering, isAuthenticated:", isAuthenticated, "userId:", user?._id);

@@ -49,19 +49,38 @@
     .header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2.5rem;
+        align-items: flex-end;
+        margin-bottom: 3.5rem;
 
         .title {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+
+            h1 {
+                font-size: var(--font-size-h1);
+                font-weight: 800;
+                letter-spacing: -0.04em;
+                margin: 0;
+                background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                text-shadow: var(--shadow-soft);
+            }
+
             .subheader {
                 color: var(--text-secondary);
-                font-size: 0.875rem;
+                font-size: var(--fs-xl);
+                max-width: 600px;
+                line-height: 1.6;
+                font-weight: 400;
+                margin: 0;
             }
         }
 
         .actions {
             button {
-                font-size: 0.875rem;
+                font-size: var(--fs-md);
                 padding: 10px 24px;
                 border-radius: 100px;
                 background-color: var(--accent);
@@ -87,7 +106,7 @@
         background-color: #816ff5;
         border-radius: 100px;
         padding: 3px 8px;
-        font-size: 0.75rem;
+        font-size: var(--font-size-body-sm);
         color: white;
     }
 
@@ -122,8 +141,8 @@
 
             h3 {
                 margin: 0;
-                font-size: 1.125rem;
-                font-weight: 600;
+                font-size: var(--fs-xl);
+                font-weight: 700;
                 color: var(--text-primary);
                 white-space: nowrap;
                 overflow: hidden;
@@ -131,13 +150,13 @@
             }
 
             .date {
-                font-size: 0.75rem;
+                font-size: var(--fs-xs);
                 color: var(--text-secondary);
             }
         }
 
         .description {
-            font-size: 0.875rem;
+            font-size: var(--fs-md);
             color: var(--text-secondary);
             line-height: 1.5;
             margin-bottom: 1.5rem;
@@ -159,6 +178,8 @@
 
             .default-btn {
                 color: var(--text-secondary);
+                font-size: var(--fs-xs);
+                font-weight: 600;
 
                 &:hover {
                     color: #b6b5b5;
@@ -167,7 +188,7 @@
             }
 
             .status {
-                font-size: 0.75rem;
+                font-size: var(--fs-xs);
                 padding: 4px 10px;
                 border-radius: 4px;
                 background-color: rgba(var(--accent-rgb), 0.1);
@@ -178,8 +199,9 @@
             .remove-btn {
                 background: none;
                 border: none;
-                color: #c02e2e;
-                font-size: 0.75rem;
+                color: #ef4444;
+                font-size: var(--fs-xs);
+                font-weight: 600;
                 cursor: pointer;
                 padding: 4px;
                 opacity: 0.6;

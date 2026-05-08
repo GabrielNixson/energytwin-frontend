@@ -16,12 +16,17 @@ const AIChat = ({ projectId, tabId }: AIChatProps) => {
     const [isLoading, setIsLoading] = useState(false);
     const [chatHistory, setChatHistory] = useState<any[]>([]);
     const { user, chatSessionId } = useAuthStore();
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const isFirstRender = useRef(true);
     const chatId = chatSessionId || user?._id || 'anonymous';
 
     const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
-        messagesEndRef.current?.scrollIntoView({ behavior });
+        if (containerRef.current) {
+            containerRef.current.scrollTo({
+                top: containerRef.current.scrollHeight,
+                behavior
+            });
+        }
     };
 
     useEffect(() => {
@@ -155,7 +160,7 @@ const AIChat = ({ projectId, tabId }: AIChatProps) => {
                             <button className={styles["close-btn"]} onClick={() => setIsOpen(false)}>✕</button>
                         </div>
 
-                        <div className={styles["messages-container"]}>
+                        <div className={styles["messages-container"]} ref={containerRef}>
                             {chatHistory.map((chat, idx) => (
                                 <div key={idx} className={`${styles["message"]} ${styles[chat.role]}`}>
                                     <div className={styles["bubble"]}>
@@ -172,7 +177,6 @@ const AIChat = ({ projectId, tabId }: AIChatProps) => {
                                     </div>
                                 </div>
                             )}
-                            <div ref={messagesEndRef} />
                         </div>
 
                         <div className={styles["input-area"]}>

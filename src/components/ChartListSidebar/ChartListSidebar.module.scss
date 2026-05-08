@@ -25,7 +25,7 @@
         padding: 1.5rem 0 1rem 0;
 
         h1 {
-            font-size: 1.125rem;
+            font-size: var(--font-size-h6);
             font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 1.25rem;
@@ -52,7 +52,7 @@
                 background: none;
                 border: none;
                 color: #e2e8f0;
-                font-size: 0.875rem;
+                font-size: var(--font-size-body);
                 outline: none;
                 width: 100%;
 
@@ -64,7 +64,7 @@
     }
 
     .section-label {
-        font-size: 0.625rem;
+        font-size: var(--fs-2xs);
         text-transform: uppercase;
         letter-spacing: 0.05em;
         color: var(--text-secondary);
@@ -108,13 +108,13 @@
             }
 
             .label {
-                font-size: 0.875rem;
+                font-size: var(--font-size-body);
                 font-weight: 500;
             }
 
             .add {
                 margin-left: auto;
-                font-size: 1.25rem;
+                font-size: var(--fs-xl);
                 color: #334155;
                 font-weight: 300;
                 opacity: 0;
@@ -154,7 +154,7 @@
             padding: 2rem 0;
             text-align: center;
             color: #475569;
-            font-size: 0.875rem;
+            font-size: var(--font-size-body);
         }
     }
 }

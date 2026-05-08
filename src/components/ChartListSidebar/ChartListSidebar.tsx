@@ -17,6 +17,9 @@ import {
     BillingIcon 
 } from "./ChartListSidebarIcons";
 import { useUIStore } from "@/store/useUIStore";
+import { useProjectStore } from "@/store/useProjectStore";
+import { useParams } from "react-router-dom";
+import { ChartData } from "@/types/chart.types";
 
 interface ChartItemProps {
     chart: {
@@ -27,7 +30,73 @@ interface ChartItemProps {
 }
 
 const DraggableChartItem = ({ chart }: ChartItemProps) => {
-    const { isEditMode } = useUIStore();
+    const { isEditMode, is3DMode, setActiveTabId } = useUIStore();
+    const { projects, addChart } = useProjectStore();
+    const { projectID } = useParams<{ projectID: string }>();
+
+    const handleQuickAdd = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!isEditMode || !projectID) return;
+
+        const currentProject = projects.find(p => p.id === projectID);
+        if (!currentProject) return;
+
+        // Use active tab or first tab as fallback
+        const activeTabId = useUIStore.getState().activeTabId || currentProject.tabs[0]?.id;
+        if (!activeTabId) return;
+
+        const targetTab = currentProject.tabs.find(t => t.id === activeTabId);
+        const currentCharts = targetTab?.charts || [];
+
+        // Simple grid placement logic for 2D (fallback for 3D)
+        let foundX = 0;
+        let foundY = 0;
+        let spotFound = false;
+
+        for (let row = 0; row < 100 && !spotFound; row++) {
+            for (let col = 0; col <= 8; col += 4) {
+                const isOccupied = currentCharts.some(c =>
+                    (col < c.x + c.w && col + 4 > c.x) &&
+                    (row < c.y + c.h && row + 2 > c.y)
+                );
+                if (!isOccupied) {
+                    foundX = col;
+                    foundY = row;
+                    spotFound = true;
+                    break;
+                }
+            }
+        }
+
+        const newChart: ChartData = {
+            id: `chart-${Date.now()}`,
+            type: chart.type,
+            title: chart.label,
+            x: foundX,
+            y: foundY,
+            w: 4,
+            h: 2,
+            // 3D positioning defaults (Percentages)
+            x3d: 5,
+            y3d: 5,
+            w3d: 500,
+            h3d: 350,
+            config: {
+                showTooltips: true,
+                showLegend: true,
+                xAxisLabel: "Time",
+                yAxisLabel: "Value",
+                showGrid: true,
+                fieldname: "",
+                timerange: "-1h",
+                function: "last"
+            }
+        };
+
+        addChart(projectID, activeTabId, newChart);
+        if (!useUIStore.getState().activeTabId) setActiveTabId(activeTabId);
+    };
+
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: `sidebar-${chart.type}`,
         disabled: !isEditMode, // Disable drag if not in edit mode
@@ -50,9 +119,11 @@ const DraggableChartItem = ({ chart }: ChartItemProps) => {
             {...attributes} 
             className={`${styles["chart-type"]} ${isDragging ? styles.dragging : ""}`}
             style={style}
+            onClick={handleQuickAdd}
         >
             <div className={styles.icon}>{chart.icon}</div>
             <div className={styles.label}>{chart.label}</div>
+            {isEditMode && <div className={styles.add}>+</div>}
         </div>
     );
 };

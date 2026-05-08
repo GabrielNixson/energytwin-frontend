@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import styles from "./Sidebar.module.scss";
 
 import userImage from "./user.jpg";
@@ -22,26 +22,12 @@ const Sidebar = () => {
   const location = useLocation();
   const { selectedOption, setSelectedOption, isSidebarCollapsed, setIsSidebarCollapsed } = useUIStore()
   const { user, logout } = useAuthStore();
-  const [isHovered, setIsHovered] = useState(false);
+  const [isHovered] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
-  };
-
-  const handleMouseEnter = () => {
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    hoverTimeoutRef.current = setTimeout(() => {
-      setIsHovered(true);
-    }, 300); // 300ms delay to open
-  };
-
-  const handleMouseLeave = () => {
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    hoverTimeoutRef.current = setTimeout(() => {
-      setIsHovered(false);
-    }, 300); // 300ms delay to close
   };
 
   useEffect(() => {
@@ -103,7 +89,7 @@ const Sidebar = () => {
           return (
             <button
               key={index}
-              title={item.label}
+              // title={item.label}
               onClick={() => optionsSelect(item)}
               className={`${styles.option} ${selectedOption === item.label ? styles.selected : ""
                 }`}

@@ -1,3 +1,4 @@
+@use "sass:color";
 @use "../../styles/base/variables" as vars;
 
 .container {
@@ -7,7 +8,7 @@
 }
 
 .message {
-    font-size: 1.1rem;
+    font-size: var(--fs-xl);
     line-height: 1.7;
     color: var(--text-primary);
     margin: 0;
@@ -27,7 +28,7 @@
     button {
         padding: 0.9rem 2rem;
         border-radius: 14px;
-        font-size: 1rem;
+        font-size: var(--font-size-body-lg);
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -60,7 +61,7 @@
         color: #ffffff;
         
         &.info {
-            background: linear-gradient(135deg, vars.$accent 0%, darken(vars.$accent, 10%) 100%);
+            background: linear-gradient(135deg, vars.$accent 0%, color.adjust(vars.$accent, $lightness: -10%) 100%);
             box-shadow: 0 8px 20px rgba(vars.$accent, 0.25);
         }
 

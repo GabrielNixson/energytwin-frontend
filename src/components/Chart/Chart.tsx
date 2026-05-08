@@ -54,7 +54,6 @@ interface ChartProps {
 const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, onDelete, onSettingsClick, isEditMode = false }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [fetchedData, setFetchedData] = useState<any>(null);
-    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (!config?.fieldname) {
@@ -85,13 +84,11 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
         const handleResponse = (payload: any) => {
             console.log(`[Chart:${id}] Received response:`, payload);
             setFetchedData(payload);
-            setIsLoading(false);
         };
 
         socket.on(responseEvent, handleResponse);
         
         // Initial fetch
-        setIsLoading(true);
         fetchData();
 
         // Polling every 2 seconds as requested
@@ -448,6 +445,7 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
                     <div className={styles.headerActions}>
                         <button
                             className={styles.settingsBtn}
+                            data-no-drag
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (onSettingsClick) onSettingsClick();
@@ -461,6 +459,7 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
                         </button>
                         <button
                             className={styles.deleteBtn}
+                            data-no-drag
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (onDelete) onDelete();

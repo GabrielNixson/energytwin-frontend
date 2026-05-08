@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './CustomDropdown.module.scss';
 
 interface Option {
@@ -23,13 +24,15 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     label
 }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number, left: number, width: number } | null>(null);
+    const triggerRef = useRef<HTMLDivElement>(null);
 
     const selectedOption = options.find(opt => opt.id === value);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+            const target = event.target as HTMLElement;
+            if (triggerRef.current && !triggerRef.current.contains(target) && !target.closest(`.${styles["options-list"]}`)) {
                 setIsOpen(false);
             }
         };
@@ -37,17 +40,30 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const toggleDropdown = () => {
+        if (!isOpen && triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            setMenuPosition({
+                top: rect.bottom + window.scrollY,
+                left: rect.left + window.scrollX,
+                width: rect.width
+            });
+        }
+        setIsOpen(!isOpen);
+    };
+
     const handleSelect = (id: string) => {
         onChange(id);
         setIsOpen(false);
     };
 
     return (
-        <div className={styles.container} ref={containerRef}>
+        <div className={styles.container}>
             {label && <label className={styles.label}>{label}</label>}
             <div 
+                ref={triggerRef}
                 className={`${styles.dropdown} ${isOpen ? styles.open : ''}`} 
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={toggleDropdown}
             >
                 <div className={styles["selected-value"]}>
                     {selectedOption ? selectedOption.label : <span className={styles.placeholder}>{placeholder}</span>}
@@ -59,8 +75,15 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 </div>
             </div>
 
-            {isOpen && (
-                <div className={styles["options-list"]}>
+            {isOpen && menuPosition && createPortal(
+                <div 
+                    className={styles["options-list"]}
+                    style={{
+                        top: menuPosition.top + 8,
+                        left: menuPosition.left,
+                        width: menuPosition.width
+                    }}
+                >
                     {options.map(option => (
                         <div 
                             key={option.id} 
@@ -74,7 +97,8 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                     {options.length === 0 && (
                         <div className={styles["no-options"]}>No options available</div>
                     )}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

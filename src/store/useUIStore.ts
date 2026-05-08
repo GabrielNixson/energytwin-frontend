@@ -53,11 +53,15 @@ interface UIStore {
   setShowCharts: (show: boolean) => void;
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
+  isShareModalOpen: boolean;
+  setIsShareModalOpen: (isOpen: boolean) => void;
 }
 
 export const useUIStore = create<UIStore>()(
   persist(
     (set) => ({
+      isShareModalOpen: false,
+      setIsShareModalOpen: (isOpen) => set({ isShareModalOpen: isOpen }),
       // Sidebar Open Close
       isSidebarCollapsed: false,
       setIsSidebarCollapsed: (isCollapsed) =>

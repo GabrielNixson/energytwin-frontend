@@ -40,6 +40,7 @@ import ConfirmModal from "@/components/ConfirmModal/ConfirmModal";
 import AssetSidebar from "@/components/AssetSidebar/AssetSidebar";
 import AIChat from "@/components/AIChat/AIChat.tsx";
 import ActionCenter from "./components/ActionCenter/ActionCenter";
+import ShareModal from "./components/ShareModal/ShareModal";
 
 const DEFAULT_CHART_CONFIG: ChartConfig = {
   showTooltips: true,
@@ -57,7 +58,8 @@ const DraggableChart = ({
   isEditMode,
   onResizeStart,
   onDelete,
-  onClick,
+  onSettingsClick,
+  onContextMenu,
   disabled = false,
   isResizing = false,
   isSelected = false,
@@ -101,8 +103,6 @@ const DraggableChart = ({
   const dragListeners =
     isEditMode && !chart.isGhost && !disabled && !isResizing ? listeners : {};
 
-  const dragDownPos = useRef({ x: 0, y: 0 });
-
   return (
     <div
       ref={setNodeRef}
@@ -110,9 +110,6 @@ const DraggableChart = ({
       className={`${styles["chart-item"]} ${chart.isGhost ? styles.ghost : ""} ${isResizing ? styles.resizing : ""}`}
       {...attributes}
       {...dragListeners}
-      onClick={(e) => {
-        e.stopPropagation();
-      }}
       onContextMenu={(e) => {
         if (!isEditMode) return;
         e.preventDefault();
@@ -170,13 +167,12 @@ const Project = () => {
   const { projectID } = useParams<{ projectID: string }>();
   const { projects, updateProjectCharts, addChart, addTab, removeTab, updateTabName, getProject, removeChart, getAssets } =
     useProjectStore();
-  const {
+    const {
     isEditMode, setIsEditMode,
     is3DMode, setIs3DMode,
     setDxfData, setDraggingChartPreview, draggingChartPreview,
     isChartSidebarOpen, setIsChartSidebarOpen,
     isAssetSidebarOpen, setIsAssetSidebarOpen,
-    findSafePosition,
     activeTabId, setActiveTabId,
     eyedropperSelection, setEyedropperSelection,
     setIsSidebarCollapsed,
@@ -184,7 +180,10 @@ const Project = () => {
     isEyedropperActive, setIsEyedropperActive,
     selectedChartId, setSelectedChartId,
     setSelectedModelId,
-    overlayCharts
+    overlayCharts,
+    showCharts,
+    isShareModalOpen, setIsShareModalOpen,
+    updateOverlayChart, removeOverlayChart
   } = useUIStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tabBarRef = useRef<HTMLDivElement>(null);
@@ -222,7 +221,7 @@ const Project = () => {
   }, [activeTabId]);
 
   const [isTabModalOpen, setIsTabModalOpen] = useState(false);
-  const [tabModalMode, setTabModalMode] = useState<{ type: 'add' | 'rename', tabId?: string, initialName?: string }>({ type: 'add' });
+  const [tabModalMode, setTabModalMode] = useState<{ type: 'add' | 'rename', tabId?: string, initialName?: string, assetId?: string }>({ type: 'add' });
   const [chartContextMenu, setChartContextMenu] = useState<{ x: number, y: number, id: string } | null>(null);
 
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -417,7 +416,7 @@ const Project = () => {
     null,
   );
 
-  const isAutoAlign = true; // Enabled by default, UI toggle removed per request
+  const isAutoAlign = false; // Disabled to prevent charts from moving automatically
 
   // Position of the item currently being dragged (in grid units)
   const [dragPosition, setDragPosition] = useState<{
@@ -428,7 +427,7 @@ const Project = () => {
   // Resizing state
   const [resizingChartId, setResizingChartId] = useState<string | null>(null);
 
-  const handleDeselectAll = useCallback((excludeTab = false) => {
+  const handleDeselectAll = useCallback((excludeTab = true) => {
     setSelectedChartId(null);
     setIsChartSidebarOpen(false);
     setIsAssetSidebarOpen(false);
@@ -448,6 +447,7 @@ const Project = () => {
     mousePos: { x: number; y: number };
     span: { w: number; h: number };
   } | null>(null);
+  const last3DDragPos = useRef<{ x: number, y: number } | null>(null);
 
   const checkOverlap = (
     a: { x: number; y: number; w: number; h: number },
@@ -535,20 +535,41 @@ const Project = () => {
     [isAutoAlign, compactLayout],
   );
 
+  // Auto-fix for corrupted/extreme coordinates
+  useEffect(() => {
+    if (!is3DMode && charts.length > 0 && charts.some(c => c.y > 500)) {
+      console.log("Detecting extreme coordinates, auto-compacting...");
+      const fixed = compactLayout(charts);
+      setCharts(fixed);
+      if (projectID && resolvedActiveTabId) {
+        updateProjectCharts(projectID, resolvedActiveTabId, fixed);
+      }
+    }
+  }, [is3DMode, charts.length, compactLayout, projectID, resolvedActiveTabId, updateProjectCharts]);
+
+
   const handleUpdateChart = useCallback(
     (id: string, updates: Partial<ChartData>) => {
-      const updated = charts.map((c) =>
-        c.id === id ? { ...c, ...updates } : c,
-      );
-      if (updates.w || updates.h || updates.x || updates.y) {
-        const moved = updated.find((c) => c.id === id)!;
-        const finalized = resolveCollisions(moved, updated);
-        saveCharts(finalized);
-      } else {
-        saveCharts(updated);
+      // 1. Try to find and update in tab-based charts
+      const isTabChart = charts.some(c => c.id === id);
+      if (isTabChart) {
+        const updated = charts.map((c) =>
+          c.id === id ? { ...c, ...updates } : c,
+        );
+        if (updates.w || updates.h || updates.x || updates.y) {
+          const moved = updated.find((c) => c.id === id)!;
+          const finalized = resolveCollisions(moved, updated);
+          saveCharts(finalized);
+        } else {
+          saveCharts(updated);
+        }
+        return;
       }
+
+      // 2. Try to update in global overlay charts
+      updateOverlayChart(id, updates as any);
     },
-    [charts, saveCharts, resolveCollisions],
+    [charts, saveCharts, resolveCollisions, updateOverlayChart],
   );
 
   // Effect: When an asset is selected via Eyedropper in 3D, open the Add Tab modal
@@ -566,28 +587,32 @@ const Project = () => {
   // Effect: Auto-align charts when switching from 3D to 2D for a clean dashboard
   const prevIs3DMode = useRef(is3DMode);
   useEffect(() => {
-    if (prevIs3DMode.current && !is3DMode) {
-      // Switched from 3D to 2D
-      saveCharts(compactLayout(charts));
-    }
     prevIs3DMode.current = is3DMode;
-  }, [is3DMode, charts, compactLayout, saveCharts]);
+  }, [is3DMode]);
+
 
   const handleRemoveChart = useCallback(
     (id: string) => {
-      let updated = charts.filter((c) => c.id !== id);
-      if (isAutoAlign) {
-        updated = compactLayout(updated);
-      }
+      // 1. Try to find and remove from tab-based charts
+      const isTabChart = charts.some(c => c.id === id);
+      if (isTabChart) {
+        let updated = charts.filter((c) => c.id !== id);
+        if (isAutoAlign) {
+          updated = compactLayout(updated);
+        }
 
-      setCharts(updated);
-      if (projectID && resolvedActiveTabId) {
-        removeChart(projectID, resolvedActiveTabId, id);
+        setCharts(updated);
+        if (projectID && resolvedActiveTabId) {
+          removeChart(projectID, resolvedActiveTabId, id);
+        }
+      } else {
+        // 2. Try to remove from global overlay charts
+        removeOverlayChart(id);
       }
 
       if (selectedChartId === id) setSelectedChartId(null);
     },
-    [charts, removeChart, projectID, resolvedActiveTabId, selectedChartId, isAutoAlign, compactLayout],
+    [charts, removeChart, projectID, resolvedActiveTabId, selectedChartId, isAutoAlign, compactLayout, removeOverlayChart, setSelectedChartId],
   );
 
   // Calculate the preview layout in real-time (for dragging)
@@ -651,8 +676,8 @@ const Project = () => {
     const container = document.getElementById("chart-container");
     if (!container) return;
     const rect = container.getBoundingClientRect();
-    const padding = 40;
-    const gap = 20;
+    const padding = 50; // Match SCSS
+    const gap = 32;    // Match SCSS
     const availableWidth = rect.width - 2 * padding;
     const colWidth = (availableWidth - 11 * gap) / 12;
 
@@ -727,6 +752,8 @@ const Project = () => {
           const relX = absoluteX - overRect.left;
           const relY = absoluteY - overRect.top;
 
+          last3DDragPos.current = { x: relX, y: relY };
+
           setDraggingChartPreview({
             type: active.data.current?.type,
             title: active.data.current?.label,
@@ -734,6 +761,7 @@ const Project = () => {
             y: relY - 175
           });
         } else {
+          last3DDragPos.current = null;
           // Fallback for screen-based if not over the area
           setDraggingChartPreview({
             type: active.data.current?.type,
@@ -752,8 +780,9 @@ const Project = () => {
     }
 
     const containerRect = container.getBoundingClientRect();
-    const padding = 40;
-    const topPadding = 80;
+    const padding = 50;    // Match SCSS
+    const topPadding = 120; // Match SCSS
+    const gap = 32;        // Match SCSS
 
     let relCenterX: number;
     let relCenterY: number;
@@ -778,7 +807,7 @@ const Project = () => {
       relCenterY = centerY - containerRect.top + container.scrollTop;
     }
 
-    const colWidth = gridMetrics.colWidth + 20;
+    const colWidth = gridMetrics.colWidth + gap;
     const rowHeight = gridMetrics.rowHeight;
 
     const chartW = activeChart?.w ?? 4;
@@ -871,21 +900,23 @@ const Project = () => {
         let relativeX = 0;
         let relativeY = 0;
 
-        if (dragPosition && rect) {
-          relativeX = dragPosition.x - rect.left;
-          relativeY = dragPosition.y - rect.top;
+        if (last3DDragPos.current) {
+          relativeX = last3DDragPos.current.x - 250;
+          relativeY = last3DDragPos.current.y - 175;
+        } else if (dragPosition && rect) {
+          // Adjust for snapCenterToCursor (subtract half of 500x350 preview size)
+          relativeX = dragPosition.x - rect.left - 250;
+          relativeY = dragPosition.y - rect.top - 175;
         } else if (event.activatorEvent && rect) {
           const e = event.activatorEvent as MouseEvent;
-          relativeX = (e.clientX + event.delta.x) - rect.left;
-          relativeY = (e.clientY + event.delta.y) - rect.top;
+          relativeX = (e.clientX + event.delta.x) - rect.left - 250;
+          relativeY = (e.clientY + event.delta.y) - rect.top - 175;
         }
         
         const containerW = rect?.width ?? window.innerWidth;
         const containerH = rect?.height ?? window.innerHeight;
 
         const targetTab = currentProject?.tabs.find((t) => t.id === resolvedActiveTabId);
-        const currentChartsList = targetTab?.charts || [];
-
         const safePos = {
           x: relativeX,
           y: relativeY
@@ -922,9 +953,9 @@ const Project = () => {
         const anchorX = safePos.x > (containerW / 2) ? 'right' : 'left';
         const anchorY = safePos.y > (containerH / 2) ? 'bottom' : 'top';
 
-        // Calculate relative position to anchor
-        const x3d = anchorX === 'right' ? (containerW - safePos.x - 500) : safePos.x;
-        const y3d = anchorY === 'bottom' ? (containerH - safePos.y - 350) : safePos.y;
+        // Calculate relative position to anchor as PERCENTAGES (rounded for precision)
+        const x3d = Number(((anchorX === 'right' ? (containerW - safePos.x - 500) : safePos.x) / containerW * 100).toFixed(3));
+        const y3d = Number(((anchorY === 'bottom' ? (containerH - safePos.y - 350) : safePos.y) / containerH * 100).toFixed(3));
 
         const newChart: ChartData = {
           id: `chart-${Date.now()}`,
@@ -1009,7 +1040,8 @@ const Project = () => {
       const dx = e.clientX - initialResizeData.current.mousePos.x;
       const dy = e.clientY - initialResizeData.current.mousePos.y;
 
-      const dw = Math.floor(dx / (colWidth + 20) + 0.5);
+      const gap = 32; // Match SCSS
+      const dw = Math.floor(dx / (colWidth + gap) + 0.5);
       const dh = Math.floor(dy / rowHeight + 0.5);
 
       setCharts((prev) => {
@@ -1017,7 +1049,8 @@ const Project = () => {
         if (!chart) return prev;
 
         // Enforce minimum width of 300px
-        const minW = Math.ceil(300 / (colWidth + 20));
+        const gap = 32; // Match SCSS
+        const minW = Math.ceil(300 / (colWidth + gap));
         let newW = Math.min(
           12,
           Math.max(minW, initialResizeData.current!.span.w + dw),
@@ -1220,70 +1253,72 @@ const Project = () => {
 
           <div className={styles["content-area"]}>
             <div className={`${styles["top-hud"]} ${isConfigOpen ? styles["is-config-open"] : ""}`}>
-              <div
-                className={styles["tab-bar-wrapper"]}
-                onClick={() => handleDeselectAll()}
-              >
+                {currentProject?.tabs && currentProject.tabs.length > 0 ? (
+                  <div
+                    className={styles["tab-bar-wrapper"]}
+                    onClick={() => handleDeselectAll()}
+                  >
 
-                {showLeftArrow && (
-                  <div className={`${styles["scroll-indicator"]} ${styles.left}`} onClick={() => scrollTabs('left')}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m15 18-6-6 6-6" />
-                    </svg>
-                  </div>
-                )}
+                    {showLeftArrow && (
+                      <div className={`${styles["scroll-indicator"]} ${styles.left}`} onClick={() => scrollTabs('left')}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m15 18-6-6 6-6" />
+                        </svg>
+                      </div>
+                    )}
 
-                <div
-                  className={`${styles["tab-bar"]} ${showLeftArrow ? styles["has-left-arrow"] : ""} ${showRightArrow ? styles["has-right-arrow"] : ""}`}
-                  ref={tabBarRef}
-                  onWheel={handleTabBarWheel}
-                  onClick={() => handleDeselectAll()}
-                >
-                  {currentProject?.tabs.map((tab) => (
                     <div
-                      key={tab.id}
-                      className={`${styles["tab-item"]} ${activeTabId === tab.id ? styles.active : ""}`}
-                      style={{ pointerEvents: 'auto', cursor: 'pointer' }}
-                      title={tab.name}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (activeTabId === tab.id) {
-                          setActiveTabId(null);
-                        } else {
-                          setActiveTabId(tab.id);
-                        }
-                        handleDeselectAll(true);
-                      }}
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        handleRenameTab(tab.id, tab.name);
-                      }}
+                      className={`${styles["tab-bar"]} ${showLeftArrow ? styles["has-left-arrow"] : ""} ${showRightArrow ? styles["has-right-arrow"] : ""}`}
+                      ref={tabBarRef}
+                      onWheel={handleTabBarWheel}
+                      onClick={() => handleDeselectAll()}
                     >
-                      <span className={styles["tab-name"]}>
-                        {tab.assetId && <span className={styles["link-icon"]} title="Linked to 3D Asset">🔗</span>}
-                        {tab.name}
-                      </span>
-                      {isEditMode && currentProject?.tabs.length > 1 && (
-                        <button
-                          className={styles["remove-tab-btn"]}
-                          onClick={(e) => handleRemoveTab(e, tab.id)}
-                          title="Delete Tab"
+                      {currentProject?.tabs.map((tab) => (
+                        <div
+                          key={tab.id}
+                          className={`${styles["tab-item"]} ${activeTabId === tab.id ? styles.active : ""}`}
+                          style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                          title={tab.name}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (activeTabId === tab.id) {
+                              setActiveTabId(null);
+                            } else {
+                              setActiveTabId(tab.id);
+                            }
+                            handleDeselectAll(true);
+                          }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            handleRenameTab(tab.id, tab.name);
+                          }}
                         >
-                          ×
-                        </button>
-                      )}
+                          <span className={styles["tab-name"]}>
+                            {tab.assetId && <span className={styles["link-icon"]} title="Linked to 3D Asset">🔗</span>}
+                            {tab.name}
+                          </span>
+                          {isEditMode && currentProject?.tabs.length > 1 && (
+                            <button
+                              className={styles["remove-tab-btn"]}
+                              onClick={(e) => handleRemoveTab(e, tab.id)}
+                              title="Delete Tab"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                {showRightArrow && (
-                  <div className={`${styles["scroll-indicator"]} ${styles.right}`} onClick={() => scrollTabs('right')}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="m9 18 6-6-6-6" />
-                    </svg>
+                    {showRightArrow && (
+                      <div className={`${styles["scroll-indicator"]} ${styles.right}`} onClick={() => scrollTabs('right')}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="m9 18 6-6-6-6" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                ) : <div />}
 
               <motion.div
                 className={styles["tools-container"]}
@@ -1294,7 +1329,11 @@ const Project = () => {
                 <div className={styles["mode-toggle-group"]}>
                   <button
                     className={`${styles["btn"]} ${!is3DMode ? styles.active : ""}`}
-                    onClick={() => setIs3DMode(false)}
+                    onClick={() => {
+                      setIs3DMode(false);
+                      setIsEditMode(false);
+                      setIsChartSidebarOpen(false);
+                    }}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -1353,7 +1392,19 @@ const Project = () => {
                   isEditMode={isEditMode}
                   onClick={handleDeselectAll}
                 >
-                  {previewCharts.length === 0 ? (
+                  {!showCharts ? (
+                    <div className={styles["empty-state"]}>
+                      <div className={styles["empty-icon"]}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          <line x1="9" y1="9" x2="15" y2="15" />
+                          <line x1="15" y1="9" x2="9" y2="15" />
+                        </svg>
+                      </div>
+                      <h3>Charts are hidden</h3>
+                      <p>Use the "Charts" toggle in the toolbar to show your widgets.</p>
+                    </div>
+                  ) : previewCharts.length === 0 ? (
                     <div className={styles["empty-state"]}>
                       <div className={styles["empty-icon"]}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1423,9 +1474,9 @@ const Project = () => {
                 exit={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
                 transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
                 className={styles["three-container"]}
-                onClick={handleDeselectAll}
+                style={{ gridColumn: '1 / -1', gridRow: '1 / -1', height: '100%' }}
+                onClick={() => handleDeselectAll(true)}
               >
-
                 <Suspense
                   fallback={
                     <div style={{ color: "white" }}>Loading 3D Scene...</div>
@@ -1523,11 +1574,15 @@ const Project = () => {
               className={styles["drag-overlay"]}
               style={{
                 width:
-                  activeId.startsWith("sidebar-") || !gridMetrics
+                  activeId.startsWith("sidebar-")
+                    ? "500px"
+                    : !gridMetrics
                     ? "300px"
                     : `${activeChart?.w ? activeChart.w * gridMetrics.colWidth + (activeChart.w - 1) * 20 : 300}px`,
                 height:
-                  activeId.startsWith("sidebar-") || !gridMetrics
+                  activeId.startsWith("sidebar-")
+                    ? "350px"
+                    : !gridMetrics
                     ? "200px"
                     : `${(activeChart?.h ?? 3) * 170 - 20}px`,
               }}
@@ -1545,6 +1600,13 @@ const Project = () => {
           ) : null}
         </DragOverlay>
       </DndContext>
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        projectName={currentProject?.name || "Project"}
+        projectUrl={window.location.href}
+      />
+
       <AddTabModal
         isOpen={isTabModalOpen}
         onClose={() => {

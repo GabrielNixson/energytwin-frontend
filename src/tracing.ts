@@ -17,7 +17,7 @@ const exporter = new OTLPTraceExporter({
 
 const provider = new WebTracerProvider({
   resource: resourceFromAttributes({
-    [SemanticResourceAttributes.SERVICE_NAME]: 'energyTwin',
+    [SemanticResourceAttributes.SERVICE_NAME]: 'energytwin-frontend',
     [SemanticResourceAttributes.SERVICE_NAMESPACE]: 'iiot',
   }),
   spanProcessors: [

@@ -11,8 +11,9 @@
     gap: 0.5rem;
 
     label {
-        font-size: 0.875rem;
-        font-weight: 500;
+        font-size: var(--fs-md);
+        font-weight: 600;
+        color: var(--text-secondary);
     }
 
     input,
@@ -20,7 +21,7 @@
     select {
         padding: 0.625rem 0.875rem;
         border-radius: 8px;
-        font-size: 1rem;
+        font-size: var(--font-size-body-lg);
         background-color: #111;
         color: #fff;
         border: 1px solid #333;
@@ -59,8 +60,8 @@
     button {
         padding: 0.625rem 1.25rem;
         border-radius: 8px;
-        font-size: 0.875rem;
-        font-weight: 600;
+        font-size: var(--fs-md);
+        font-weight: 700;
         cursor: pointer;
         transition: background-color 0.2s, opacity 0.2s;
 

@@ -8,10 +8,10 @@ interface Notification {
   message: string;
   time: string;
   isUnread: boolean;
-  user?: {
+  users?: Array<{
     name: string;
     avatar?: string;
-  };
+  }>;
 }
 
 interface NotificationDropdownProps {
@@ -52,7 +52,7 @@ const ErrorIcon = () => (
 );
 
 const ShareIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
     <polyline points="16 6 12 2 8 6" />
     <line x1="12" y1="2" x2="12" y2="15" />
@@ -90,35 +90,49 @@ export const NotificationDropdown = ({
                 className={`${styles["notification-item"]} ${notif.isUnread ? styles.unread : ""}`}
                 onClick={() => onMarkAsRead(notif.id)}
               >
-                <div className={`${styles.icon} ${styles[notif.type]}`}>
+                <div className={`${styles.icon} ${styles.left} ${styles[notif.type]}`}>
                   {notif.type === "alert" && <AlertIcon />}
                   {notif.type === "info" && <InfoIcon />}
                   {notif.type === "warning" && <WarningIcon />}
                   {notif.type === "error" && <ErrorIcon />}
+                  {notif.type === "share" && <ShareIcon />}
                 </div>
                 <div className={styles.content}>
                   <div className={styles["content-header"]}>
                     <h4>{notif.title}</h4>
-                    {notif.user && (
-                      <div className={styles["user-info"]}>
-                        {notif.user.avatar ? (
-                          <img src={notif.user.avatar} alt={notif.user.name} className={styles.avatar} />
-                        ) : (
-                          <div className={styles["avatar-placeholder"]}>
-                            {notif.user.name.charAt(0)}
-                          </div>
-                        )}
-                        <span className={styles["user-name"]}>
-                          {notif.title.toLowerCase().includes("shared") && <ShareIcon />}
-                          {notif.user.name}
-                        </span>
-                      </div>
-                    )}
                   </div>
                   <p>{notif.message}</p>
                   <span className={styles.time}>{notif.time}</span>
                 </div>
-                {notif.isUnread && <div className={styles["unread-dot"]} />}
+                {notif.users && notif.users.length > 0 && (
+                  <div 
+                    className={`${styles["avatar-stack"]} ${styles.right}`}
+                    title={notif.users.map(u => u.name).join(', ')}
+                  >
+                    {notif.users.slice(0, 3).map((user, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`${styles.icon} ${styles["user-icon"]}`}
+                        style={{ zIndex: 10 - idx }}
+                      >
+                        {user.avatar ? (
+                          <img src={user.avatar} alt={user.name} className={styles.avatar} />
+                        ) : (
+                          <div className={styles["avatar-placeholder"]}>
+                            {user.name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {notif.users.length > 3 && (
+                      <div className={styles["more-users"]}>
+                        +{notif.users.length - 3}
+                      </div>
+                    )}
+                    {notif.isUnread && <div className={styles["unread-dot"]} />}
+                  </div>
+                )}
+                {(!notif.users || notif.users.length === 0) && notif.isUnread && <div className={styles["unread-dot-standalone"]} />}
               </div>
             ))}
             {notifications.length === 0 && (

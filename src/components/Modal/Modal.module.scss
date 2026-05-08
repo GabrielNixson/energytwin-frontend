@@ -26,7 +26,7 @@
     max-height: 90vh;
     animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .header {
@@ -38,10 +38,11 @@
     color: var(--text-primary);
     background: var(--secondary);
     opacity: 0.95;
+    border-radius: 24px 24px 0 0;
 
     .title {
         margin: 0;
-        font-size: 1.25rem;
+        font-size: var(--fs-2xl);
         font-weight: 700;
         letter-spacing: -0.02em;
     }

@@ -26,6 +26,18 @@ const Projects = () => {
     handleCloseModal();
   };
 
+  const openDeleteConfirm = (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    setConfirmDelete({ isOpen: true, id, name });
+  };
+
+  const handleRemoveProject = () => {
+    if (confirmDelete.id) {
+      removeProject(confirmDelete.id);
+      setConfirmDelete({ isOpen: false });
+    }
+  };
+
   const [newlyCreatedIds, setNewlyCreatedIds] = useState<Set<string>>(new Set());
   const prevProjectsRef = useRef(projects);
 
@@ -143,7 +155,7 @@ const Projects = () => {
       <ConfirmModal
         isOpen={confirmDelete.isOpen}
         onClose={() => setConfirmDelete({ isOpen: false })}
-        // onConfirm={handleRemoveProject}
+        onConfirm={handleRemoveProject}
         title="Delete Project"
         message={`Are you sure you want to delete "${confirmDelete.name}"? This action cannot be undone.`}
         confirmText="Delete Project"

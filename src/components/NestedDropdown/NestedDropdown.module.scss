@@ -5,7 +5,7 @@
 
 .label {
     display: block;
-    font-size: 0.75rem;
+    font-size: var(--font-size-body-sm);
     font-weight: 600;
     color: var(--text-secondary);
     text-transform: uppercase;
@@ -26,7 +26,7 @@
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--text-primary);
-    font-size: 0.95rem;
+    font-size: var(--font-size-body-lg);
     user-select: none;
 
     &:hover {
@@ -55,7 +55,7 @@
     .path-separator {
         color: var(--text-secondary);
         margin: 0 6px;
-        font-size: 0.8rem;
+        font-size: var(--fs-md);
     }
 
     .parent-name {
@@ -76,25 +76,22 @@
 }
 
 .menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    width: 480px; /* Wider for 2-column */
-    max-width: calc(100vw - 40px);
+    position: fixed;
     background: var(--surface);
     backdrop-filter: blur(24px);
-    border: var(--border);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 14px;
-    box-shadow: var(--shadow-soft);
-    z-index: 1000;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 10000;
     display: flex;
     overflow: hidden;
-    animation: slideUp 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateZ(0);
+    animation: slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .parents-list {
     width: 200px;
-    border-right: var(--border);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
     padding: 8px;
     max-height: 320px;
     overflow-y: auto;
@@ -119,19 +116,19 @@
     margin-bottom: 2px;
     color: var(--text-secondary);
 
-    &:hover, &.active {
-        background: var(--background);
+    &:hover {
+        background: rgba(255, 255, 255, 0.05);
         color: var(--text-primary);
     }
 
     &.active {
-        background: rgba(var(--accent-rgb), 0.1);
+        background: rgba(var(--accent-rgb, 124, 58, 237), 0.15);
         color: var(--accent);
         font-weight: 500;
     }
 
     .arrow {
-        font-size: 0.7rem;
+        font-size: var(--fs-xs);
         opacity: 0.5;
     }
 }
@@ -145,12 +142,11 @@
     color: var(--text-primary);
 
     &:hover {
-        background: var(--background);
-        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.05);
     }
 
     &.selected {
-        background: rgba(var(--accent-rgb), 0.15);
+        background: rgba(var(--accent-rgb, 124, 58, 237), 0.15);
         color: var(--accent);
         font-weight: 600;
     }
@@ -159,18 +155,18 @@
 .no-data {
     padding: 20px;
     text-align: center;
-    color: #64748b;
-    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-size: var(--fs-base);
     width: 100%;
 }
 
-@keyframes slideUp {
+@keyframes slideIn {
     from {
         opacity: 0;
-        transform: translateY(8px);
+        transform: translateY(8px) scale(0.98);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }

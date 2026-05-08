@@ -1,13 +1,13 @@
 import { useUIStore } from "@/store/useUIStore";
 import styles from "./ActionCenter.module.scss";
-import { motion } from "framer-motion";
 
 const ActionCenter = () => {
     const {
         isEditMode, setIsEditMode,
         showLabels, setShowLabels,
         showCharts, setShowCharts,
-        setIsChartSidebarOpen
+        setIsChartSidebarOpen,
+        is3DMode
     } = useUIStore();
 
     const handleSwitchToView = () => {
@@ -18,7 +18,7 @@ const ActionCenter = () => {
     return (
         <>
             {/* Mode Switch */}
-            <div className={styles["mode-switch"]}>
+            <div className={`${styles["mode-switch"]} ${!is3DMode ? styles.disabled : ""}`}>
                 <button 
                     className={`${styles["mode-btn"]} ${!isEditMode ? styles.active : ""}`}
                     onClick={handleSwitchToView}
@@ -29,19 +29,24 @@ const ActionCenter = () => {
                     </svg>
                     <span>View</span>
                 </button>
-                <button 
-                    className={`${styles["mode-btn"]} ${isEditMode ? styles.active : ""}`}
-                    onClick={() => setIsEditMode(true)}
-                >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                    </svg>
-                    <span>Edit</span>
-                </button>
+                {is3DMode && (
+                    <button 
+                        className={`${styles["mode-btn"]} ${isEditMode ? styles.active : ""}`}
+                        onClick={() => setIsEditMode(true)}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                        </svg>
+                        <span>Edit</span>
+                    </button>
+                )}
                 <div 
                     className={styles["mode-indicator"]} 
-                    style={{ transform: `translateX(${isEditMode ? '100%' : '0%'})` }}
+                    style={{ 
+                        transform: `translateX(${isEditMode ? '100%' : '0%'})`,
+                        display: is3DMode ? 'block' : 'none'
+                    }}
                 />
             </div>
 
@@ -64,8 +69,13 @@ const ActionCenter = () => {
 
                 <button 
                     className={`${styles["toggle-btn"]} ${showCharts ? styles.active : ""}`}
-                    onClick={() => setShowCharts(!showCharts)}
-                    title={showCharts ? "Hide Charts" : "Show Charts"}
+                    onClick={() => {
+                        setShowCharts(true); // Always ensure charts are visible when clicking the button
+                        if (isEditMode) {
+                            setIsChartSidebarOpen(true);
+                        }
+                    }}
+                    title={isEditMode ? "Open Chart Sidebar" : (showCharts ? "Hide Charts" : "Show Charts")}
                 >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />

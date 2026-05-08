@@ -1,14 +1,25 @@
 import { useState, useEffect, useRef } from "react";
-import { RefreshIcon, SearchIcon, BellIcon, SettingsIcon, SunIcon, MoonIcon } from "../../assets/svg/Misc";
+import { RefreshIcon, BellIcon, SunIcon, MoonIcon } from "../../assets/svg/Misc";
 import styles from "./Navbar.module.scss";
-import { useLocation, useParams } from "react-router-dom";
-import { useProjectStore } from "../../store/useProjectStore";
 import { useUIStore } from "../../store/useUIStore";
 import { NotificationDropdown } from "./NotificationDropdown/NotificationDropdown";
+import { useLocation } from "react-router-dom";
 
 const initialNotifications = [
     {
         id: 1,
+        type: "share",
+        title: "Project Shared",
+        message: "Nalvazhuthi shared the 'Smart City IIoT' project with you as an Editor.",
+        time: "5 mins ago",
+        isUnread: true,
+        users: [{
+            name: "Nalvazhuthi",
+            avatar: "https://ui-avatars.com/api/?name=Nalvazhuthi&background=7c5dfa&color=fff"
+        }]
+    },
+    {
+        id: 2,
         type: "alert",
         title: "High Energy Usage",
         message: "HVAC Unit #3 in Server Room has exceeded its normal threshold by 15%.",
@@ -16,43 +27,39 @@ const initialNotifications = [
         isUnread: true,
     },
     {
-        id: 2,
-        type: "info",
-        title: "Floor Plan Processed",
-        message: "The 3D structural extraction for 'Lobby Level' is complete.",
+        id: 3,
+        type: "share",
+        title: "Collaborators Added",
+        message: "Sowmya, Developer, and 2 others joined your project.",
         time: "1 hour ago",
         isUnread: true,
+        users: [
+            { name: "Sowmya", avatar: "https://ui-avatars.com/api/?name=Sowmya&background=10b981&color=fff" },
+            { name: "Developer", avatar: "https://ui-avatars.com/api/?name=Developer&background=3b82f6&color=fff" },
+            { name: "Admin", avatar: "https://ui-avatars.com/api/?name=Admin&background=f59e0b&color=fff" },
+            { name: "Guest" }
+        ]
     },
     {
-        id: 3,
+        id: 4,
         type: "warning",
         title: "Maintenance Reminder",
         message: "Chiller #1 requires routine filter replacement.",
         time: "5 hours ago",
         isUnread: false,
     },
-    {
-        id: 4,
-        type: "error",
-        title: "Sensor Offline",
-        message: "Temperature sensor in Zone A is unresponsive.",
-        time: "1 day ago",
-        isUnread: false,
-    },
 ];
 
 const Navbar = () => {
+    const { theme, setTheme, setIsShareModalOpen } = useUIStore();
     const location = useLocation();
-    const { projectID } = useParams();
-    const { projects } = useProjectStore();
-    const { theme, setTheme } = useUIStore();
+    const isProjectPage = location.pathname.includes("/project/");
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [notifications, setNotifications] = useState(initialNotifications);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const notificationRef = useRef<HTMLDivElement>(null);
 
-    const currentProject = projects.find(p => p.id === projectID);
 
     const unreadCount = notifications.filter(n => n.isUnread).length;
 
@@ -135,9 +142,20 @@ const Navbar = () => {
                     >
                         {theme === "dark" ? <SunIcon /> : <MoonIcon />}
                     </button>
-                    {/* <button className={styles["icon-btn"]} title="Settings">
-                        <SettingsIcon />
-                    </button> */}
+
+                    {isProjectPage && (
+                        <button
+                            className={`${styles["icon-btn"]} ${styles["share-nav-btn"]}`}
+                            title="Share Project"
+                            onClick={() => setIsShareModalOpen(true)}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                                <polyline points="16 6 12 2 8 6" />
+                                <line x1="12" y1="2" x2="12" y2="15" />
+                            </svg>
+                        </button>
+                    )}
                 </div>
 
                 <div

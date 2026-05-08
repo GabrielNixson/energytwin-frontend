@@ -97,10 +97,12 @@ const Billing: React.FC = () => {
             variants={containerVariants}
         >
             <div className={styles["page-header"]}>
-                <motion.h1 variants={itemVariants}>Billing Settings</motion.h1>
-                <motion.p className={styles["subtitle"]} variants={itemVariants}>
-                    Configure your billing cycles and regional tariffs.
-                </motion.p>
+                <div className={styles["header-text"]}>
+                    <motion.h1 variants={itemVariants}>Billing Settings</motion.h1>
+                    <motion.p className={styles["subtitle"]} variants={itemVariants}>
+                        Configure your billing cycles and regional tariffs.
+                    </motion.p>
+                </div>
             </div>
 
             <div className={styles["content-layout"]}>

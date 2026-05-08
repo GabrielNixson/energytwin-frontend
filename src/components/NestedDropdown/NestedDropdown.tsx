@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './NestedDropdown.module.scss';
 import { SensorParent } from '@/services/influxService';
 
@@ -19,7 +20,8 @@ const NestedDropdown: React.FC<NestedDropdownProps> = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [activeParentId, setActiveParentId] = useState<string | null>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number, left: number, width: number } | null>(null);
+    const triggerRef = useRef<HTMLDivElement>(null);
 
     // Parse the current value to find selected parent and child labels for display
     const [selectedParentId, selectedChildId] = value ? value.split('.') : [null, null];
@@ -29,7 +31,8 @@ const NestedDropdown: React.FC<NestedDropdownProps> = ({
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+            const target = event.target as HTMLElement;
+            if (triggerRef.current && !triggerRef.current.contains(target) && !target.closest(`.${styles.menu}`)) {
                 setIsOpen(false);
             }
         };
@@ -44,6 +47,18 @@ const NestedDropdown: React.FC<NestedDropdownProps> = ({
         }
     }, [isOpen, selectedParentId, data]);
 
+    const toggleDropdown = () => {
+        if (!isOpen && triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            setMenuPosition({
+                top: rect.bottom + window.scrollY,
+                left: rect.left + window.scrollX,
+                width: rect.width
+            });
+        }
+        setIsOpen(!isOpen);
+    };
+
     const handleSelect = (parentId: string, childId: string) => {
         onChange(`${parentId}.${childId}`);
         setIsOpen(false);
@@ -52,11 +67,12 @@ const NestedDropdown: React.FC<NestedDropdownProps> = ({
     const activeParent = data.find(p => p.id === activeParentId);
 
     return (
-        <div className={styles.container} ref={containerRef}>
+        <div className={styles.container}>
             {label && <label className={styles.label}>{label}</label>}
             <div 
+                ref={triggerRef}
                 className={`${styles["dropdown-btn"]} ${isOpen ? styles.open : ''}`} 
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={toggleDropdown}
             >
                 <div className={styles["selected-value"]}>
                     {selectedParent && selectedChild ? (
@@ -76,8 +92,15 @@ const NestedDropdown: React.FC<NestedDropdownProps> = ({
                 </div>
             </div>
 
-            {isOpen && (
-                <div className={styles.menu}>
+            {isOpen && menuPosition && createPortal(
+                <div 
+                    className={styles.menu}
+                    style={{
+                        top: menuPosition.top + 8,
+                        left: menuPosition.left,
+                        width: Math.max(menuPosition.width, 400) // Double wide menu
+                    }}
+                >
                     {data.length > 0 ? (
                         <>
                             <div className={styles["parents-list"]}>
@@ -112,7 +135,8 @@ const NestedDropdown: React.FC<NestedDropdownProps> = ({
                     ) : (
                         <div className={styles["no-data"]}>No sensors available</div>
                     )}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

@@ -146,7 +146,6 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                     if (isClick(e)) {
                         // Select the model on right-click too for consistency
                         e.stopPropagation();
-                        onSelect(groupRef.current);
                         onContextMenu(e);
                     } else {
                         // Prevent menu during pans
@@ -228,13 +227,12 @@ const DragPreview = ({ path, positionRef, rotationRef }: { path: string, positio
                 path={path}
                 meshRef={meshRef}
                 opacity={style.modelOpacity}
-                scale={style.modelScale}
             />
         </Suspense>
     );
 };
 
-const PlacedModelPreview = ({ path, meshRef, opacity, scale }: { path: string, meshRef: React.RefObject<THREE.Group>, opacity: number, scale: number }) => {
+const PlacedModelPreview = ({ path, meshRef, opacity }: { path: string, meshRef: React.RefObject<THREE.Group>, opacity: number }) => {
     const { scene } = useGLTF(path);
     const PREVIEW_SCALE = 4.5;
 
@@ -376,7 +374,8 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
         setHoveredAsset,
         isEditMode,
         showLabels,
-        showCharts
+        showCharts,
+        setSelectedChartId
     } = useUIStore();
 
     // Get current project and asset data
@@ -643,10 +642,12 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
                     key={chart.id}
                     {...chart}
                     // Map 3D fields to expected props or fallback
-                    x={chart.x3d ?? 400}
-                    y={chart.y3d ?? 200}
+                    x={chart.x3d ?? 10}
+                    y={chart.y3d ?? 10}
                     w={chart.w3d ?? 400}
                     h={chart.h3d ?? 300}
+                    anchorX={chart.anchorX}
+                    anchorY={chart.anchorY}
                     constraintsRef={containerRef}
                     onUpdate={(updates) => {
                         if (projectID && activeTab) {
@@ -960,16 +961,6 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
                     onLinkToTab={contextMenu.type === 'asset' ? handleLinkToActiveTab : undefined}
                     onRelocate={contextMenu.type === 'asset' ? handleRelocate : undefined}
                     onConfigure={contextMenu.type === 'chart' ? () => setSelectedChartId(contextMenu.id) : undefined}
-                    autoRotate={contextMenu.type === 'asset' ? placedModels.find(m => m.id === contextMenu.id)?.autoRotate : undefined}
-                    onToggleAutoRotate={() => {
-                        if (projectID && contextMenu.type === 'asset') {
-                            const model = placedModels.find(m => m.id === contextMenu.id);
-                            updateAsset(projectID, contextMenu.id, {
-                                autoRotate: !model?.autoRotate
-                            });
-                        }
-                        setContextMenu(null);
-                    }}
                 />
             )}
         </div>

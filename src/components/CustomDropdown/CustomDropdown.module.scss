@@ -7,7 +7,7 @@
 
 .label {
     display: block;
-    font-size: 0.8rem;
+    font-size: var(--fs-md);
     font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
@@ -29,7 +29,7 @@
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--text-primary);
-    font-size: 0.95rem;
+    font-size: var(--font-size-body-lg);
     user-select: none;
 
     &:hover {
@@ -73,20 +73,21 @@
 }
 
 .options-list {
-    position: absolute;
-    top: calc(100% + 10px);
-    left: 0;
-    width: 100%;
-    max-height: 280px;
+    position: fixed;
     background: var(--surface);
     backdrop-filter: blur(30px);
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 16px;
-    box-shadow: var(--shadow-soft);
-    z-index: 1000;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 10000;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 8px;
-    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transform: translateZ(0);
+    animation: slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 
     &::-webkit-scrollbar {
         width: 4px;
@@ -106,39 +107,34 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin-bottom: 4px;
-
-    &:last-child {
-        margin-bottom: 0;
-    }
+    box-sizing: border-box;
 
     &:hover {
-        background: var(--accent-hover);
+        background: rgba(255, 255, 255, 0.05);
     }
 
     &.selected {
-        background: rgba(vars.$accent, 0.15);
-        color: vars.$accent;
-
+        background: rgba(var(--accent-rgb, 124, 58, 237), 0.15);
+        
         .option-label {
             font-weight: 700;
-            color: vars.$accent;
+            color: var(--accent);
         }
 
         .option-description {
-            color: rgba(vars.$accent, 0.8);
+            color: rgba(var(--accent-rgb), 0.8);
         }
     }
 }
 
 .option-label {
-    font-size: 0.95rem;
+    font-size: var(--font-size-body-lg);
     color: var(--text-primary);
     font-weight: 500;
 }
 
 .option-description {
-    font-size: 0.75rem;
+    font-size: var(--font-size-body-sm);
     color: var(--text-secondary);
     line-height: 1.4;
 }
@@ -147,11 +143,11 @@
     padding: 20px;
     text-align: center;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: var(--fs-base);
     font-style: italic;
 }
 
-@keyframes slideUp {
+@keyframes slideIn {
     from {
         opacity: 0;
         transform: translateY(12px) scale(0.98);

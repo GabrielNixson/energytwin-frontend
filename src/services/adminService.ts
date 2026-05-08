@@ -3,8 +3,8 @@ import { Member, Role, ActivityLogEntry } from '../types/admin.types';
 const MOCK_MEMBERS: Member[] = [
   {
     id: '1',
-    name: 'Sowmy',
-    email: 'sowmy@example.com',
+    name: 'Nalvazhuthi',
+    email: 'nalvazhuthi@example.com',
     role: 'Admin',
     status: 'Active',
     joinedDate: '2024-01-15',
@@ -67,7 +67,7 @@ const MOCK_LOGS: ActivityLogEntry[] = [
   {
     id: 'l1',
     userId: '1',
-    userName: 'Sowmy',
+    userName: 'Nalvazhuthi',
     action: 'INVITE_MEMBER',
     target: 'jane@example.com',
     timestamp: '2024-05-01T10:30:00Z',
@@ -75,7 +75,7 @@ const MOCK_LOGS: ActivityLogEntry[] = [
   {
     id: 'l2',
     userId: '1',
-    userName: 'Sowmy',
+    userName: 'Nalvazhuthi',
     action: 'UPDATE_ROLE',
     target: 'Operator Permissions',
     timestamp: '2024-04-28T15:45:00Z',

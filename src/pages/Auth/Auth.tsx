@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../store/useAuthStore';
-import { useUIStore } from '../../store/useUIStore';
 import { authService } from '../../services/auth';
-import { SunIcon, MoonIcon } from '../../assets/svg/Misc';
 import styles from './Auth.module.scss';
+import { LogoIcon } from '@/assets/svg/LogoSvg';
+import { useNavigate } from 'react-router-dom';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,14 +15,9 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
 
   const { login } = useAuthStore();
+  const navigate = useNavigate();
   // Theme is still applied globally, but we remove the manual toggle from this page
-  const { theme } = useUIStore();
 
-  const handleSocialLogin = (provider: string) => {
-    console.log(`Logging in with ${provider}`);
-    // Implementation would typically redirect to backend or use a library such as firebase or supabase
-    // window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/${provider}`;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +75,15 @@ const Auth = () => {
         initial="hidden"
         animate="visible"
       >
+        <div 
+          className={styles.logoHeader} 
+          onClick={() => navigate('/')}
+          title="Go to Home"
+        >
+          <LogoIcon />
+          <span>Energy Twin</span>
+        </div>
+
         <AnimatePresence mode="wait">
           <motion.div
             key={isLogin ? 'login' : 'signup'}
