@@ -235,7 +235,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, projectUrl, pr
                     </div>
                 </div>
 
-                <div className={styles["divider-text"]}>
+                {/* <div className={styles["divider-text"]}>
                     <span>or share link</span>
                 </div>
 
@@ -260,7 +260,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, projectUrl, pr
                             {copied ? "Copied!" : "Copy"}
                         </button>
                     </div>
-                </div>
+                </div> */}
             </div>
         </Modal>
     );

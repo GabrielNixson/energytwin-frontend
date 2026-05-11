@@ -7,6 +7,7 @@ import {
   OverviewIcon,
   ServicesIcon,
   AdminIcon,
+  DeviceManagementIcon,
 } from "./SidebarIcons";
 
 import { LogoIcon } from "../../assets/svg/LogoSvg";
@@ -41,6 +42,7 @@ const Sidebar = () => {
     { label: "projects", route: "projects", icon: ServicesIcon },
     { label: "Billing", route: "billing", icon: BillingIcon },
     { label: "Admin", route: "admin", icon: AdminIcon },
+    { label: "Device Management", route: "device-management", icon: DeviceManagementIcon },
   ];
 
   useEffect(() => {

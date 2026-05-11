@@ -46,8 +46,8 @@ function toAbsolutePixels(
         ? containerH - (y / 100) * containerH - h
         : (y / 100) * containerH;
     return {
-        left: Math.max(0, Math.min(left, containerW - w)),
-        top: Math.max(0, Math.min(top, containerH - h)),
+        left: Math.round(Math.max(0, Math.min(left, containerW - w))),
+        top: Math.round(Math.max(0, Math.min(top, containerH - h))),
     };
 }
 
@@ -122,22 +122,33 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
         }
     }, [w, h, isResizing]);
 
-    // Handle window resize to keep pixel positions in sync with percentages
+    // Handle container resize to keep pixel positions in sync with percentages
     React.useEffect(() => {
-        const handleResize = () => {
-            if (isDraggingRef.current || isResizing) return;
-            if (!constraintsRef.current) return;
-            const rect = constraintsRef.current.getBoundingClientRect();
-            const { width, height } = rect;
+        if (!constraintsRef.current) return;
+
+        const observer = new ResizeObserver((entries) => {
+            const entry = entries[0];
+            if (!entry) return;
+
+            const { width, height } = entry.contentRect;
+            
+            // Avoid updates during drag/resize to prevent fighting
+            if (isDraggingRef.current || isResizing) {
+                setContainerSize({ w: width, h: height });
+                return;
+            }
+
             setContainerSize({ w: width, h: height });
+            
             if (width === 0 || height === 0) return;
+            
             const { left, top } = toAbsolutePixels(x, y, anchorX, anchorY, localW, localH, width, height);
             setPosLeft(left);
             setPosTop(top);
-        };
+        });
 
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
+        observer.observe(constraintsRef.current);
+        return () => observer.disconnect();
     }, [x, y, anchorX, anchorY, localW, localH]);
 
     // ── DRAG STATE ─────────────────────────────────────────────────────────────
@@ -173,8 +184,8 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
         const cW = containerSize.w || constraintsRef.current?.getBoundingClientRect().width || window.innerWidth;
         const cH = containerSize.h || constraintsRef.current?.getBoundingClientRect().height || window.innerHeight;
 
-        const newLeft = Math.max(0, Math.min(dragStart.current.left + dx, cW - localW));
-        const newTop = Math.max(0, Math.min(dragStart.current.top + dy, cH - localH));
+        const newLeft = Math.round(Math.max(0, Math.min(dragStart.current.left + dx, cW - localW)));
+        const newTop = Math.round(Math.max(0, Math.min(dragStart.current.top + dy, cH - localH)));
 
         setPosLeft(newLeft);
         setPosTop(newTop);
@@ -217,9 +228,51 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
         }
     };
 
-    // Derived properties for rendering
-    const currentIsRight = containerSize.w > 0 && (posLeft + localW / 2) > (containerSize.w / 2);
-    const currentIsBottom = containerSize.h > 0 && (posTop + localH / 2) > (containerSize.h / 2);
+    // ── RESIZE STATE ──────────────────────────────────────────────────────────
+    const resizeStart = React.useRef<{ w: number, h: number, x: number, y: number } | null>(null);
+
+    const handleResizePointerDown = (e: React.PointerEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+        setIsResizing(true);
+        resizeStart.current = {
+            w: localW,
+            h: localH,
+            x: e.clientX,
+            y: e.clientY
+        };
+    };
+
+    const handleResizePointerMove = (e: React.PointerEvent) => {
+        if (!isResizing || !resizeStart.current) return;
+        e.stopPropagation();
+        
+        const dx = e.clientX - resizeStart.current.x;
+        const dy = e.clientY - resizeStart.current.y;
+        
+        const newW = Math.max(300, resizeStart.current.w + dx);
+        const newH = Math.max(250, resizeStart.current.h + dy);
+        
+        setLocalW(newW);
+        setLocalH(newH);
+    };
+
+    const handleResizePointerUp = (e: React.PointerEvent) => {
+        if (!isResizing) return;
+        setIsResizing(false);
+        (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
+        
+        const finalW = localW;
+        const finalH = localH;
+        resizeStart.current = null;
+
+        if (onUpdate) {
+            onUpdate({ x, y, w: finalW, h: finalH, anchorX, anchorY });
+        } else {
+            updateOverlayChart(id, { w: finalW, h: finalH });
+        }
+    };
 
     return (
         <div
@@ -237,10 +290,8 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
             }}
             style={{
                 position: 'absolute',
-                left: currentIsRight ? 'auto' : posLeft,
-                right: currentIsRight ? (containerSize.w - posLeft - localW) : 'auto',
-                top: currentIsBottom ? 'auto' : posTop,
-                bottom: currentIsBottom ? (containerSize.h - posTop - localH) : 'auto',
+                left: posLeft,
+                top: posTop,
                 width: localW,
                 height: localH,
                 zIndex: (isConfigOpen && isSelected) ? 2000 : 1000,
@@ -298,6 +349,13 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
                 {isEditMode && (
                     <div
                         data-resize-handle="true"
+                        onPointerDown={handleResizePointerDown}
+                        onPointerMove={handleResizePointerMove}
+                        onPointerUp={handleResizePointerUp}
+                        onLostPointerCapture={() => {
+                            setIsResizing(false);
+                            resizeStart.current = null;
+                        }}
                         style={{
                             position: 'absolute',
                             bottom: 0,
@@ -313,41 +371,6 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
                             color: 'rgba(255, 255, 255, 0.6)',
                             background: 'linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.05) 50%)',
                             borderBottomRightRadius: '16px'
-                        }}
-                        onPointerDown={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
-                            setIsResizing(true);
-
-                            const startW = localW;
-                            const startH = localH;
-                            const startX = e.clientX;
-                            const startY = e.clientY;
-                            let currentW = startW;
-                            let currentH = startH;
-
-                            const onMove = (ev: PointerEvent) => {
-                                ev.stopPropagation();
-                                currentW = Math.max(300, startW + (ev.clientX - startX));
-                                currentH = Math.max(250, startH + (ev.clientY - startY));
-                                requestAnimationFrame(() => {
-                                    setLocalW(currentW);
-                                    setLocalH(currentH);
-                                });
-                            };
-
-                            const onUp = (ev: PointerEvent) => {
-                                setIsResizing(false);
-                                (e.currentTarget as HTMLDivElement).releasePointerCapture(ev.pointerId);
-                                window.removeEventListener('pointermove', onMove);
-                                window.removeEventListener('pointerup', onUp);
-                                if (onUpdate) onUpdate({ x, y, w: currentW, h: currentH });
-                                else updateOverlayChart(id, { w: currentW, h: currentH });
-                            };
-
-                            window.addEventListener('pointermove', onMove);
-                            window.addEventListener('pointerup', onUp);
                         }}
                     >
                         ◢

@@ -9,6 +9,8 @@ import Projects from "./pages/Projects/Projects";
 import Navbar from "./components/Navbar/Navbar";
 import Project from "./pages/Project/Project";
 import Auth from "./pages/Auth/Auth";
+import DeviceManagement from "./pages/DeviceManagement/DeviceManagement";
+import EdgeDetails from "./pages/DeviceManagement/EdgeDetails";
 import { useAuthStore } from "./store/useAuthStore";
 import { useProjectStore } from "./store/useProjectStore";
 import { useUIStore } from "./store/useUIStore";
@@ -72,6 +74,8 @@ const App = () => {
                 <Route path="billing" element={<Billing />} />
                 <Route path="/billing" element={<Billing />} />
                 <Route path="admin" element={<Admin />} />
+                <Route path="device-management" element={<DeviceManagement />} />
+                <Route path="device-management/:id" element={<EdgeDetails />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </>
             )}

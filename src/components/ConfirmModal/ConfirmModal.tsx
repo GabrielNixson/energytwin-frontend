@@ -1,6 +1,6 @@
-import React from "react";
-import Modal from "../Modal/Modal";
-import styles from "./ConfirmModal.module.scss";
+import React from 'react';
+import Modal from '../Modal/Modal';
+import styles from './ConfirmModal.module.scss';
 
 interface ConfirmModalProps {
     isOpen: boolean;
@@ -8,37 +8,39 @@ interface ConfirmModalProps {
     onConfirm: () => void;
     title: string;
     message: string;
-    confirmText?: string;
-    cancelText?: string;
-    type?: 'danger' | 'warning' | 'info';
+    confirmLabel?: string;
+    cancelLabel?: string;
+    isDanger?: boolean;
 }
 
-const ConfirmModal: React.FC<ConfirmModalProps> = ({ 
-    isOpen, 
-    onClose, 
-    onConfirm, 
-    title, 
-    message, 
-    confirmText = "Confirm", 
-    cancelText = "Cancel",
-    type = 'info'
+const ConfirmModal: React.FC<ConfirmModalProps> = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    title,
+    message,
+    confirmLabel = "Confirm",
+    cancelLabel = "Cancel",
+    isDanger = true
 }) => {
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={title}>
             <div className={styles.container}>
-                <p className={styles.message}>{message}</p>
-                <div className={styles.actions}>
-                    <button className={styles.cancelButton} onClick={onClose}>
-                        {cancelText}
+                <div className={styles.message}>
+                    {message}
+                </div>
+                <div className={styles.footer}>
+                    <button className={styles.cancelBtn} onClick={onClose}>
+                        {cancelLabel}
                     </button>
                     <button 
-                        className={`${styles.confirmButton} ${styles[type]}`} 
+                        className={`${styles.confirmBtn} ${isDanger ? styles.danger : ''}`} 
                         onClick={() => {
                             onConfirm();
                             onClose();
                         }}
                     >
-                        {confirmText}
+                        {confirmLabel}
                     </button>
                 </div>
             </div>
