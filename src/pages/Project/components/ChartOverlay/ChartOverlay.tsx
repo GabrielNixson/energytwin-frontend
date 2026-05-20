@@ -12,13 +12,13 @@ interface ChartOverlayProps {
     y: number;
     w: number;
     h: number;
+    anchorX?: 'left' | 'right';
+    anchorY?: 'top' | 'bottom';
     constraintsRef: React.RefObject<HTMLDivElement>;
     onUpdate?: (updates: any) => void;
     onDelete?: () => void;
     onContextMenu?: (e: React.MouseEvent) => void;
     isConfigOpen?: boolean;
-    anchorX?: 'left' | 'right';
-    anchorY?: 'top' | 'bottom';
 }
 
 const DEFAULT_CHART_CONFIG: ChartConfig = {
@@ -32,19 +32,25 @@ const DEFAULT_CHART_CONFIG: ChartConfig = {
     function: "last"
 };
 
-/** Convert stored (anchor-relative) percentage coordinates to absolute pixels. */
+/** Convert stored percentage coordinates relative to anchor to absolute pixels. */
 function toAbsolutePixels(
     x: number, y: number,
-    anchorX: 'left' | 'right', anchorY: 'top' | 'bottom',
     w: number, h: number,
-    containerW: number, containerH: number
+    containerW: number, containerH: number,
+    anchorX: 'left' | 'right' = 'left',
+    anchorY: 'top' | 'bottom' = 'top'
 ) {
-    const left = anchorX === 'right'
-        ? containerW - (x / 100) * containerW - w
-        : (x / 100) * containerW;
+    const leftPx = (x / 100) * containerW;
+    const topPx = (y / 100) * containerH;
+
+    const left = anchorX === 'right' 
+        ? containerW - leftPx - w 
+        : leftPx;
+        
     const top = anchorY === 'bottom'
-        ? containerH - (y / 100) * containerH - h
-        : (y / 100) * containerH;
+        ? containerH - topPx - h
+        : topPx;
+    
     return {
         left: Math.round(Math.max(0, Math.min(left, containerW - w))),
         top: Math.round(Math.max(0, Math.min(top, containerH - h))),
@@ -53,8 +59,9 @@ function toAbsolutePixels(
 
 const ChartOverlay: React.FC<ChartOverlayProps> = ({
     id, type, title, config, x, y, w, h,
+    anchorX = 'left', anchorY = 'top',
     constraintsRef, onUpdate, onDelete, onContextMenu,
-    isConfigOpen, anchorX = 'left', anchorY = 'top'
+    isConfigOpen
 }) => {
     const {
         removeOverlayChart, updateOverlayChart, bringOverlayToFront,
@@ -74,7 +81,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
     const [posTop, setPosTop] = React.useState<number>(0);
     const [containerSize, setContainerSize] = React.useState({ w: 0, h: 0 });
     const posInitialized = React.useRef(false);
-    const lastUpdateRef = React.useRef<{ x: number, y: number, anchorX: string, anchorY: string } | null>(null);
+    const lastUpdateRef = React.useRef<{ x: number, y: number } | null>(null);
 
     // Initialize pixel position from props on first render
     React.useLayoutEffect(() => {
@@ -83,7 +90,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
         const { width, height } = rect;
         setContainerSize({ w: width, h: height });
         if (width === 0 || height === 0) return;
-        const { left, top } = toAbsolutePixels(x, y, anchorX, anchorY, localW, localH, width, height);
+        const { left, top } = toAbsolutePixels(x, y, localW, localH, width, height, anchorX, anchorY);
         setPosLeft(left);
         setPosTop(top);
         posInitialized.current = true;
@@ -94,13 +101,11 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
     const isDraggingRef = React.useRef(false);
     React.useEffect(() => {
         if (isDraggingRef.current || isResizing) return;
-        
+
         // Skip sync if props match our last intentional update (avoids rounding jumps)
         if (lastUpdateRef.current &&
             lastUpdateRef.current.x === x &&
-            lastUpdateRef.current.y === y &&
-            lastUpdateRef.current.anchorX === anchorX &&
-            lastUpdateRef.current.anchorY === anchorY) {
+            lastUpdateRef.current.y === y) {
             return;
         }
 
@@ -109,7 +114,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
         const { width, height } = rect;
         if (width === 0 || height === 0) return;
 
-        const { left, top } = toAbsolutePixels(x, y, anchorX, anchorY, localW, localH, width, height);
+        const { left, top } = toAbsolutePixels(x, y, localW, localH, width, height, anchorX, anchorY);
         setPosLeft(left);
         setPosTop(top);
     }, [x, y, anchorX, anchorY]);
@@ -131,7 +136,7 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
             if (!entry) return;
 
             const { width, height } = entry.contentRect;
-            
+
             // Avoid updates during drag/resize to prevent fighting
             if (isDraggingRef.current || isResizing) {
                 setContainerSize({ w: width, h: height });
@@ -139,17 +144,17 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
             }
 
             setContainerSize({ w: width, h: height });
-            
+
             if (width === 0 || height === 0) return;
-            
-            const { left, top } = toAbsolutePixels(x, y, anchorX, anchorY, localW, localH, width, height);
+
+            const { left, top } = toAbsolutePixels(x, y, localW, localH, width, height, anchorX, anchorY);
             setPosLeft(left);
             setPosTop(top);
         });
 
         observer.observe(constraintsRef.current);
         return () => observer.disconnect();
-    }, [x, y, anchorX, anchorY, localW, localH]);
+    }, [x, y, localW, localH, anchorX, anchorY]);
 
     // ── DRAG STATE ─────────────────────────────────────────────────────────────
     const dragStart = React.useRef({ left: 0, top: 0, pointerLeft: 0, pointerTop: 0 });
@@ -204,22 +209,16 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
         const finalLeft = posLeft;
         const finalTop = posTop;
 
-        const newAnchorX: 'left' | 'right' = (finalLeft + localW / 2) > (containerW / 2) ? 'right' : 'left';
-        const newAnchorY: 'top' | 'bottom' = (finalTop + localH / 2) > (containerH / 2) ? 'bottom' : 'top';
+        // Recalculate anchor based on viewport quadrants to keep consistent with drop behavior
+        const newAnchorX = finalLeft > (containerW / 2) ? 'right' : 'left';
+        const newAnchorY = finalTop > (containerH / 2) ? 'bottom' : 'top';
 
-        const storedX = Number((
-            newAnchorX === 'right'
-                ? (containerW - finalLeft - localW) / containerW * 100
-                : finalLeft / containerW * 100
-        ).toFixed(4));
+        const storedX = Number(((newAnchorX === 'right' ? (containerW - finalLeft - localW) : finalLeft) / containerW * 100).toFixed(4));
+        const storedY = Number(((newAnchorY === 'bottom' ? (containerH - finalTop - localH) : finalTop) / containerH * 100).toFixed(4));
 
-        const storedY = Number((
-            newAnchorY === 'bottom'
-                ? (containerH - finalTop - localH) / containerH * 100
-                : finalTop / containerH * 100
-        ).toFixed(4));
+        console.log(`[ChartOverlay] Drag ended. Calculated Percentage: X=${storedX}%, Y=${storedY}%, anchorX=${newAnchorX}, anchorY=${newAnchorY}`);
 
-        lastUpdateRef.current = { x: storedX, y: storedY, anchorX: newAnchorX, anchorY: newAnchorY };
+        lastUpdateRef.current = { x: storedX, y: storedY };
 
         if (onUpdate) {
             onUpdate({ x: storedX, y: storedY, w: localW, h: localH, anchorX: newAnchorX, anchorY: newAnchorY });
@@ -247,13 +246,13 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
     const handleResizePointerMove = (e: React.PointerEvent) => {
         if (!isResizing || !resizeStart.current) return;
         e.stopPropagation();
-        
+
         const dx = e.clientX - resizeStart.current.x;
         const dy = e.clientY - resizeStart.current.y;
-        
+
         const newW = Math.max(300, resizeStart.current.w + dx);
         const newH = Math.max(250, resizeStart.current.h + dy);
-        
+
         setLocalW(newW);
         setLocalH(newH);
     };
@@ -262,13 +261,13 @@ const ChartOverlay: React.FC<ChartOverlayProps> = ({
         if (!isResizing) return;
         setIsResizing(false);
         (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
-        
+
         const finalW = localW;
         const finalH = localH;
         resizeStart.current = null;
 
         if (onUpdate) {
-            onUpdate({ x, y, w: finalW, h: finalH, anchorX, anchorY });
+            onUpdate({ x, y, w: finalW, h: finalH });
         } else {
             updateOverlayChart(id, { w: finalW, h: finalH });
         }

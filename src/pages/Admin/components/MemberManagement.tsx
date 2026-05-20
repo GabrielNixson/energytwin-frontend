@@ -98,16 +98,22 @@ const MemberManagement = () => {
 
   return (
     <div className="member-management" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ 
+      <div className="management-header" style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
         marginBottom: '1rem',
-        padding: '1.5rem 0 1rem 0',
-        borderBottom: '1px solid var(--border-color)'
+        padding: '1rem 0',
+        borderBottom: '1px solid var(--border-color)',
+        flexWrap: 'wrap',
+        gap: '12px'
       }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Team Members</h2>
-        <button className="primary-btn" onClick={handleOpenAddModal}>+ Invite Member</button>
+        <h2 style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, margin: 0 }}>Team Members</h2>
+        <button className="primary-btn" onClick={handleOpenAddModal} style={{ 
+          padding: '8px 16px', 
+          fontSize: 'var(--fs-sm)',
+          whiteSpace: 'nowrap'
+        }}>+ Invite Member</button>
       </div>
 
       <div className="admin-table-container">

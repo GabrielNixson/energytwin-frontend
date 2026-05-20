@@ -45,7 +45,7 @@ const ActionCenter = () => {
                     className={styles["mode-indicator"]} 
                     style={{ 
                         transform: `translateX(${isEditMode ? '100%' : '0%'})`,
-                        display: is3DMode ? 'block' : 'none'
+                        width: is3DMode ? undefined : 'calc(100% - 6px)'
                     }}
                 />
             </div>
@@ -70,12 +70,10 @@ const ActionCenter = () => {
                 <button 
                     className={`${styles["toggle-btn"]} ${showCharts ? styles.active : ""}`}
                     onClick={() => {
-                        setShowCharts(true); // Always ensure charts are visible when clicking the button
-                        if (isEditMode) {
-                            setIsChartSidebarOpen(true);
-                        }
+                        const newShowCharts = !showCharts;
+                        setShowCharts(newShowCharts);e
                     }}
-                    title={isEditMode ? "Open Chart Sidebar" : (showCharts ? "Hide Charts" : "Show Charts")}
+                    title={isEditMode ? "Toggle Charts" : (showCharts ? "Hide Charts" : "Show Charts")}
                 >
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />

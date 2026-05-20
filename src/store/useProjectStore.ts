@@ -67,7 +67,9 @@ const mapAsset = (s: any): Asset => ({
     path: s.path,
     position: s.position || [0, 0, 0],
     rotation: s.rotation || [0, 0, 0],
-    autoRotate: s.autoRotate || false
+    autoRotate: s.autoRotate || false,
+    status: s.status,
+    metadata: s.metadata
 });
 
 const mapTab = (t: any): TabData => ({
@@ -89,8 +91,8 @@ const mapChart = (c: any): ChartData => ({
     y3d: (c.y3d !== undefined ? c.y3d : c.chartData?.y3d),
     w3d: (c.w3d !== undefined ? c.w3d : c.chartData?.w3d),
     h3d: (c.h3d !== undefined ? c.h3d : c.chartData?.h3d),
-    anchorX: c.anchorX || c.chartData?.anchorX,
-    anchorY: c.anchorY || c.chartData?.anchorY,
+    anchorX: (c.anchorX !== undefined ? c.anchorX : c.chartData?.anchorX),
+    anchorY: (c.anchorY !== undefined ? c.anchorY : c.chartData?.anchorY),
     config: c.configData || c.config || {}
 });
 
@@ -115,7 +117,9 @@ const mergeLocal3DData = (newP: Project, existingP: Project | undefined): Projec
                         x3d: existingC.x3d ?? newC.x3d,
                         y3d: existingC.y3d ?? newC.y3d,
                         w3d: existingC.w3d ?? newC.w3d,
-                        h3d: existingC.h3d ?? newC.h3d
+                        h3d: existingC.h3d ?? newC.h3d,
+                        anchorX: existingC.anchorX ?? newC.anchorX,
+                        anchorY: existingC.anchorY ?? newC.anchorY
                     };
                 })
             };
@@ -175,6 +179,8 @@ export const useProjectStore = create<ProjectStore>()(
 
             // This method was originally used to bulk update charts from Dashboard
             updateProjectCharts: (projectId, tabId, charts) => {
+                console.log(`[ProjectStore] Updating charts for project ${projectId}, tab ${tabId}`);
+
                 set((state) => ({
                     projects: state.projects.map(p =>
                         p.id === projectId ? {
@@ -195,7 +201,10 @@ export const useProjectStore = create<ProjectStore>()(
                             chartData: {
                                 x: c.x, y: c.y, w: c.w, h: c.h,
                                 x3d: c.x3d, y3d: c.y3d, w3d: c.w3d, h3d: c.h3d,
-                                title: c.title, type: c.type
+                                anchorX: c.anchorX,
+                                anchorY: c.anchorY,
+                                title: c.title,
+                                type: c.type
                             },
                             configData: c.config
                         });
@@ -787,6 +796,8 @@ export const useProjectStore = create<ProjectStore>()(
                             y3d: c.y3d,
                             w3d: c.w3d,
                             h3d: c.h3d,
+                            anchorX: c.anchorX,
+                            anchorY: c.anchorY,
                             config: c.config
                         }))
                     })),
@@ -795,7 +806,9 @@ export const useProjectStore = create<ProjectStore>()(
                         name: s.name,
                         path: s.path,
                         position: s.position,
-                        rotation: s.rotation
+                        rotation: s.rotation,
+                        status: s.status,
+                        metadata: s.metadata
                     }))
                 }))
             })

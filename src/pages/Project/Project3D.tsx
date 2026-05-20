@@ -7,7 +7,6 @@ import {
     Environment,
     Line,
     useGLTF,
-    TransformControls,
     Html
 } from '@react-three/drei';
 import {
@@ -25,6 +24,8 @@ import { useProjectStore } from '@/store/useProjectStore';
 import { useParams } from 'react-router-dom';
 import Controls from '@/components/3D/Controls';
 import ModelContextMenu from '@/components/ModelContextMenu/ModelContextMenu';
+import AssetStatusCard from '@/components/3D/AssetStatusCard';
+import { AssetStatus } from '@/pages/Projects/project';
 import styles from './Project.module.scss';
 
 interface PlacedModelProps {
@@ -42,9 +43,12 @@ interface PlacedModelProps {
     showLabels?: boolean;
     isEditMode?: boolean;
     autoRotate?: boolean;
+    status?: AssetStatus;
+    isRelocating?: boolean;
+    isRotating?: boolean;
 }
 
-const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onContextMenu, isSelected, onSelect, onPointerOver, onPointerOut, showLabels, isEditMode, autoRotate }: PlacedModelProps) => {
+const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onContextMenu, isSelected, onSelect, onPointerOver, onPointerOut, showLabels, isEditMode, autoRotate, status, isRelocating, isRotating }: PlacedModelProps) => {
     const groupRef = useRef<THREE.Group>(null!);
     const gltf = useGLTF(path) as any;
     const downPos = useRef({ x: 0, y: 0 });
@@ -118,7 +122,7 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
             }
         });
 
-        return [clone, size.y + 0.5];
+        return [clone, size.y + 1.5];
     }, [gltf.scene, path]);
 
     const handleSelect = (e: any) => {
@@ -142,57 +146,31 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
                 onPointerOut={onPointerOut}
                 onClick={handleSelect}
                 onContextMenu={(e: any) => {
-                    if (!isEditMode) return;
-                    if (isClick(e)) {
-                        // Select the model on right-click too for consistency
-                        e.stopPropagation();
-                        onContextMenu(e);
-                    } else {
-                        // Prevent menu during pans
-                        if (e.nativeEvent && typeof e.nativeEvent.preventDefault === 'function') {
-                            e.nativeEvent.preventDefault();
-                        } else if (typeof e.preventDefault === 'function') {
-                            e.preventDefault();
-                        }
-                        e.stopPropagation();
-                    }
+                    if (isRelocating || isRotating) return;
+
+                    // Stop propagation and prevent default browser menu
+                    e.stopPropagation();
+                    const domEvent = e.nativeEvent || e;
+                    if (domEvent.preventDefault) domEvent.preventDefault();
+
+                    // Trigger the context menu directly
+                    onContextMenu(e);
                 }}
             >
                 <primitive object={clonedScene} name={name} />
 
-                {linkedTabName && showLabels && (
-                    <Html
+                {showLabels && (
+                    <AssetStatusCard
                         position={[0, labelHeight, 0]}
-                        center
-                        distanceFactor={10}
-                        zIndexRange={[0, 10]}
-                        style={{
-                            pointerEvents: 'none',
-                            zIndex: -1
-                        }}
-                    >
-                        <div style={{
-                            background: 'var(--surface)',
-                            backdropFilter: 'blur(12px)',
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            border: '1px solid var(--accent)',
-                            color: 'var(--text-primary)',
-                            fontSize: '11px',
-                            fontWeight: '700',
-                            whiteSpace: 'nowrap',
-                            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                            transform: 'translateY(-100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            userSelect: 'none',
-                            letterSpacing: '0.02em'
-                        }}>
-                            <span style={{ fontSize: '13px' }}>📍</span>
-                            {(linkedTabName || name || "Asset").toUpperCase()}
-                        </div>
-                    </Html>
+                        name={(linkedTabName || name || "Asset").toUpperCase()}
+                        status={status || (() => {
+                            const n = name.toLowerCase();
+                            if (n.includes('ac') || n.includes('air')) return { type: 'warning', message: 'High Temperature Filter Alert', value: '28', unit: '°C', lastUpdated: '2M AGO' };
+                            if (n.includes('fan') || n.includes('vent')) return { type: 'normal', message: 'Optimal Airflow', value: '1200', unit: 'RPM', lastUpdated: '10S AGO' };
+                            if (n.includes('power') || n.includes('meter')) return { type: 'error', message: 'Voltage Fluctuation', value: '415', unit: 'V', lastUpdated: 'NOW' };
+                            return { type: 'normal', message: 'System Operational', value: 'OK', unit: '', lastUpdated: 'JUST NOW' };
+                        })()}
+                    />
                 )}
             </group>
         </Select>
@@ -200,11 +178,9 @@ const PlacedModel = ({ id, path, position, rotation, name, linkedTabName, onCont
 };
 
 
-const DragPreview = ({ path, positionRef, rotationRef }: { path: string, positionRef: React.RefObject<THREE.Vector3>, rotationRef: React.RefObject<THREE.Euler> }) => {
+const DragPreview = ({ path, positionRef, rotationRef, instant }: { path: string, positionRef: React.RefObject<THREE.Vector3>, rotationRef: React.RefObject<THREE.Euler>, instant?: boolean }) => {
     const meshRef = useRef<THREE.Group>(null);
-
-    // Track transition opacities and scales
-    const [style, setStyle] = useState({ modelOpacity: 0, modelScale: 0.8 });
+    const [style, setStyle] = useState({ modelOpacity: instant ? 1.0 : 0, modelScale: instant ? 1.0 : 0.8 });
 
     useFrame(() => {
         if (positionRef.current && meshRef.current) {
@@ -214,11 +190,12 @@ const DragPreview = ({ path, positionRef, rotationRef }: { path: string, positio
             meshRef.current.rotation.copy(rotationRef.current);
         }
 
-        // Fast fade-in and scale-up instead of 3s loading box
-        setStyle(prev => ({
-            modelOpacity: THREE.MathUtils.lerp(prev.modelOpacity, 1.0, 0.15),
-            modelScale: THREE.MathUtils.lerp(prev.modelScale, 1.0, 0.15)
-        }));
+        if (!instant) {
+            setStyle(prev => ({
+                modelOpacity: THREE.MathUtils.lerp(prev.modelOpacity, 1.0, 0.15),
+                modelScale: THREE.MathUtils.lerp(prev.modelScale, 1.0, 0.15)
+            }));
+        }
     });
 
     return (
@@ -236,7 +213,7 @@ const PlacedModelPreview = ({ path, meshRef, opacity }: { path: string, meshRef:
     const { scene } = useGLTF(path);
     const PREVIEW_SCALE = 4.5;
 
-    // 🎯 STABILIZE Preview: Clone, scale, center, and apply opacity ONCE
+    // 🎯 STABILIZE Preview: Clone, scale, center ONCE
     const clonedScene = useMemo(() => {
         const clone = scene.clone();
         clone.scale.set(PREVIEW_SCALE, PREVIEW_SCALE, PREVIEW_SCALE);
@@ -251,22 +228,31 @@ const PlacedModelPreview = ({ path, meshRef, opacity }: { path: string, meshRef:
 
         // 🛡️ PREVIEW STABILIZATION
         clone.traverse((child: any) => {
-            if (child.isMesh) {
-                if (child.material) {
-                    const mats = Array.isArray(child.material) ? child.material : [child.material];
-                    mats.forEach((m: any) => {
-                        m.transparent = true;
-                        m.opacity = opacity;
-                        m.side = THREE.FrontSide;
-                        m.polygonOffset = true;
-                        m.polygonOffsetFactor = -1; // Pull preview forward
-                        m.needsUpdate = true;
-                    });
-                }
+            if (child.isMesh && child.material) {
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach((m: any) => {
+                    m.transparent = true;
+                    m.side = THREE.FrontSide;
+                    m.polygonOffset = true;
+                    m.polygonOffsetFactor = -1;
+                    m.needsUpdate = true;
+                });
             }
         });
         return clone;
-    }, [scene, path, opacity]);
+    }, [scene, path]);
+
+    // Update opacity separately without re-cloning/re-memoizing
+    useEffect(() => {
+        clonedScene.traverse((child: any) => {
+            if (child.isMesh && child.material) {
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach((m: any) => {
+                    m.opacity = opacity;
+                });
+            }
+        });
+    }, [clonedScene, opacity]);
 
     return (
         <group ref={meshRef} position={[0, 0, 0]} name="ghost">
@@ -343,7 +329,7 @@ const DxfLayer = () => {
 import FocusManager from './components/FocusManager/FocusManager';
 import ShortcutManager from './components/ShortcutManager/ShortcutManager';
 
-const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
+const Project3D = ({ isConfigOpen, projectContainerRef }: { isConfigOpen: boolean, projectContainerRef: React.RefObject<HTMLDivElement> }) => {
     const { projectID } = useParams<{ projectID: string }>();
     if (!projectID) return null; // Ensure projectID exists 
 
@@ -392,13 +378,17 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
     const mousePointer = useMemo(() => new THREE.Vector2(), []);
     const dragPositionRef = useRef(new THREE.Vector3());
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, id: string, type: 'asset' | 'chart' } | null>(null);
-    const [isTransforming, setIsTransforming] = useState(false);
     const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
-    const [transformMode, setTransformMode] = useState<'translate' | 'rotate'>('translate');
     const [isCtrlPressed, setIsCtrlPressed] = useState(false);
     const [isRelocating, setIsRelocating] = useState(false);
+    const [isRotating, setIsRotating] = useState(false);
+    const [axisLock, setAxisLock] = useState<'x' | 'y' | 'z' | null>(null);
     const [relocatingAssetId, setRelocatingAssetId] = useState<string | null>(null);
     const dragRotationRef = useRef(new THREE.Euler(0, 0, 0));
+    const [initialTransform, setInitialTransform] = useState<{ position: [number, number, number], rotation: [number, number, number] } | null>(null);
+    const mouseStartPos = useRef({ x: 0, y: 0 });
+    const initialRayPoint = useRef(new THREE.Vector3());
+    const [shouldCaptureInitialRay, setShouldCaptureInitialRay] = useState(false);
 
     const relocatingAsset = useMemo(() => {
         if (!relocatingAssetId) return null;
@@ -434,6 +424,18 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
             );
         }
     }, [isOrthoView]);
+
+    // Fix: Prevent "Unable to preventDefault inside passive event listener" error
+    // By explicitly registering a non-passive wheel listener on the container
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        const handleWheel = (e: WheelEvent) => {
+            // No action needed, presence of listener with passive: false solves the issue
+        };
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        return () => container.removeEventListener('wheel', handleWheel);
+    }, []);
 
     const startTimeRef = useRef(Date.now());
 
@@ -476,49 +478,113 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
         addAsset(projectID, {
             name: draggingAsset.name,
             path: draggingAsset.path,
-            position: [dragPositionRef.current.x, 0, dragPositionRef.current.z],
-            rotation: [0, 0, 0]
+            position: [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z],
+            rotation: [dragRotationRef.current.x, dragRotationRef.current.y, dragRotationRef.current.z]
         });
         setDraggingAsset(null);
+        setAxisLock(null);
+        setInitialTransform(null);
     };
 
-    const DragTracker = ({ relocating }: { relocating?: boolean } = {}) => {
+    const DragTracker = ({ mode }: { mode?: 'translate' | 'rotate' } = {}) => {
         const { raycaster, camera, scene } = useThree();
         const plane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), []);
 
         useFrame(() => {
-            if (draggingAsset || relocating) {
+            // Force update world matrices to ensure raycasting hits models at their new positions
+            scene.updateMatrixWorld(true);
+
+            if (shouldCaptureInitialRay) {
                 raycaster.setFromCamera(mousePointer, camera);
-
-                // Smart Raycasting: Try hitting geometry first (walls, floors, etc.)
                 const intersects = raycaster.intersectObjects(scene.children, true);
-
-                // Filter out the ghost/preview itself and some helpers
                 const validHit = intersects.find(hit => {
                     let p: any = hit.object;
                     while (p) {
                         if (p.name === 'ghost' || p.type === 'GridHelper' || p.type === 'AxesHelper') return false;
                         p = p.parent;
                     }
-                    return hit.object.type === 'Mesh';
+                    return (hit.object as any).isMesh;
                 });
 
                 if (validHit) {
-                    // Offset by 0.1 units along the normal to prevent merging into the wall
-                    const offset = validHit.face ? validHit.face.normal.clone().multiplyScalar(0.1) : new THREE.Vector3(0, 0, 0);
-                    dragPositionRef.current.copy(validHit.point).add(offset);
+                    initialRayPoint.current.copy(validHit.point);
+                } else {
+                    raycaster.ray.intersectPlane(plane, initialRayPoint.current);
+                }
+                setShouldCaptureInitialRay(false);
+            }
 
-                    // Surface Alignment Rotation
-                    if (validHit.face) {
+            if (draggingAsset || (isRelocating && mode === 'translate')) {
+                raycaster.setFromCamera(mousePointer, camera);
+
+                const intersects = raycaster.intersectObjects(scene.children, true);
+                const validHit = intersects.find(hit => {
+                    let p: any = hit.object;
+                    while (p) {
+                        if (p.name === 'ghost' || p.type === 'GridHelper' || p.type === 'AxesHelper') return false;
+                        p = p.parent;
+                    }
+                    return (hit.object as any).isMesh;
+                });
+
+                let newRayPos = new THREE.Vector3();
+                if (validHit) {
+                    // Pull point slightly INTO the surface to ensure flushness and avoid floating gaps
+                    // -0.05m (5cm) helps assets with small paddings or corner offsets look flush
+                    const offset = validHit.face ? validHit.face.normal.clone().multiplyScalar(-0.05) : new THREE.Vector3(0, 0, 0);
+                    newRayPos.copy(validHit.point).add(offset);
+                } else {
+                    raycaster.ray.intersectPlane(plane, newRayPos);
+                }
+
+                if (initialTransform) {
+                    const delta = newRayPos.clone().sub(initialRayPoint.current);
+                    const initPos = initialTransform.position;
+                    const finalPos = new THREE.Vector3(initPos[0] + delta.x, initPos[1] + delta.y, initPos[2] + delta.z);
+
+                    if (axisLock) {
+                        if (axisLock === 'x') dragPositionRef.current.set(finalPos.x, initPos[1], initPos[2]);
+                        else if (axisLock === 'y') dragPositionRef.current.set(initPos[0], finalPos.y, initPos[2]);
+                        else if (axisLock === 'z') dragPositionRef.current.set(initPos[0], initPos[1], finalPos.z);
+                    } else {
+                        dragPositionRef.current.copy(finalPos);
+
+                        // Surface Alignment Rotation (only when NOT axis locked)
+                        if (validHit && validHit.face) {
+                            const normal = validHit.face.normal.clone();
+                            const worldQuaternion = new THREE.Quaternion();
+                            validHit.object.getWorldQuaternion(worldQuaternion);
+                            normal.applyQuaternion(worldQuaternion);
+
+                            const angle = Math.atan2(normal.x, normal.z);
+                            dragRotationRef.current.set(0, angle, 0);
+                        }
+                    }
+                } else {
+                    // Sidebar Drop: use absolute ray point
+                    dragPositionRef.current.copy(newRayPos);
+                    if (validHit && validHit.face) {
                         const normal = validHit.face.normal.clone();
                         normal.applyQuaternion(validHit.object.quaternion);
                         const angle = Math.atan2(normal.x, normal.z);
                         dragRotationRef.current.set(0, angle, 0);
                     }
-                } else {
-                    // Fallback to ground plane
-                    raycaster.ray.intersectPlane(plane, dragPositionRef.current);
-                    dragRotationRef.current.set(0, 0, 0);
+                }
+
+            } else if (isRotating && mode === 'rotate') {
+                const deltaX = mousePointer.x - mouseStartPos.current.x;
+                if (initialTransform) {
+                    const sensitivity = 5;
+                    const rotationDelta = deltaX * sensitivity;
+
+                    if (axisLock === 'x') {
+                        dragRotationRef.current.set(initialTransform.rotation[0] + rotationDelta, initialTransform.rotation[1], initialTransform.rotation[2]);
+                    } else if (axisLock === 'z') {
+                        dragRotationRef.current.set(initialTransform.rotation[0], initialTransform.rotation[1], initialTransform.rotation[2] + rotationDelta);
+                    } else {
+                        // Default to Y rotation
+                        dragRotationRef.current.set(initialTransform.rotation[0], initialTransform.rotation[1] + rotationDelta, initialTransform.rotation[2]);
+                    }
                 }
             }
         });
@@ -526,16 +592,45 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
         return null;
     };
 
+    const AxisGuide = () => {
+        if (!axisLock || !initialTransform) return null;
+
+        const pos = [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z] as [number, number, number];
+        const color = axisLock === 'x' ? '#ff4444' : axisLock === 'y' ? '#44ff44' : '#4444ff';
+
+        const length = 1000;
+        const points: [number, number, number][] = [];
+
+        if (axisLock === 'x') {
+            points.push([pos[0] - length, pos[1], pos[2]], [pos[0] + length, pos[1], pos[2]]);
+        } else if (axisLock === 'y') {
+            points.push([pos[0], pos[1] - length, pos[2]], [pos[0], pos[1] + length, pos[2]]);
+        } else if (axisLock === 'z') {
+            points.push([pos[0], pos[1], pos[2] - length], [pos[0], pos[1], pos[2] + length]);
+        }
+
+        return <Line points={points} color={color} lineWidth={1} transparent opacity={0.5} />;
+    };
+
     const handleModelContextMenu = (e: any, id: string, type: 'asset' | 'chart' = 'asset') => {
+        if (isRelocating || isRotating) return;
+
+        // Prevent default browser context menu
         const domEvent = e.nativeEvent || e;
         if (domEvent.preventDefault) domEvent.preventDefault();
-        
-        setContextMenu({
-            x: domEvent.clientX,
-            y: domEvent.clientY,
-            id: id,
-            type: type
-        });
+
+        // Extract coordinates from either native event or synthetic event
+        const x = domEvent.clientX ?? e.clientX;
+        const y = domEvent.clientY ?? e.clientY;
+
+        if (x !== undefined && y !== undefined) {
+            setContextMenu({
+                x,
+                y,
+                id,
+                type
+            });
+        }
     };
 
     const handleDuplicate = () => {
@@ -580,6 +675,9 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.ctrlKey) setIsCtrlPressed(true);
 
+            const isTyping = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable;
+            if (isTyping) return;
+
             if (e.ctrlKey && e.key === 'v' && copiedModel && projectID) {
                 addAsset(projectID, {
                     ...copiedModel,
@@ -588,9 +686,54 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
                 });
             }
 
-            // Transform mode shortcuts
-            if (e.key.toLowerCase() === 'w') setTransformMode('translate');
-            if (e.key.toLowerCase() === 'e') setTransformMode('rotate');
+            // Blender-style Shortcuts
+            if (e.key.toLowerCase() === 'g' && selectedModelId) {
+                const asset = placedModels.find(m => m.id === selectedModelId);
+                if (asset) {
+                    setRelocatingAssetId(selectedModelId);
+                    setInitialTransform({ position: asset.position, rotation: asset.rotation });
+                    dragPositionRef.current.set(...asset.position);
+                    dragRotationRef.current.set(...asset.rotation);
+                    setShouldCaptureInitialRay(true);
+                    setIsRelocating(true);
+                    setIsRotating(false);
+                    setAxisLock(null);
+                }
+            }
+            if (e.key.toLowerCase() === 'r' && selectedModelId) {
+                const asset = placedModels.find(m => m.id === selectedModelId);
+                if (asset) {
+                    setRelocatingAssetId(selectedModelId);
+                    setInitialTransform({ position: asset.position, rotation: asset.rotation });
+                    dragPositionRef.current.set(...asset.position);
+                    dragRotationRef.current.set(...asset.rotation);
+                    mouseStartPos.current = { x: mousePointer.x, y: mousePointer.y };
+                    setIsRotating(true);
+                    setIsRelocating(false);
+                    setAxisLock(null);
+                }
+            }
+
+            // Axis Locking
+            if (isRelocating || isRotating || draggingAsset) {
+                if (draggingAsset && !initialTransform) {
+                    setInitialTransform({ position: [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z], rotation: [0, 0, 0] });
+                }
+                if (e.key.toLowerCase() === 'x') setAxisLock(prev => prev === 'x' ? null : 'x');
+                if (e.key.toLowerCase() === 'y') setAxisLock(prev => prev === 'y' ? null : 'y');
+                if (e.key.toLowerCase() === 'z') setAxisLock(prev => prev === 'z' ? null : 'z');
+            }
+
+            if (e.key === 'Escape') {
+                if (isRelocating || isRotating) {
+                    setIsRelocating(false);
+                    setIsRotating(false);
+                    setRelocatingAssetId(null);
+                    setAxisLock(null);
+                } else {
+                    setSelectedModelId(null);
+                }
+            }
         };
 
         const handleKeyUp = (e: KeyboardEvent) => {
@@ -603,7 +746,7 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
-    }, [copiedModel, addAsset]);
+    }, [copiedModel, addAsset, selectedModelId, placedModels, projectID, mousePointer, isRelocating, isRotating]);
 
     // Clear selection when switching out of edit mode
     useEffect(() => {
@@ -615,8 +758,17 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
 
     const handleRelocate = () => {
         if (!contextMenu || contextMenu.type !== 'asset') return;
-        setRelocatingAssetId(contextMenu.id);
-        setIsRelocating(true);
+        const asset = placedModels.find(m => m.id === contextMenu.id);
+        if (asset) {
+            setRelocatingAssetId(contextMenu.id);
+            setInitialTransform({ position: asset.position, rotation: asset.rotation });
+            dragPositionRef.current.set(...asset.position);
+            dragRotationRef.current.set(...asset.rotation);
+            setShouldCaptureInitialRay(true);
+            setIsRelocating(true);
+            setIsRotating(false);
+            setAxisLock(null);
+        }
         setContextMenu(null);
     };
 
@@ -646,8 +798,6 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
                     y={chart.y3d ?? 10}
                     w={chart.w3d ?? 400}
                     h={chart.h3d ?? 300}
-                    anchorX={chart.anchorX}
-                    anchorY={chart.anchorY}
                     constraintsRef={containerRef}
                     onUpdate={(updates) => {
                         if (projectID && activeTab) {
@@ -663,6 +813,7 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
                                     anchorY: updates.anchorY !== undefined ? updates.anchorY : c.anchorY,
                                 } : c
                             );
+                            console.log(`[Project3D] Requesting chart update: id=${chart.id}, x=${updates.x}%, y=${updates.y}%, anchorX=${updates.anchorX}, anchorY=${updates.anchorY}`);
                             updateProjectCharts(projectID, activeTab.id, newCharts);
                         }
                     }}
@@ -684,263 +835,217 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
                     key={chart.id}
                     {...chart}
                     h={chart.h}
-                    anchorX={chart.anchorX}
-                    anchorY={chart.anchorY}
                     constraintsRef={containerRef}
                 />
             ))}
 
-            {/* Live Drag Preview for Charts */}
-            {draggingChartPreview && (
-                <div style={{ pointerEvents: 'none', opacity: 0.5 }}>
-                    <ChartOverlay
-                        id="preview-ghost"
-                        {...draggingChartPreview}
-                        w={500}
-                        h={350}
-                        constraintsRef={containerRef}
-                    />
-                </div>
-            )}
+
 
 
 
 
             <Tools />
 
-            {/* Transform Mode Toggle UI */}
-            {isEditMode && selectedModelId && (
-                <div className={styles["transform-toolbar"]}>
-                    <button
-                        className={`${styles["transform-btn"]} ${transformMode === 'translate' ? styles.active : ""}`}
-                        onClick={(e) => { e.stopPropagation(); setTransformMode('translate'); }}
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="5 9 2 12 5 15" />
-                            <polyline points="9 5 12 2 15 5" />
-                            <polyline points="15 19 12 22 9 19" />
-                            <polyline points="19 9 22 12 19 15" />
-                            <line x1="2" y1="12" x2="22" y2="12" />
-                            <line x1="12" y1="2" x2="12" y2="22" />
-                        </svg>
-                        Move (W)
-                    </button>
-                    <button
-                        className={`${styles["transform-btn"]} ${transformMode === 'rotate' ? styles.active : ""}`}
-                        onClick={(e) => { e.stopPropagation(); setTransformMode('rotate'); }}
-                    >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21 2v6h-6" />
-                            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
-                            <path d="M3 22v-6h6" />
-                            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-                        </svg>
-                        Rotate (E)
-                    </button>
-                </div>
-            )}
+
+
 
             <Suspense fallback={<div style={{ color: 'white' }}>Loading 3D Scene...</div>}>
-                <Canvas
-                    shadows
-                    gl={{
-                        antialias: true,
-                        alpha: true,
-                        powerPreference: "high-performance",
-                        precision: "highp",
-                    }}
-                    onContextMenu={(e) => e.preventDefault()}
-                    onPointerMissed={() => {
-                        // Prevent deselection if we were just transforming something or relocating
-                        if (isTransforming || (isRelocating && relocatingAssetId)) {
-                             return;
-                        }
-
-                        if (isRelocating && relocatingAssetId && projectID) {
-                            updateAsset(projectID, relocatingAssetId, {
-                                position: [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z],
-                                rotation: [dragRotationRef.current.x, dragRotationRef.current.y, dragRotationRef.current.z]
-                            });
-                            setIsRelocating(false);
-                            setRelocatingAssetId(null);
-                            return;
-                        }
-                        setSelectedModelId(null);
-                        setSelectedObject(null);
-                    }}
-                >
-                    <ShortcutManager
-                        cameraRef={cameraRef}
-                        selectedModelId={selectedModelId}
-                        setIsOrthoManual={setIsOrthoManual}
-                    />
-                    <Selection>
-                        <EffectComposer multisampling={8} autoClear={false}>
-                            <Outline
-                                visibleEdgeColor={0xff9900}
-                                hiddenEdgeColor={0xff9900}
-                                edgeStrength={5}
-                            />
-                        </EffectComposer>
-
-                        {/* 🎥 Cameras */}
-                        {isOrthoView ? (
-                            <OrthographicCamera makeDefault position={[0, 30, 0]} zoom={50} />
-                        ) : (
-                            <PerspectiveCamera makeDefault position={[8, 6, 10]} fov={50} />
-                        )}
-
-                        <Controls ref={cameraRef} enabled={!isTransforming} />
-                        <FocusManager cameraRef={cameraRef} projectID={projectID} />
-
-
-                        <Grid
-                            position={[0, -0.1, 0]}
-                            args={[100, 100]}
-                            cellSize={1}
-                            cellThickness={0.7}
-                            cellColor="#1a1a1a"        // visible but still dark
-                            sectionSize={5}
-                            sectionThickness={1.2}
-                            sectionColor="#262626"     // slightly brighter for structure
-                            fadeDistance={500}
-                            fadeStrength={1.2}
-                            infiniteGrid
-                        />
-
-                        <Environment preset="city" />
-                        {/* <axesHelper /> */}
-                        {/* Uploaded DXF Content */}
-                        <DxfLayer />
-
-                        {/* Placed 3D Models */}
-                        {placedModels.filter(m => m.id !== relocatingAssetId).map((model) => {
-                            // Find linked tab by assetId (direct link only)
-                            const linkedTab = currentProject?.tabs.find(t =>
-                                t.assetId && (String(t.assetId) === String(model.id))
-                            );
-
-                            return (
-                                <PlacedModel
-                                    key={model.id}
-                                    id={model.id}
-                                    path={model.path}
-                                    position={model.position}
-                                    rotation={model.rotation}
-                                    name={model.name}
-                                    linkedTabName={linkedTab?.name}
-                                    onContextMenu={(e: any) => handleModelContextMenu(e, model.id)}
-                                    isSelected={selectedModelId === model.id}
-                                    showLabels={showLabels}
-                                    isEditMode={isEditMode}
-                                    autoRotate={model.autoRotate}
-                                    onPointerOver={(e: any) => {
-                                        e.stopPropagation();
-                                        if (isEyedropperActive) setHoveredAsset({ name: model.name, id: model.id });
-                                    }}
-                                    onPointerOut={() => setHoveredAsset(null)}
-                                    onSelect={(obj: THREE.Object3D) => {
-                                        if (isRelocating) {
-                                            if (relocatingAssetId && projectID) {
-                                                updateAsset(projectID, relocatingAssetId, {
-                                                    position: [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z],
-                                                    rotation: [dragRotationRef.current.x, dragRotationRef.current.y, dragRotationRef.current.z]
-                                                });
-                                                setIsRelocating(false);
-                                                setRelocatingAssetId(null);
-                                            }
-                                            return;
-                                        }
-                                        if (!isEditMode && !isEyedropperActive) return;
-                                        if (isEyedropperActive) {
-                                            setEyedropperSelection({ name: model.name, id: model.id });
-                                            // Also select it immediately to show focus/controls
-                                            setSelectedModelId(model.id);
-                                            setIsEyedropperActive(false);
-                                            setHoveredAsset(null);
-                                            return;
-                                        }
-                                        setSelectedModelId(model.id);
-                                        setSelectedObject(obj);
-
-                                        // Automatically switch to the linked tab if it exists
-                                        if (linkedTab) {
-                                            setActiveTabId(linkedTab.id);
-                                        }
-                                    }}
-                                />
-                            );
-                        })}
-
-                        {/* Drag and Drop Preview */}
-                        {draggingAsset && (
-                            <>
-                                <DragTracker />
-                                <Select enabled={true}>
-                                    <DragPreview
-                                        path={draggingAsset.path}
-                                        positionRef={dragPositionRef}
-                                        rotationRef={dragRotationRef}
-                                    />
-                                </Select>
-                            </>
-                        )}
-                        {/* Relocation Preview */}
-                        {isRelocating && relocatingAsset && (
-                            <>
-                                <DragTracker relocating />
-                                <Select enabled={true}>
-                                    <DragPreview
-                                        path={relocatingAsset.path}
-                                        positionRef={dragPositionRef}
-                                        rotationRef={dragRotationRef}
-                                    />
-                                </Select>
-                            </>
-                        )}
-                    </Selection>
-
-                    {/* Centralized Transform Controls */}
-                    {isEditMode && selectedObject && selectedModelId && (
-                        <TransformControls
-                            object={selectedObject as any}
-                            mode={transformMode}
-                            space={transformMode === 'translate' ? 'world' : 'local'}
-
-                            // Snapping logic
-                            translationSnap={isCtrlPressed ? 0.5 : null}
-                            rotationSnap={isCtrlPressed ? Math.PI / 12 : null}
-
-                            // Axis visibility
-                            showX={transformMode === 'translate'}
-                            showY={transformMode === 'translate' || transformMode === 'rotate'}
-                            showZ={transformMode === 'translate'}
-
-                            onMouseDown={() => setIsTransforming(true)}
-                            onObjectChange={() => {
-                                if (selectedObject) {
-                                    if (transformMode === 'rotate') {
-                                        // Robust axis lock: Always enforce perfectly upright verticality
-                                        selectedObject.rotation.order = 'YXZ';
-                                        selectedObject.rotation.set(0, selectedObject.rotation.y, 0);
+                <div style={{ position: 'absolute', left: 0, top: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none' }}>
+                    <Canvas
+                        shadows
+                        gl={{
+                            antialias: true,
+                            alpha: true,
+                            powerPreference: "high-performance",
+                            precision: "highp",
+                        }}
+                        style={{ pointerEvents: 'auto' }}
+                        onContextMenu={(e) => e.preventDefault()}
+                        onPointerMissed={(e) => {
+                            // Confirm on left click, cancel on right click
+                            if (isRelocating || isRotating) {
+                                if (e.button === 0) { // Left click
+                                    if (projectID && relocatingAssetId) {
+                                        updateAsset(projectID, relocatingAssetId, {
+                                            position: [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z],
+                                            rotation: [dragRotationRef.current.x, dragRotationRef.current.y, dragRotationRef.current.z]
+                                        });
                                     }
+                                    setIsRelocating(false);
+                                    setIsRotating(false);
+                                    setRelocatingAssetId(null);
+                                    setAxisLock(null);
+                                } else if (e.button === 2) { // Right click
+                                    setIsRelocating(false);
+                                    setIsRotating(false);
+                                    setRelocatingAssetId(null);
+                                    setAxisLock(null);
                                 }
-                            }}
-                            onMouseUp={() => {
-                                if (projectID && selectedModelId && selectedObject) {
-                                    updateAsset(projectID, selectedModelId, {
-                                        position: [selectedObject.position.x, selectedObject.position.y, selectedObject.position.z],
-                                        rotation: [selectedObject.rotation.x, selectedObject.rotation.y, selectedObject.rotation.z]
-                                    });
-                                }
-                                // Small delay to prevent onPointerMissed from firing immediately
-                                setTimeout(() => setIsTransforming(false), 100);
-                            }}
-                        />)}
+                                return;
+                            }
+
+                            setSelectedModelId(null);
+                            setSelectedObject(null);
+                        }}
+                    >
+                        <ShortcutManager
+                            cameraRef={cameraRef}
+                            selectedModelId={selectedModelId}
+                            setIsOrthoManual={setIsOrthoManual}
+                        />
+                        <Selection>
+                            <EffectComposer multisampling={8} autoClear={false}>
+                                <Outline
+                                    visibleEdgeColor={0xff9900}
+                                    hiddenEdgeColor={0xff9900}
+                                    edgeStrength={5}
+                                />
+                            </EffectComposer>
+
+                            {/* 🎥 Cameras */}
+                            {isOrthoView ? (
+                                <OrthographicCamera makeDefault position={[0, 30, 0]} zoom={50} />
+                            ) : (
+                                <PerspectiveCamera makeDefault position={[8, 6, 10]} fov={50} />
+                            )}
+
+                            <Controls ref={cameraRef} enabled={true} />
+                            <FocusManager cameraRef={cameraRef} projectID={projectID} />
 
 
+                            <Grid
+                                position={[0, -0.1, 0]}
+                                args={[100, 100]}
+                                cellSize={1}
+                                cellThickness={0.7}
+                                cellColor="#1a1a1a"        // visible but still dark
+                                sectionSize={5}
+                                sectionThickness={1.2}
+                                sectionColor="#262626"     // slightly brighter for structure
+                                fadeDistance={500}
+                                fadeStrength={1.2}
+                                infiniteGrid
+                            />
 
-                </Canvas>
+                            <Environment preset="city" />
+                            {/* <axesHelper /> */}
+                            {/* Uploaded DXF Content */}
+                            <DxfLayer />
+
+                            {/* Placed 3D Models */}
+                            {placedModels.filter(m => m.id !== relocatingAssetId).map((model) => {
+                                // Find linked tab by assetId (direct link only)
+                                const linkedTab = currentProject?.tabs.find(t =>
+                                    t.assetId && (String(t.assetId) === String(model.id))
+                                );
+
+                                return (
+                                    <PlacedModel
+                                        key={model.id}
+                                        id={model.id}
+                                        path={model.path}
+                                        position={model.position}
+                                        rotation={model.rotation}
+                                        name={model.name}
+                                        linkedTabName={linkedTab?.name}
+                                        onContextMenu={(e: any) => handleModelContextMenu(e, model.id)}
+                                        isSelected={selectedModelId === model.id}
+                                        showLabels={showLabels}
+                                        isEditMode={isEditMode}
+                                        autoRotate={model.autoRotate}
+                                        isRelocating={isRelocating}
+                                        isRotating={isRotating}
+                                        onPointerOver={(e: any) => {
+                                            e.stopPropagation();
+                                            if (isEyedropperActive) setHoveredAsset({ name: model.name, id: model.id });
+                                        }}
+                                        onPointerOut={() => setHoveredAsset(null)}
+                                        onSelect={(obj: THREE.Object3D) => {
+                                            if (isRelocating || isRotating) {
+                                                if (relocatingAssetId && projectID) {
+                                                    updateAsset(projectID, relocatingAssetId, {
+                                                        position: [dragPositionRef.current.x, dragPositionRef.current.y, dragPositionRef.current.z],
+                                                        rotation: [dragRotationRef.current.x, dragRotationRef.current.y, dragRotationRef.current.z]
+                                                    });
+                                                    setIsRelocating(false);
+                                                    setIsRotating(false);
+                                                    setRelocatingAssetId(null);
+                                                    setAxisLock(null);
+                                                }
+                                                return;
+                                            }
+                                            if (!isEditMode && !isEyedropperActive) return;
+                                            if (isEyedropperActive) {
+                                                setEyedropperSelection({ name: model.name, id: model.id });
+                                                // Also select it immediately to show focus/controls
+                                                setSelectedModelId(model.id);
+                                                setIsEyedropperActive(false);
+                                                setHoveredAsset(null);
+                                                return;
+                                            }
+                                            setSelectedModelId(model.id);
+                                            setSelectedObject(obj);
+
+                                            // Automatically switch to the linked tab if it exists
+                                            if (linkedTab) {
+                                                setActiveTabId(linkedTab.id);
+                                            }
+                                        }}
+                                        status={model.status}
+                                    />
+                                );
+                            })}
+
+                            {/* Drag and Drop Preview */}
+                            {draggingAsset && (
+                                <>
+                                    <DragTracker mode="translate" />
+                                    <AxisGuide />
+                                    <Select enabled={true}>
+                                        <DragPreview
+                                            path={draggingAsset.path}
+                                            positionRef={dragPositionRef}
+                                            rotationRef={dragRotationRef}
+                                        />
+                                    </Select>
+                                </>
+                            )}
+                            {/* Relocation/Grab Preview */}
+                            {isRelocating && relocatingAsset && (
+                                <>
+                                    <DragTracker mode="translate" />
+                                    <AxisGuide />
+                                    <Select enabled={true}>
+                                        <DragPreview
+                                            path={relocatingAsset.path}
+                                            positionRef={dragPositionRef}
+                                            rotationRef={dragRotationRef}
+                                            instant
+                                        />
+                                    </Select>
+                                </>
+                            )}
+                            {/* Rotation Preview */}
+                            {isRotating && relocatingAsset && (
+                                <>
+                                    <DragTracker mode="rotate" />
+                                    <AxisGuide />
+                                    <Select enabled={true}>
+                                        <DragPreview
+                                            path={relocatingAsset.path}
+                                            positionRef={dragPositionRef}
+                                            rotationRef={dragRotationRef}
+                                            instant
+                                        />
+                                    </Select>
+                                </>
+                            )}
+                        </Selection>
+
+                        {/* TransformControls removed in favor of Blender-style G/R shortcuts */}
+
+                    </Canvas>
+                </div>
             </Suspense>
 
             {contextMenu && (
@@ -948,18 +1053,18 @@ const Project3D = ({ isConfigOpen }: { isConfigOpen: boolean }) => {
                     x={contextMenu.x}
                     y={contextMenu.y}
                     onClose={() => setContextMenu(null)}
-                    onDelete={() => {
+                    onDelete={isEditMode ? () => {
                         if (contextMenu.type === 'asset') {
                             if (projectID) removeAsset(projectID, contextMenu.id);
                         } else {
                             if (projectID && activeTabId) removeChart(projectID, activeTabId, contextMenu.id);
                         }
                         setContextMenu(null);
-                    }}
-                    onDuplicate={handleDuplicate}
-                    onCopy={handleCopy}
-                    onLinkToTab={contextMenu.type === 'asset' ? handleLinkToActiveTab : undefined}
-                    onRelocate={contextMenu.type === 'asset' ? handleRelocate : undefined}
+                    } : undefined}
+                    onDuplicate={isEditMode ? handleDuplicate : undefined}
+                    onCopy={isEditMode ? handleCopy : undefined}
+                    onLinkToTab={(isEditMode && contextMenu.type === 'asset') ? handleLinkToActiveTab : undefined}
+                    onRelocate={(isEditMode && contextMenu.type === 'asset') ? handleRelocate : undefined}
                     onConfigure={contextMenu.type === 'chart' ? () => setSelectedChartId(contextMenu.id) : undefined}
                 />
             )}

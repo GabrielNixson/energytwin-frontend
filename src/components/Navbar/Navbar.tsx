@@ -3,7 +3,8 @@ import { RefreshIcon, BellIcon, SunIcon, MoonIcon } from "../../assets/svg/Misc"
 import styles from "./Navbar.module.scss";
 import { useUIStore } from "../../store/useUIStore";
 import { NotificationDropdown } from "./NotificationDropdown/NotificationDropdown";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { LogoIcon } from "@/assets/svg/LogoSvg";
 
 const initialNotifications = [
     {
@@ -51,8 +52,9 @@ const initialNotifications = [
 ];
 
 const Navbar = () => {
-    const { theme, setTheme, setIsShareModalOpen } = useUIStore();
+    const { theme, setTheme, setIsShareModalOpen, setIsSidebarCollapsed, isSidebarCollapsed } = useUIStore();
     const location = useLocation();
+    const navigate = useNavigate();
     const isProjectPage = location.pathname.includes("/project/");
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [notifications, setNotifications] = useState(initialNotifications);
@@ -100,15 +102,10 @@ const Navbar = () => {
     return (
         <div className={styles["navbar-container"]}>
             <div className={styles.left}>
-                {/* <div className={styles["page-info"]}>
-                    <span className={styles.breadcrumb}>Pages / {getPageTitle()}</span>
-                    <h2 className={styles.title}>{getPageTitle()}</h2>
+                <div className={styles["logo-section"]} onClick={() => navigate("/")}>
+                    <LogoIcon />
+                    <span>Energy Twin</span>
                 </div>
-                
-                <div className={styles["search-wrapper"]}>
-                    <SearchIcon />
-                    <input type="text" placeholder="Search data points, charts..." />
-                </div> */}
             </div>
 
             <div className={styles.right}>
@@ -118,6 +115,14 @@ const Navbar = () => {
                 </div>
 
                 <div className={styles["action-icons"]}>
+                    <button
+                        className={styles["icon-btn"]}
+                        title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+                        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    >
+                        {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+                    </button>
+
                     <div style={{ position: "relative" }} ref={notificationRef}>
                         <button
                             className={styles["icon-btn"]}
@@ -134,14 +139,8 @@ const Navbar = () => {
                             onMarkAllRead={handleMarkAllRead}
                             onMarkAsRead={handleMarkAsRead}
                         />
+
                     </div>
-                    <button
-                        className={styles["icon-btn"]}
-                        title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-                        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                    >
-                        {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-                    </button>
 
                     {isProjectPage && (
                         <button
@@ -158,6 +157,7 @@ const Navbar = () => {
                     )}
                 </div>
 
+
                 <div
                     className={`${styles["refresh-container"]} ${isRefreshing ? styles.refreshing : ""}`}
                     onClick={handleRefresh}
@@ -168,6 +168,17 @@ const Navbar = () => {
                     </div>
                     <span>{isRefreshing ? "refreshing..." : "refresh"}</span>
                 </div>
+
+                <button
+                    className={styles["hamburger-menu"]}
+                    onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <line x1="3" y1="6" x2="21" y2="6" />
+                        <line x1="3" y1="18" x2="21" y2="18" />
+                    </svg>
+                </button>
             </div>
         </div>
     );

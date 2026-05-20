@@ -8,6 +8,11 @@
     align-items: flex-end;
     gap: 16px;
 
+    @media (max-width: 768px) {
+        bottom: 20px;
+        right: 20px;
+    }
+
     .chat-btn {
         width: 56px;
         height: 56px;
@@ -22,6 +27,11 @@
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
 
+        @media (max-width: 768px) {
+            width: 48px;
+            height: 48px;
+        }
+
         .AI {
             font-size: var(--fs-xl);
         }
@@ -35,6 +45,12 @@
             position: absolute;
             top: 4px;
             right: 8px;
+
+            @media (max-width: 768px) {
+                scale: 1.1;
+                top: 2px;
+                right: 6px;
+            }
         }
 
         &:hover {
@@ -55,6 +71,14 @@
         overflow: hidden;
         box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
         transform-origin: bottom right;
+
+        @media (max-width: 768px) {
+            width: calc(100vw - 40px);
+            height: calc(100dvh - 120px);
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+        }
 
         .chat-header {
             padding: 9px 20px;

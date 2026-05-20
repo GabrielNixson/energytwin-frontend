@@ -59,82 +59,89 @@ const Sidebar = () => {
 
   const optionsSelect = (item: any) => {
     navigate(item.route);
+    if (window.innerWidth <= 768) {
+      setIsSidebarCollapsed(true);
+    }
   };
+
   return (
-    <div
-      className={`${styles["sidebar-container"]} ${isSidebarCollapsed && !isHovered ? styles.collapsed : ""
-        }`}
-      // onMouseEnter={handleMouseEnter}
-      // onMouseLeave={handleMouseLeave}
-    >
+    <>
+      <div 
+        className={`${styles["mobile-backdrop"]} ${!isSidebarCollapsed ? styles.active : ""}`}
+        onClick={() => setIsSidebarCollapsed(true)}
+      />
       <div
-        className={styles["visibility-toggle"]}
-        onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        className={`${styles["sidebar-container"]} ${
+          isSidebarCollapsed && !isHovered ? styles.collapsed : ""
+        } ${!isSidebarCollapsed ? styles["mobile-open"] : ""}`}
       >
-        <DropIcon />
-      </div>
-
-      <div
-        className={styles["logo-container"]}
-        onClick={() => navigate("/")}
-      >
-        <div className={styles.icon}>
-          <LogoIcon />
-        </div>
-        <span>Energy Twin</span>
-      </div>
-
-      <div className={styles["options-container"]}>
-        {options.map((item, index) => {
-          const Icon = item.icon;
-
-          return (
-            <button
-              key={index}
-              // title={item.label}
-              onClick={() => optionsSelect(item)}
-              className={`${styles.option} ${selectedOption === item.label ? styles.selected : ""
-                }`}
-            >
-              <div className={styles.icon}>
-                <Icon />
-              </div>
-
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <div
-        className={styles["user-details-container"]}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (isSidebarCollapsed) setIsSidebarCollapsed(false);
-        }}
-      >
-        <div className={styles["user-img"]}>
-          <img src={userImage} alt="" />
-        </div>
-
-        <div className={styles["user-details"]}>
-          <div className={styles["user-name"]}>{user?.userName ?? "Guest"}</div>
-          <div className={styles["user-email"]}>{user?.emailId ?? ""}</div>
-        </div>
-
-        <button
-          className={styles["logout-btn"]}
-          onClick={handleLogout}
-          title="Logout"
+        <div
+          className={styles["visibility-toggle"]}
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" x2="9" y1="12" y2="12" />
-          </svg>
-        </button>
+          <DropIcon />
+        </div>
+
+        <div
+          className={styles["logo-container"]}
+          onClick={() => navigate("/")}
+        >
+          <div className={styles.icon}>
+            <LogoIcon />
+          </div>
+          <span>Energy Twin</span>
+        </div>
+
+        <div className={styles["options-container"]}>
+          {options.map((item, index) => {
+            const Icon = item.icon;
+
+            return (
+              <button
+                key={index}
+                onClick={() => optionsSelect(item)}
+                className={`${styles.option} ${selectedOption === item.label ? styles.selected : ""}`}
+              >
+                <div className={styles.icon}>
+                  <Icon />
+                </div>
+
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          className={styles["user-details-container"]}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isSidebarCollapsed) setIsSidebarCollapsed(false);
+          }}
+        >
+          <div className={styles["user-img"]}>
+            <img src={userImage} alt="" />
+          </div>
+
+          <div className={styles["user-details"]}>
+            <div className={styles["user-name"]}>{user?.userName ?? "Guest"}</div>
+            <div className={styles["user-email"]}>{user?.emailId ?? ""}</div>
+          </div>
+
+          <button
+            className={styles["logout-btn"]}
+            onClick={handleLogout}
+            title="Logout"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" x2="9" y1="12" y2="12" />
+            </svg>
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

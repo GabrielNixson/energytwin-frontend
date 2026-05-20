@@ -6,9 +6,9 @@ interface ModelContextMenuProps {
     x: number;
     y: number;
     onClose: () => void;
-    onDelete: () => void;
-    onDuplicate: () => void;
-    onCopy: () => void;
+    onDelete?: () => void;
+    onDuplicate?: () => void;
+    onCopy?: () => void;
     onLinkToTab?: () => void;
     onRelocate?: () => void;
     onConfigure?: () => void;
@@ -84,16 +84,24 @@ const ModelContextMenu: React.FC<ModelContextMenuProps> = ({ x, y, onClose, onDe
                     </button>
                 )}
                 
-                <button onClick={() => { onDuplicate(); onClose(); }}>
-                    Duplicate
-                </button>
-                <button onClick={() => { onCopy(); onClose(); }}>
-                    Copy
-                </button>
-                <div className={styles.divider} />
-                <button className={styles.danger} onClick={() => { onDelete(); onClose(); }}>
-                    Delete
-                </button>
+                {onDuplicate && (
+                    <button onClick={() => { onDuplicate(); onClose(); }}>
+                        Duplicate
+                    </button>
+                )}
+                {onCopy && (
+                    <button onClick={() => { onCopy(); onClose(); }}>
+                        Copy
+                    </button>
+                )}
+                {onDelete && (
+                    <>
+                        <div className={styles.divider} />
+                        <button className={styles.danger} onClick={() => { onDelete(); onClose(); }}>
+                            Delete
+                        </button>
+                    </>
+                )}
             </div>
         </div>,
         document.body

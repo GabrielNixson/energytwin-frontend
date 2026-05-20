@@ -15,6 +15,7 @@ interface DeviceCardProps {
     cpu: string;
     mem: string;
     modbus: number;
+    protocol: string;
     lastHeartbeat: string;
     isOnline: boolean;
     onClick: (id: string) => void;
@@ -22,7 +23,7 @@ interface DeviceCardProps {
     onDelete: (id: string) => void;
 }
 
-const DeviceCard: React.FC<DeviceCardProps> = ({ id, name, status, location, cpu, mem, modbus, lastHeartbeat, isOnline, onClick, onEdit, onDelete }) => {
+const DeviceCard: React.FC<DeviceCardProps> = ({ id, name, status, location, cpu, mem, modbus, protocol, lastHeartbeat, isOnline, onClick, onEdit, onDelete }) => {
     const kebabOptions = [
         { 
             label: 'Edit Edge', 
@@ -86,7 +87,7 @@ const DeviceCard: React.FC<DeviceCardProps> = ({ id, name, status, location, cpu
                 </div>
                 <div className={styles.techItem}>
                     <span className={styles.techLabel}>PROTOCOL</span>
-                    <span className={styles.techValue}>MODBUS/TCP</span>
+                    <span className={styles.techValue}>{protocol}</span>
                 </div>
             </div>
 
@@ -113,10 +114,10 @@ const DeviceManagement: React.FC = () => {
     const [edgeForm, setEdgeForm] = useState({ name: '', location: '', env: 'PRODUCTION' });
 
     const devices = [
-        { id: 'plant-a', name: 'Plant-A Gateway', status: 'PRODUCTION', location: 'Bangalore Factory - Floor 1', cpu: '36%', mem: '52%', modbus: 2, lastHeartbeat: 'Just now', isOnline: true },
-        { id: 'plant-b', name: 'Plant-B Gateway', status: 'PRODUCTION', location: 'Pune Factory - Boiler Room', cpu: '0%', mem: '0%', modbus: 1, lastHeartbeat: '6s ago', isOnline: false },
-        { id: 'lab-edge', name: 'Lab Edge Node', status: 'TESTING', location: 'R&D Lab - Rack 3', cpu: '0%', mem: '0%', modbus: 0, lastHeartbeat: '2.1m ago', isOnline: false },
-        { id: 'substation', name: 'Substation North', status: 'PRODUCTION', location: 'Grid Substation 7', cpu: '26%', mem: '41%', modbus: 1, lastHeartbeat: 'Just now', isOnline: true },
+        { id: 'plant-a', name: 'Plant-A Gateway', status: 'PRODUCTION', location: 'Bangalore Factory - Floor 1', cpu: '36%', mem: '52%', modbus: 3, protocol: 'TCP / RTU', lastHeartbeat: 'Just now', isOnline: true },
+        { id: 'plant-b', name: 'Plant-B Gateway', status: 'PRODUCTION', location: 'Pune Factory - Boiler Room', cpu: '0%', mem: '0%', modbus: 1, protocol: 'MODBUS / RTU', lastHeartbeat: '6s ago', isOnline: false },
+        { id: 'lab-edge', name: 'Lab Edge Node', status: 'TESTING', location: 'R&D Lab - Rack 3', cpu: '0%', mem: '0%', modbus: 0, protocol: '—', lastHeartbeat: '2.1m ago', isOnline: false },
+        { id: 'substation', name: 'Substation North', status: 'PRODUCTION', location: 'Grid Substation 7', cpu: '26%', mem: '41%', modbus: 1, protocol: 'MODBUS / TCP', lastHeartbeat: 'Just now', isOnline: true },
     ];
 
     const stats = [
@@ -186,7 +187,7 @@ const DeviceManagement: React.FC = () => {
                     <h1>Operations Overview</h1>
                     <p>Real time fleet telemetry across your edge network</p>
                 </div>
-                <div className={styles.headerActions}>
+                {/* <div className={styles.headerActions}>
                     <button className={styles.addBtn} onClick={handleAddClick}>
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="12" y1="5" x2="12" y2="19" />
@@ -196,7 +197,7 @@ const DeviceManagement: React.FC = () => {
                     </button>
                     <button className={styles.viewAllBtn}>View all edges</button>
 
-                </div>
+                </div> */}
             </header>
 
             <div className={styles.statsRow}>

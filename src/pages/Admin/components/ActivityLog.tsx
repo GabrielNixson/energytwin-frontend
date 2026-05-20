@@ -36,13 +36,13 @@ const ActivityLog = () => {
 
   return (
     <div className="activity-log" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ 
+      <div className="management-header" style={{ 
         marginBottom: '1rem',
-        padding: '1.5rem 0 1rem 0',
+        padding: '1rem 0',
         borderBottom: '1px solid var(--border-color)'
       }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>System Activity</h2>
-        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Track administrative changes across the organization.</p>
+        <h2 style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, margin: 0 }}>System Activity</h2>
+        <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Track administrative changes across the organization.</p>
       </div>
 
       <div className="admin-table-container">

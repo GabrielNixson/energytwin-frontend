@@ -15,11 +15,19 @@
     justify-content: space-between;
     align-items: center;
     padding: 24px 40px;
-    z-index: 1;
+    z-index: 2;
     background: transparent;
     pointer-events: none;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
+    @media (max-width: 768px) {
+        padding: 12px;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        background: rgba(0,0,0,0.2);
+        backdrop-filter: blur(10px);
+    }
 }
 
 .content-area {
@@ -46,6 +54,11 @@
     max-width: 800px;
     position: relative;
     pointer-events: auto;
+
+    @media (max-width: 768px) {
+        max-width: 100%;
+        width: 100%;
+    }
 
     &.shifted {
         margin-left: 260px;
@@ -166,6 +179,16 @@
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-soft);
     pointer-events: auto;
+
+    @media (max-width: 768px) {
+        max-width: 95vw;
+        overflow-x: auto;
+        padding: 4px;
+        gap: 4px;
+        justify-content: center;
+        scrollbar-width: none;
+        &::-webkit-scrollbar { display: none; }
+    }
 }
 
 .divider {
@@ -173,6 +196,10 @@
     height: 24px;
     background: rgba(255, 255, 255, 0.1);
     margin: 0 8px;
+
+    @media (max-width: 768px) {
+        display: none;
+    }
 }
 
 .mode-toggle-group {
@@ -237,6 +264,12 @@
     transition: all 0.5s linear;
     align-content: start;
     position: relative;
+
+    @media (max-width: 768px) {
+        padding: 110px 16px 50px 16px;
+        gap: 16px;
+        grid-auto-rows: auto;
+    }
 
     &.edit-mode {
         .chart-item {

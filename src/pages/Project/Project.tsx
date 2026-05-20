@@ -63,6 +63,7 @@ const DraggableChart = ({
   disabled = false,
   isResizing = false,
   isSelected = false,
+  isMobile = false,
 }: {
   chart: ChartData;
   isEditMode: boolean;
@@ -74,6 +75,7 @@ const DraggableChart = ({
   isHidden?: boolean;
   isResizing?: boolean;
   isSelected?: boolean;
+  isMobile?: boolean;
   onContextMenu?: (e: React.MouseEvent, id: string) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -85,8 +87,8 @@ const DraggableChart = ({
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    gridColumn: `${chart.x + 1} / span ${chart.w}`,
-    gridRow: `${chart.y + 1} / span ${chart.h}`,
+    gridColumn: isMobile ? "1 / span 12" : `${chart.x + 1} / span ${chart.w}`,
+    gridRow: isMobile ? "auto" : `${chart.y + 1} / span ${chart.h}`,
     opacity: isDragging || !!chart.isHidden ? 0 : 1,
     pointerEvents: (isDragging || !!chart.isHidden ? "none" : "auto") as any,
     zIndex: isDragging ? 200 : isResizing || chart.isGhost ? 150 : 1,
@@ -97,6 +99,7 @@ const DraggableChart = ({
     boxShadow: isSelected
       ? "0 0 0 2px var(--accent), 0 10px 25px -5px rgba(0, 0, 0, 0.4)"
       : undefined,
+    minHeight: isMobile ? "300px" : undefined,
   };
 
   // Split listeners to exclude the resize handle area
@@ -219,6 +222,23 @@ const Project = () => {
       return () => clearTimeout(timer);
     }
   }, [activeTabId]);
+
+  // Mobile-specific enforcement: Force 2D view-only mode
+  useEffect(() => {
+    const checkMobile = () => {
+      if (window.innerWidth <= 768) {
+        setIs3DMode(false);
+        setIsEditMode(false);
+        setIsChartSidebarOpen(false);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [setIs3DMode, setIsEditMode, setIsChartSidebarOpen]);
+
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   const [isTabModalOpen, setIsTabModalOpen] = useState(false);
   const [tabModalMode, setTabModalMode] = useState<{ type: 'add' | 'rename', tabId?: string, initialName?: string, assetId?: string }>({ type: 'add' });
@@ -1226,8 +1246,10 @@ const Project = () => {
 
   const isConfigOpen = (isEditMode || is3DMode) && !!selectedChartId;
 
+  const projectContainerRef = useRef<HTMLDivElement>(null);
+
   return (
-    <div className={styles["project-container"]}>
+    <div className={styles["project-container"]} ref={projectContainerRef}>
 
       <DndContext
         sensors={sensors}
@@ -1320,6 +1342,7 @@ const Project = () => {
                   </div>
                 ) : <div />}
 
+            {!isMobile && (
               <motion.div
                 className={styles["tools-container"]}
                 initial={{ y: -50, opacity: 0 }}
@@ -1342,17 +1365,19 @@ const Project = () => {
                     </svg>
                     2D Dashboard
                   </button>
-                  <button
-                    className={`${styles["btn"]} ${is3DMode ? styles.active : ""}`}
-                    onClick={() => setIs3DMode(true)}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                      <line x1="12" y1="22.08" x2="12" y2="12" />
-                    </svg>
-                    3D Energy Twin
-                  </button>
+                  {!isMobile && (
+                    <button
+                      className={`${styles["btn"]} ${is3DMode ? styles.active : ""}`}
+                      onClick={() => setIs3DMode(true)}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                        <line x1="12" y1="22.08" x2="12" y2="12" />
+                      </svg>
+                      3D Energy Twin
+                    </button>
+                  )}
                 </div>
 
                 <div className={styles["divider"]} />
@@ -1369,6 +1394,7 @@ const Project = () => {
                   />
                 )}
               </motion.div>
+            )}
             </div>
 
           <AnimatePresence mode="wait">
@@ -1418,23 +1444,28 @@ const Project = () => {
                       </div>
                       <h3>No widgets yet</h3>
                       <p>
-                        Your dashboard is looking a bit empty. Start by switching to the 3D Energy Twin to add and position your widgets.
+                        {isMobile 
+                          ? "This dashboard doesn't have any widgets yet. Please add and position your widgets on a desktop browser to view them here."
+                          : "Your dashboard is looking a bit empty. Start by switching to the 3D Energy Twin to add and position your widgets."
+                        }
                       </p>
-                      <button 
-                        className={styles["add-widget-btn"]}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIs3DMode(true);
-                          setIsChartSidebarOpen(true);
-                        }}
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                          <line x1="12" y1="22.08" x2="12" y2="12" />
-                        </svg>
-                        Switch to 3D Energy Twin
-                      </button>
+                      {!isMobile && (
+                        <button 
+                          className={styles["add-widget-btn"]}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIs3DMode(true);
+                            setIsChartSidebarOpen(true);
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                            <line x1="12" y1="22.08" x2="12" y2="12" />
+                          </svg>
+                          Switch to 3D Energy Twin
+                        </button>
+                      )}
                     </div>
                   ) : (
                     previewCharts.map((chart) => (
@@ -1447,6 +1478,7 @@ const Project = () => {
                         onSettingsClick={onChartClick}
                         onContextMenu={handleChartContextMenu}
                         isSelected={selectedChartId === chart.id}
+                        isMobile={isMobile}
                         disabled={
                           resizingChartId !== null && chart.id !== resizingChartId
                         }
@@ -1484,6 +1516,7 @@ const Project = () => {
                 >
                   <Project3D 
                     isConfigOpen={isConfigOpen}
+                    projectContainerRef={projectContainerRef}
                   />
                 </Suspense>
               </motion.div>

@@ -6,10 +6,10 @@
     display: flex;
     flex-direction: column;
     padding: 0 1rem;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                opacity 0.2s ease,
-                border-right 0.3s ease;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.2s ease,
+        border-right 0.3s ease;
     overflow: hidden;
     white-space: nowrap;
 
@@ -158,5 +158,3 @@
         }
     }
 }
-
-

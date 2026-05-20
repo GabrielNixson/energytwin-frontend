@@ -9,12 +9,58 @@
     // backdrop-filter: blur(20px);
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: 3;
+
+    @media (max-width: 768px) {
+        padding: 0 12px;
+        height: 48px;
+    }
 
     .left {
         display: flex;
         align-items: center;
         gap: 48px;
+
+        .logo-section {
+            display: none; // Hidden on desktop by default
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+
+            @media (max-width: 768px) {
+                display: flex; // Show on mobile
+            }
+
+            &:hover { opacity: 0.8; }
+
+            svg {
+                width: 32px;
+                height: 32px;
+                color: var(--accent);
+            }
+
+            span {
+                font-size: 1.25rem;
+                font-weight: 700;
+                color: var(--text-primary);
+                letter-spacing: -0.02em;
+
+                @media (max-width: 480px) {
+                    display: none; // Hide text on small mobile
+                }
+            }
+        }
+    }
+
+    .right {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+
+        @media (max-width: 768px) {
+            gap: 12px;
+        }
 
         .page-info {
             display: flex;
@@ -33,6 +79,10 @@
                 margin: 0;
                 letter-spacing: -0.01em;
             }
+
+            @media (max-width: 640px) {
+                display: none;
+            }
         }
 
         .search-wrapper {
@@ -46,6 +96,14 @@
             width: 320px;
             color: var(--text-secondary);
             transition: all 0.2s ease;
+
+            @media (max-width: 1024px) {
+                width: 200px;
+            }
+
+            @media (max-width: 768px) {
+                display: none;
+            }
 
             input {
                 background: transparent;
@@ -73,6 +131,10 @@
         align-items: center;
         gap: 24px;
 
+        @media (max-width: 768px) {
+            gap: 12px;
+        }
+
         .status-indicator {
             display: flex;
             align-items: center;
@@ -83,6 +145,10 @@
             padding: 6px 12px;
             border-radius: 100px;
             border: 1px solid rgba(34, 197, 94, 0.1);
+
+            @media (max-width: 640px) {
+                display: none;
+            }
 
             .dot {
                 width: 6px;
@@ -101,7 +167,11 @@
         .action-icons {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
+
+            @media (max-width: 768px) {
+                gap: 8px;
+            }
 
             .icon-btn {
                 width: 38px;
@@ -131,17 +201,31 @@
                     border-radius: 50%;
                     border: 2px solid var(--background);
                 }
+            }
+        }
 
-                &.share-nav-btn {
-                    color: var(--accent);
-                    background: rgba(var(--accent-rgb), 0.1);
-                    margin-left: 4px;
+        .hamburger-menu {
+            display: none;
+            // background: rgba(var(--accent-rgb), 0.1);
+            // border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            width: 38px;
+            height: 38px;
 
-                    &:hover {
-                        background: var(--accent);
-                        color: white;
-                    }
-                }
+            @media (max-width: 768px) {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            &:hover {
+                background: var(--accent);
+                color: #fff;
+                box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
             }
         }
 
@@ -160,8 +244,9 @@
             font-weight: 500;
             transition: all 0.2s;
 
-            span {
-                text-transform: capitalize;
+            @media (max-width: 640px) {
+                padding: 6px 10px;
+                span { display: none; }
             }
 
             &.refreshing {

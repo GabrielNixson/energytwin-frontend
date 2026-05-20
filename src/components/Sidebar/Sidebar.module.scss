@@ -9,9 +9,54 @@
   gap: 2rem;
 
   position: relative;
-  transition: width 0.25s ease;
+  transition: all 0.25s ease;
 
   background: var(--background);
+  z-index: 100;
+
+  @media (max-width: 768px) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 64px !important; // Wider drawer for mobile
+    height: 100dvh;
+    flex-direction: column;
+    border-right: 1px solid var(--glass-border);
+    border-top: none;
+    padding: 20px 0;
+    gap: 1rem;
+    align-items: center;
+    justify-content: flex-start;
+    background: var(--background);
+    z-index: 1001;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+
+    &.mobile-open {
+      transform: translateX(0);
+    }
+  }
+}
+
+.mobile-backdrop {
+  display: none;
+  @media (max-width: 768px) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+
+    &.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
 }
 
 /* Toggle button */
@@ -39,6 +84,10 @@
   svg {
     transition: transform 0.25s ease;
   }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 }
 
 /* Logo */
@@ -55,6 +104,15 @@
   span {
     font-weight: 600;
     white-space: nowrap;
+
+    @media (max-width: 768px) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    justify-content: center;
+    padding: 10px 0;
   }
 }
 
@@ -64,6 +122,13 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+  }
 
   .option {
     padding: 8px;
@@ -115,6 +180,10 @@
       font-weight: 600;
       white-space: nowrap;
       transition: all 0.2s ease;
+
+      @media (max-width: 768px) {
+        display: none;
+      }
     }
 
     &:hover {
@@ -137,6 +206,10 @@
 
   background: var(--secondary);
 
+  @media (max-width: 768px) {
+    display: none;
+  }
+
   .user-img {
     width: 32px;
     height: 32px;
@@ -158,6 +231,10 @@
     flex-direction: column;
     flex: 1;
     min-width: 0;
+
+    @media (max-width: 768px) {
+      display: none;
+    }
 
     .user-name {
       font-size: var(--font-size-body-sm);

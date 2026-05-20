@@ -151,16 +151,22 @@ const RoleManagement = () => {
 
   return (
     <div className="role-management" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ 
+      <div className="management-header" style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
         marginBottom: '1rem',
-        padding: '1.5rem 0 1rem 0',
-        borderBottom: '1px solid var(--border-color)'
+        padding: '1rem 0',
+        borderBottom: '1px solid var(--border-color)',
+        flexWrap: 'wrap',
+        gap: '12px'
       }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Roles & Permissions</h2>
-        <button className="primary-btn" onClick={handleOpenCreateModal}>+ Create Role</button>
+        <h2 style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, margin: 0 }}>Roles & Permissions</h2>
+        <button className="primary-btn" onClick={handleOpenCreateModal} style={{ 
+          padding: '8px 16px', 
+          fontSize: 'var(--fs-sm)',
+          whiteSpace: 'nowrap'
+        }}>+ Create Role</button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0' }}>
@@ -261,7 +267,14 @@ const RoleManagement = () => {
             <label style={{ display: 'block', marginBottom: '1rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
               Permissions
             </label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '0.5rem', 
+              maxHeight: window.innerWidth <= 768 ? '250px' : '400px', 
+              overflowY: 'auto', 
+              paddingRight: '0.5rem' 
+            }}>
               {roleData.permissions.map((perm) => (
                 <div 
                   key={perm.id} 
@@ -279,15 +292,19 @@ const RoleManagement = () => {
                     opacity: perm.enabled ? 1 : 0.8
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--accent)';
-                    e.currentTarget.style.background = 'var(--accent-hover)';
+                    if (window.innerWidth > 768) {
+                      e.currentTarget.style.borderColor = 'var(--accent)';
+                      e.currentTarget.style.background = 'var(--accent-hover)';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border-color)';
-                    e.currentTarget.style.background = 'var(--secondary)';
+                    if (window.innerWidth > 768) {
+                      e.currentTarget.style.borderColor = 'var(--border-color)';
+                      e.currentTarget.style.background = 'var(--secondary)';
+                    }
                   }}
                 >
-                  <div>
+                  <div style={{ flex: 1, marginRight: '12px' }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{perm.name}</div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{perm.description}</div>
                   </div>
@@ -297,7 +314,8 @@ const RoleManagement = () => {
                     borderRadius: '20px', 
                     background: perm.enabled ? 'var(--accent)' : 'var(--border-color)',
                     position: 'relative',
-                    transition: 'background 0.3s'
+                    transition: 'background 0.3s',
+                    flexShrink: 0
                   }}>
                     <div style={{ 
                       width: '12px', 
@@ -315,7 +333,7 @@ const RoleManagement = () => {
             </div>
           </div>
 
-          <div className="form-actions">
+          <div className="form-actions" style={{ marginTop: '2rem', marginBottom: '0.5rem' }}>
             <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)}>Cancel</button>
             <button type="submit" className="primary-btn">
               {editingRole ? "Update Role" : "Create Role"}
