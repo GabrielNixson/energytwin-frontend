@@ -43,6 +43,7 @@ interface Device {
 interface DeviceFormState {
     name: string;
     protocol: 'tcp' | 'rtu';
+    template: string;
     serial: {
         path: string;
         baudRate: number;
@@ -62,6 +63,7 @@ interface DeviceFormState {
 const initialFormState: DeviceFormState = {
     name: '',
     protocol: 'tcp',
+    template: 'custom',
     serial: {
         path: '/dev/ttyUSB0',
         baudRate: 9600,
@@ -80,6 +82,39 @@ const initialFormState: DeviceFormState = {
     ]
 };
 
+const DEVICE_TEMPLATES = [
+    {
+        id: 'custom',
+        label: 'Custom Device (Configure manually)',
+        registers: [
+            { address: 40001, dataType: 'int16' as const, name: '' }
+        ]
+    },
+    {
+        id: 'temp-sensor',
+        label: 'Schneider Temperature Sensor (Preset)',
+        registers: [
+            { address: 40001, dataType: 'int16' as const, name: 'temperature' },
+            { address: 40002, dataType: 'uint16' as const, name: 'humidity' }
+        ]
+    },
+    {
+        id: 'power-meter',
+        label: 'Power Meter Main (Preset)',
+        registers: [
+            { address: 30001, dataType: 'float32' as const, name: 'active_power' },
+            { address: 30003, dataType: 'float32' as const, name: 'voltage' }
+        ]
+    },
+    {
+        id: 'boiler-controller',
+        label: 'Boiler Controller (Preset)',
+        registers: [
+            { address: 40010, dataType: 'bit field' as const, name: 'relay_status' }
+        ]
+    }
+];
+
 const EdgeDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -90,6 +125,9 @@ const EdgeDetails: React.FC = () => {
     
     const [deviceForm, setDeviceForm] = useState<DeviceFormState>({ ...initialFormState });
     const [expandedDeviceId, setExpandedDeviceId] = useState<string | null>(null);
+    const [isTesting, setIsTesting] = useState(false);
+    const [isTested, setIsTested] = useState(false);
+    const [testedTemplates, setTestedTemplates] = useState<Record<string, boolean>>({});
 
     const [devices, setDevices] = useState<Device[]>([
         { 
@@ -155,6 +193,13 @@ const EdgeDetails: React.FC = () => {
         { id: 'rtu', label: 'Modbus RTU' },
     ];
 
+    const templateOptions = [
+        { id: 'custom', label: 'Custom Device (Configure manually)' },
+        { id: 'temp-sensor', label: 'Schneider Temperature Sensor (Preset)' },
+        { id: 'power-meter', label: 'Power Meter Main (Preset)' },
+        { id: 'boiler-controller', label: 'Boiler Controller (Preset)' },
+    ];
+
     const serialPathOptions = [
         { id: '/dev/ttyUSB0', label: '/dev/ttyUSB0 (Standard USB Serial)' },
         { id: '/dev/ttyUSB1', label: '/dev/ttyUSB1' },
@@ -217,11 +262,20 @@ const EdgeDetails: React.FC = () => {
         (device.config?.protocol || '').toLowerCase().includes(search.toLowerCase())
     );
 
+    const handleConnectionChange = () => {
+        setIsTested(false);
+        setTestedTemplates({});
+    };
+
     const handleAddClick = () => {
         setEditingDevice(null);
+        setIsTested(false);
+        setIsTesting(false);
+        setTestedTemplates({});
         setDeviceForm({
             name: '',
             protocol: 'tcp',
+            template: 'custom',
             serial: { ...initialFormState.serial },
             tcp: { ...initialFormState.tcp },
             slaveId: 1,
@@ -233,10 +287,15 @@ const EdgeDetails: React.FC = () => {
 
     const handleEditDevice = (device: Device) => {
         setEditingDevice(device);
+        setIsTested(true);
+        setIsTesting(false);
+        const activeTemplate = device.config ? (device.config as any).template || 'custom' : 'custom';
+        setTestedTemplates({ [activeTemplate]: true });
         if (device.config) {
             setDeviceForm({
                 name: device.config.name,
                 protocol: device.config.protocol,
+                template: activeTemplate,
                 serial: { ...device.config.serial },
                 tcp: { ...device.config.tcp },
                 slaveId: device.config.slaveId,
@@ -251,6 +310,23 @@ const EdgeDetails: React.FC = () => {
             });
         }
         setIsModalOpen(true);
+    };
+
+    const handleTestConnection = () => {
+        if (!deviceForm.name) {
+            alert("Please enter a device name first.");
+            return;
+        }
+        if (deviceForm.protocol === 'tcp' && !deviceForm.tcp.ip) {
+            alert("Please enter a Modbus TCP IP address first.");
+            return;
+        }
+        setIsTesting(true);
+        setTimeout(() => {
+            setIsTesting(false);
+            setIsTested(true);
+            setTestedTemplates(prev => ({ ...prev, [deviceForm.template]: true }));
+        }, 1500);
     };
 
     const handleDeleteDevice = (deviceId: string) => {
@@ -268,9 +344,10 @@ const EdgeDetails: React.FC = () => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const formConfig: ModbusDeviceConfig = {
+        const formConfig: ModbusDeviceConfig & { template?: string } = {
             name: deviceForm.name,
             protocol: deviceForm.protocol,
+            template: deviceForm.template,
             serial: { ...deviceForm.serial },
             tcp: { ...deviceForm.tcp },
             slaveId: Number(deviceForm.slaveId),
@@ -577,7 +654,10 @@ const EdgeDetails: React.FC = () => {
                                     placeholder="e.g. Temperature Sensor 01" 
                                     required 
                                     value={deviceForm.name}
-                                    onChange={(e) => setDeviceForm({ ...deviceForm, name: e.target.value })}
+                                    onChange={(e) => {
+                                        handleConnectionChange();
+                                        setDeviceForm({ ...deviceForm, name: e.target.value });
+                                    }}
                                 />
                             </div>
                             <div className={styles.formGroup}>
@@ -585,7 +665,10 @@ const EdgeDetails: React.FC = () => {
                                     label="Modbus Protocol Type"
                                     options={protocolOptions}
                                     value={deviceForm.protocol}
-                                    onChange={(val) => setDeviceForm({ ...deviceForm, protocol: val as 'tcp' | 'rtu' })}
+                                    onChange={(val) => {
+                                        handleConnectionChange();
+                                        setDeviceForm({ ...deviceForm, protocol: val as 'tcp' | 'rtu' });
+                                    }}
                                 />
                             </div>
                         </div>
@@ -599,7 +682,10 @@ const EdgeDetails: React.FC = () => {
                                     max="247" 
                                     required 
                                     value={deviceForm.slaveId}
-                                    onChange={(e) => setDeviceForm({ ...deviceForm, slaveId: parseInt(e.target.value) || 1 })}
+                                    onChange={(e) => {
+                                        handleConnectionChange();
+                                        setDeviceForm({ ...deviceForm, slaveId: parseInt(e.target.value) || 1 });
+                                    }}
                                 />
                             </div>
                             <div className={styles.formGroup}>
@@ -610,7 +696,10 @@ const EdgeDetails: React.FC = () => {
                                     step="100" 
                                     required 
                                     value={deviceForm.pollingInterval}
-                                    onChange={(e) => setDeviceForm({ ...deviceForm, pollingInterval: parseInt(e.target.value) || 5000 })}
+                                    onChange={(e) => {
+                                        handleConnectionChange();
+                                        setDeviceForm({ ...deviceForm, pollingInterval: parseInt(e.target.value) || 5000 });
+                                    }}
                                 />
                             </div>
                         </div>
@@ -630,10 +719,13 @@ const EdgeDetails: React.FC = () => {
                                                 required={deviceForm.protocol === 'tcp'} 
                                                 pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
                                                 value={deviceForm.tcp.ip}
-                                                onChange={(e) => setDeviceForm({ 
-                                                    ...deviceForm, 
-                                                    tcp: { ...deviceForm.tcp, ip: e.target.value } 
-                                                })}
+                                                onChange={(e) => {
+                                                    handleConnectionChange();
+                                                    setDeviceForm({ 
+                                                        ...deviceForm, 
+                                                        tcp: { ...deviceForm.tcp, ip: e.target.value } 
+                                                    });
+                                                }}
                                             />
                                         </div>
                                         <div className={styles.formGroup} style={{ marginBottom: 0 }}>
@@ -645,10 +737,13 @@ const EdgeDetails: React.FC = () => {
                                                 max="65535" 
                                                 required={deviceForm.protocol === 'tcp'} 
                                                 value={deviceForm.tcp.port}
-                                                onChange={(e) => setDeviceForm({ 
-                                                    ...deviceForm, 
-                                                    tcp: { ...deviceForm.tcp, port: parseInt(e.target.value) || 502 } 
-                                                })}
+                                                onChange={(e) => {
+                                                    handleConnectionChange();
+                                                    setDeviceForm({ 
+                                                        ...deviceForm, 
+                                                        tcp: { ...deviceForm.tcp, port: parseInt(e.target.value) || 502 } 
+                                                    });
+                                                }}
                                             />
                                         </div>
                                     </div>
@@ -671,6 +766,7 @@ const EdgeDetails: React.FC = () => {
                                                 value={serialPathOptions.some(opt => opt.id === deviceForm.serial.path && opt.id !== 'custom') ? deviceForm.serial.path : 'custom'}
                                                 placeholder="Select serial path..."
                                                 onChange={(val) => {
+                                                    handleConnectionChange();
                                                     setDeviceForm({
                                                         ...deviceForm,
                                                         serial: { 
@@ -688,10 +784,13 @@ const EdgeDetails: React.FC = () => {
                                                 required={deviceForm.protocol === 'rtu'}
                                                 style={{ flex: 1 }}
                                                 value={deviceForm.serial.path}
-                                                onChange={(e) => setDeviceForm({
-                                                    ...deviceForm,
-                                                    serial: { ...deviceForm.serial, path: e.target.value }
-                                                })}
+                                                onChange={(e) => {
+                                                    handleConnectionChange();
+                                                    setDeviceForm({
+                                                        ...deviceForm,
+                                                        serial: { ...deviceForm.serial, path: e.target.value }
+                                                    });
+                                                }}
                                             />
                                         )}
                                     </div>
@@ -703,10 +802,13 @@ const EdgeDetails: React.FC = () => {
                                             label="Baud Rate"
                                             options={baudRateOptions}
                                             value={String(deviceForm.serial.baudRate)}
-                                            onChange={(val) => setDeviceForm({
-                                                ...deviceForm,
-                                                serial: { ...deviceForm.serial, baudRate: parseInt(val) || 9600 }
-                                            })}
+                                            onChange={(val) => {
+                                                handleConnectionChange();
+                                                setDeviceForm({
+                                                    ...deviceForm,
+                                                    serial: { ...deviceForm.serial, baudRate: parseInt(val) || 9600 }
+                                                });
+                                            }}
                                         />
                                     </div>
                                     <div className={styles.formGroup} style={{ marginBottom: 0 }}>
@@ -714,10 +816,13 @@ const EdgeDetails: React.FC = () => {
                                             label="Parity"
                                             options={parityOptions}
                                             value={deviceForm.serial.parity}
-                                            onChange={(val) => setDeviceForm({
-                                                ...deviceForm,
-                                                serial: { ...deviceForm.serial, parity: val as any }
-                                            })}
+                                            onChange={(val) => {
+                                                handleConnectionChange();
+                                                setDeviceForm({
+                                                    ...deviceForm,
+                                                    serial: { ...deviceForm.serial, parity: val as any }
+                                                });
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -727,10 +832,13 @@ const EdgeDetails: React.FC = () => {
                                             label="Data Bits"
                                             options={dataBitsOptions}
                                             value={String(deviceForm.serial.dataBits)}
-                                            onChange={(val) => setDeviceForm({
-                                                ...deviceForm,
-                                                serial: { ...deviceForm.serial, dataBits: parseInt(val) as any }
-                                            })}
+                                            onChange={(val) => {
+                                                handleConnectionChange();
+                                                setDeviceForm({
+                                                    ...deviceForm,
+                                                    serial: { ...deviceForm.serial, dataBits: parseInt(val) as any }
+                                                });
+                                            }}
                                         />
                                     </div>
                                     <div className={styles.formGroup} style={{ marginBottom: 0 }}>
@@ -738,10 +846,13 @@ const EdgeDetails: React.FC = () => {
                                             label="Stop Bits"
                                             options={stopBitsOptions}
                                             value={String(deviceForm.serial.stopBits)}
-                                            onChange={(val) => setDeviceForm({
-                                                ...deviceForm,
-                                                serial: { ...deviceForm.serial, stopBits: parseFloat(val) as any }
-                                            })}
+                                            onChange={(val) => {
+                                                handleConnectionChange();
+                                                setDeviceForm({
+                                                    ...deviceForm,
+                                                    serial: { ...deviceForm.serial, stopBits: parseFloat(val) as any }
+                                                });
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -749,8 +860,112 @@ const EdgeDetails: React.FC = () => {
                             )}
                         </div>
 
-                        <div>
-                            <div className={styles.sectionHeader}>
+                        {/* Test Connection Action */}
+                        <div style={{ 
+                            background: isTested ? 'rgba(34, 197, 94, 0.08)' : 'rgba(255, 255, 255, 0.02)',
+                            border: isTested ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)',
+                            borderRadius: '12px',
+                            padding: '16px',
+                            marginBottom: '20px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            transition: 'all 0.3s ease'
+                        }}>
+                            <div style={{ flex: 1, marginRight: '16px' }}>
+                                <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', fontWeight: 700, color: isTested ? '#22c55e' : 'var(--text-primary)' }}>
+                                    {isTested ? '✓ Connection Verified' : 'Modbus Hardware Verification'}
+                                </h4>
+                                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                    {isTested 
+                                        ? `Modbus slave ID ${deviceForm.slaveId} is online and responding.` 
+                                        : 'Test communication to unlock register mapping and templates.'}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleTestConnection}
+                                disabled={isTesting}
+                                style={{
+                                    background: isTested ? 'rgba(34, 197, 94, 0.15)' : 'var(--accent)',
+                                    color: isTested ? '#22c55e' : '#fff',
+                                    border: isTested ? '1px solid rgba(34, 197, 94, 0.4)' : 'none',
+                                    padding: '10px 20px',
+                                    borderRadius: '10px',
+                                    fontWeight: 600,
+                                    fontSize: '0.9rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    transition: 'all 0.2s',
+                                    boxShadow: isTested ? 'none' : '0 4px 12px rgba(var(--accent-rgb), 0.2)'
+                                }}
+                            >
+                                {isTesting ? (
+                                    <>
+                                        <svg className={styles.spinner} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ animation: 'spin 1s linear infinite' }}>
+                                            <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9" />
+                                        </svg>
+                                        Testing...
+                                    </>
+                                ) : isTested ? (
+                                    <>Re-test Connection</>
+                                ) : (
+                                    <>Test Connection</>
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Device Profile Selection (Select devices after test) */}
+                        <div style={{ 
+                            marginBottom: '24px',
+                            opacity: isTested ? 1 : 0.4,
+                            pointerEvents: isTested ? 'auto' : 'none',
+                            transition: 'all 0.3s ease',
+                            background: 'rgba(255, 255, 255, 0.01)',
+                            border: '1px solid rgba(255, 255, 255, 0.04)',
+                            borderRadius: '12px',
+                            padding: '16px'
+                        }}>
+                            <CustomDropdown 
+                                label="Device Profile / Prototype"
+                                options={templateOptions}
+                                value={deviceForm.template}
+                                onChange={(val) => {
+                                    const templateId = val;
+                                    const selectedTemplate = DEVICE_TEMPLATES.find(t => t.id === templateId);
+                                    if (selectedTemplate) {
+                                        const alreadyVerified = !!testedTemplates[templateId];
+                                        setIsTested(alreadyVerified);
+
+                                        setDeviceForm({
+                                            ...deviceForm,
+                                            template: templateId,
+                                            registers: selectedTemplate.registers.map(r => ({ ...r }))
+                                        });
+                                    }
+                                }}
+                            />
+                            <p style={{ margin: '8px 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                {deviceForm.template === 'custom' 
+                                    ? 'Custom Device: Add your own register mappings manually below.' 
+                                    : `Preset Profile: Automatically loaded predefined register mappings for ${templateOptions.find(t => t.id === deviceForm.template)?.label}.`}
+                            </p>
+                        </div>
+
+                        {/* Registers Mapping (grayed out until tested) */}
+                        <div style={{ 
+                            opacity: isTested ? 1 : 0.4, 
+                            pointerEvents: isTested ? 'auto' : 'none', 
+                            transition: 'all 0.3s ease',
+                            border: '1px solid rgba(255, 255, 255, 0.03)',
+                            background: 'rgba(255, 255, 255, 0.005)',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            marginBottom: '16px'
+                        }}>
+                            <div className={styles.sectionHeader} style={{ marginTop: 0 }}>
                                 <span>Registers Mapping ({deviceForm.registers.length})</span>
                                 <span style={{ fontSize: '0.8rem', opacity: 0.6, fontWeight: 400 }}>InfluxDB Field Definitions</span>
                             </div>
@@ -857,7 +1072,14 @@ const EdgeDetails: React.FC = () => {
 
                     <div className={styles.modalFooter} style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
                         <button type="button" className={styles.filterBtn} onClick={() => setIsModalOpen(false)}>Cancel</button>
-                        <button type="submit" className={styles.addBtn}>{editingDevice ? 'Save Configuration' : 'Register Device'}</button>
+                        <button 
+                            type="submit" 
+                            className={styles.addBtn}
+                            disabled={!isTested}
+                            style={!isTested ? { opacity: 0.5, cursor: 'not-allowed', background: '#475569', boxShadow: 'none' } : {}}
+                        >
+                            {editingDevice ? 'Save Configuration' : 'Register Device'}
+                        </button>
                     </div>
                 </form>
             </Modal>

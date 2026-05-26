@@ -30,7 +30,7 @@ interface ChartItemProps {
 }
 
 const DraggableChartItem = ({ chart }: ChartItemProps) => {
-    const { isEditMode, is3DMode, setActiveTabId } = useUIStore();
+    const { isEditMode, setActiveTabId } = useUIStore();
     const { projects, addChart } = useProjectStore();
     const { projectID } = useParams<{ projectID: string }>();
 
@@ -133,7 +133,7 @@ interface ChartListSidebarProps {
 }
 
 const ChartListSidebar = ({ isOpen = true }: ChartListSidebarProps) => {
-    const { isEditMode, is3DMode } = useUIStore();
+    const { isEditMode, is3DMode, setIsChartSidebarOpen } = useUIStore();
     const [searchQuery, setSearchQuery] = useState("");
 
     const chartList = [
@@ -164,7 +164,16 @@ const ChartListSidebar = ({ isOpen = true }: ChartListSidebarProps) => {
             onClick={(e) => e.stopPropagation()}
         >
             <div className={styles.header}>
-                <h1>Charts</h1>
+                <div className={styles["title-row"]}>
+                    <h1>Charts</h1>
+                    <button 
+                        className={styles["close-btn"]}
+                        onClick={() => setIsChartSidebarOpen(false)}
+                        title="Close Sidebar"
+                    >
+                        ✕
+                    </button>
+                </div>
                 <div className={styles["search-box"]}>
                     <SearchIcon />
                     <input

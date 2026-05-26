@@ -61,15 +61,15 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
             return;
         }
 
-        console.log(`[Chart:${id}] Initializing Polling`, { 
-            topic: config.fieldname, 
-            range: config.timerange, 
+        console.log(`[Chart:${id}] Initializing Polling`, {
+            topic: config.fieldname,
+            range: config.timerange,
             agg: config.function,
             socket: socket.connected ? 'Connected' : 'Disconnected'
         });
 
         const responseEvent = `energyTwin:data:res:${id}`;
-        
+
         const fetchData = () => {
             const payload = {
                 fieldname: config.fieldname,
@@ -87,7 +87,7 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
         };
 
         socket.on(responseEvent, handleResponse);
-        
+
         // Initial fetch
         fetchData();
 
@@ -483,7 +483,7 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
                 {renderChart()}
             </div>
 
-            {isEditMode && (
+            {isEditMode && onResizeStart && (
                 <div
                     className={styles.resizeHandle}
                     onPointerDown={handleResizePointerDown}
