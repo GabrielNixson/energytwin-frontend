@@ -1,4 +1,4 @@
-export type MemberRole = 'Admin' | 'Viewer' | 'Operator' | 'Editor';
+export type MemberRole = string;
 
 export type MemberStatus = 'Active' | 'Pending' | 'Suspended';
 
@@ -25,6 +25,7 @@ export interface Role {
   name: MemberRole;
   description: string;
   permissions: Permission[];
+  isSystemRole?: boolean;
 }
 
 export interface ActivityLogEntry {

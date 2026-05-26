@@ -87,22 +87,22 @@ const EdgeDetails: React.FC = () => {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [editingDevice, setEditingDevice] = useState<Device | null>(null);
     const [deletingDeviceId, setDeletingDeviceId] = useState<string | null>(null);
-    
+
     const [deviceForm, setDeviceForm] = useState<DeviceFormState>({ ...initialFormState });
     const [expandedDeviceId, setExpandedDeviceId] = useState<string | null>(null);
 
     const [devices, setDevices] = useState<Device[]>([
-        { 
-            id: 'dev-1', 
-            name: 'Temperature Sensor 01', 
-            type: 'SENSOR', 
-            status: 'online', 
+        {
+            id: 'dev-1',
+            name: 'Temperature Sensor 01',
+            type: 'SENSOR',
+            status: 'online',
             lastSeen: 'Just now',
             config: {
                 name: 'Temperature Sensor 01',
                 protocol: 'tcp',
                 serial: { path: '/dev/ttyUSB0', baudRate: 9600, parity: 'none', dataBits: 8, stopBits: 1 },
-                tcp: { ip: '192.168.1.101', port: 502 },
+                tcp: { ip: '192.168.21.114', port: 502 },
                 slaveId: 1,
                 pollingInterval: 5000,
                 registers: [
@@ -111,11 +111,11 @@ const EdgeDetails: React.FC = () => {
                 ]
             }
         },
-        { 
-            id: 'dev-2', 
-            name: 'Power Meter Main', 
-            type: 'METER', 
-            status: 'online', 
+        {
+            id: 'dev-2',
+            name: 'Power Meter Main',
+            type: 'METER',
+            status: 'online',
             lastSeen: 'Just now',
             config: {
                 name: 'Power Meter Main',
@@ -130,11 +130,11 @@ const EdgeDetails: React.FC = () => {
                 ]
             }
         },
-        { 
-            id: 'dev-3', 
-            name: 'Humidity Controller', 
-            type: 'ACTUATOR', 
-            status: 'offline', 
+        {
+            id: 'dev-3',
+            name: 'Humidity Controller',
+            type: 'ACTUATOR',
+            status: 'offline',
             lastSeen: '2h ago',
             config: {
                 name: 'Humidity Controller',
@@ -212,8 +212,8 @@ const EdgeDetails: React.FC = () => {
 
     const [search, setSearch] = useState('');
 
-    const filteredDevices = devices.filter(device => 
-        device.name.toLowerCase().includes(search.toLowerCase()) || 
+    const filteredDevices = devices.filter(device =>
+        device.name.toLowerCase().includes(search.toLowerCase()) ||
         (device.config?.protocol || '').toLowerCase().includes(search.toLowerCase())
     );
 
@@ -308,12 +308,12 @@ const EdgeDetails: React.FC = () => {
         <div className={styles.container}>
             <header className={styles.header}>
                 <div className={styles.titleSection}>
-                    <button 
-                        onClick={() => navigate(-1)} 
+                    <button
+                        onClick={() => navigate(-1)}
                         className={styles.filterBtn}
                         style={{ padding: '0.5rem 1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid var(--border-color)', borderRadius: '10px' }}
                     >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>
                         Back
                     </button>
                     <h1>{id?.replace('-', ' ').toUpperCase()}</h1>
@@ -356,17 +356,17 @@ const EdgeDetails: React.FC = () => {
                         <span className={styles.tag}>{filteredDevices.length} Total</span>
                     </h2>
                     <div className={styles.searchBox} style={{ width: '300px' }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input 
-                            type="text" 
-                            placeholder="Filter assets..." 
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                        <input
+                            type="text"
+                            placeholder="Filter assets..."
                             style={{ background: 'transparent', border: 'none', color: '#fff', padding: '8px', fontSize: '0.9rem', outline: 'none', width: '100%' }}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
                 </div>
-                
+
                 <div className={styles.devicesTableContainer}>
                     <table className={styles.devicesTable}>
                         <thead>
@@ -383,28 +383,28 @@ const EdgeDetails: React.FC = () => {
                         <tbody>
                             {filteredDevices.map(device => {
                                 const isTcp = device.config?.protocol === 'tcp';
-                                const connectionStr = device.config 
-                                    ? isTcp 
+                                const connectionStr = device.config
+                                    ? isTcp
                                         ? `TCP: ${device.config.tcp.ip || '0.0.0.0'}:${device.config.tcp.port || 502} (Slave ${device.config.slaveId})`
                                         : `RTU: ${device.config.serial.path || 'COM1'} (${device.config.serial.baudRate} bps, ${device.config.serial.dataBits || 8}${device.config.serial.parity === 'none' ? 'N' : device.config.serial.parity?.charAt(0).toUpperCase() || 'N'}${device.config.serial.stopBits || 1}, Slave ${device.config.slaveId})`
                                     : device.type;
 
-                                const registersSummary = device.config?.registers 
+                                const registersSummary = device.config?.registers
                                     ? `${device.config.registers.length} mapped (${device.config.registers.map(r => r.name).filter(Boolean).join(', ') || 'no names'})`
                                     : 'None';
 
                                 return (
                                     <React.Fragment key={device.id}>
-                                        <tr 
+                                        <tr
                                             onClick={() => setExpandedDeviceId(expandedDeviceId === device.id ? null : device.id)}
                                             style={{ cursor: 'pointer', transition: 'background 0.2s' }}
                                         >
                                             <td style={{ width: '40px', textAlign: 'center' }}>
-                                                <div style={{ 
-                                                    display: 'inline-flex', 
-                                                    alignItems: 'center', 
-                                                    justifyContent: 'center', 
-                                                    transition: 'transform 0.2s', 
+                                                <div style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    transition: 'transform 0.2s',
                                                     transform: expandedDeviceId === device.id ? 'rotate(90deg)' : 'none',
                                                     color: 'var(--accent)'
                                                 }}>
@@ -434,16 +434,16 @@ const EdgeDetails: React.FC = () => {
                                             <td style={{ fontSize: '0.85rem', opacity: 0.7 }}>{device.lastSeen}</td>
                                             <td onClick={(e) => e.stopPropagation()}>
                                                 <KebabMenu options={[
-                                                    { 
-                                                        label: 'Edit Device', 
+                                                    {
+                                                        label: 'Edit Device',
                                                         onClick: () => handleEditDevice(device),
-                                                        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                                                     },
-                                                    { 
-                                                        label: 'Delete Device', 
+                                                    {
+                                                        label: 'Delete Device',
                                                         onClick: () => handleDeleteDevice(device.id),
                                                         danger: true,
-                                                        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                                        icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
                                                     }
                                                 ]} />
                                             </td>
@@ -451,11 +451,11 @@ const EdgeDetails: React.FC = () => {
                                         {expandedDeviceId === device.id && (
                                             <tr style={{ background: 'rgba(255, 255, 255, 0.015)' }}>
                                                 <td colSpan={7} style={{ padding: '16px 24px 24px 24px', borderTop: 'none' }}>
-                                                    <div style={{ 
-                                                        background: 'rgba(6, 9, 18, 0.6)', 
-                                                        border: '1px solid rgba(255,255,255,0.06)', 
-                                                        borderRadius: '12px', 
-                                                        padding: '20px', 
+                                                    <div style={{
+                                                        background: 'rgba(6, 9, 18, 0.6)',
+                                                        border: '1px solid rgba(255,255,255,0.06)',
+                                                        borderRadius: '12px',
+                                                        padding: '20px',
                                                         boxShadow: 'inset 0 0 20px rgba(0,0,0,0.4)'
                                                     }}>
                                                         <h4 style={{ color: 'var(--accent)', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 0, marginBottom: '16px' }}>
@@ -467,7 +467,7 @@ const EdgeDetails: React.FC = () => {
                                                                     <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Protocol</span>
                                                                     <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>{device.config.protocol.toUpperCase()}</span>
                                                                 </div>
-                                                                
+
                                                                 {isTcp && (
                                                                     <>
                                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -516,7 +516,7 @@ const EdgeDetails: React.FC = () => {
                                                         ) : (
                                                             <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '20px' }}>No connection parameters defined.</div>
                                                         )}
-                                                        
+
                                                         <h4 style={{ color: 'var(--accent)', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '20px', marginBottom: '12px' }}>
                                                             Registers Mapping Definition ({device.config?.registers.length || 0})
                                                         </h4>
@@ -561,9 +561,9 @@ const EdgeDetails: React.FC = () => {
                 </div>
             </div>
 
-            <Modal 
-                isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
                 title={editingDevice ? 'Edit Modbus Device Configuration' : 'Register New Modbus Device'}
                 style={{ maxWidth: '750px', width: '90%' }}
             >
@@ -572,16 +572,16 @@ const EdgeDetails: React.FC = () => {
                         <div className={styles.formGrid}>
                             <div className={styles.formGroup}>
                                 <label>Device Name (human readable)</label>
-                                <input 
-                                    type="text" 
-                                    placeholder="e.g. Temperature Sensor 01" 
-                                    required 
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Temperature Sensor 01"
+                                    required
                                     value={deviceForm.name}
                                     onChange={(e) => setDeviceForm({ ...deviceForm, name: e.target.value })}
                                 />
                             </div>
                             <div className={styles.formGroup}>
-                                <CustomDropdown 
+                                <CustomDropdown
                                     label="Modbus Protocol Type"
                                     options={protocolOptions}
                                     value={deviceForm.protocol}
@@ -593,22 +593,22 @@ const EdgeDetails: React.FC = () => {
                         <div className={styles.formGrid}>
                             <div className={styles.formGroup}>
                                 <label>Modbus Slave ID</label>
-                                <input 
-                                    type="number" 
-                                    min="1" 
-                                    max="247" 
-                                    required 
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="247"
+                                    required
                                     value={deviceForm.slaveId}
                                     onChange={(e) => setDeviceForm({ ...deviceForm, slaveId: parseInt(e.target.value) || 1 })}
                                 />
                             </div>
                             <div className={styles.formGroup}>
                                 <label>Polling Interval (ms)</label>
-                                <input 
-                                    type="number" 
-                                    min="100" 
-                                    step="100" 
-                                    required 
+                                <input
+                                    type="number"
+                                    min="100"
+                                    step="100"
+                                    required
                                     value={deviceForm.pollingInterval}
                                     onChange={(e) => setDeviceForm({ ...deviceForm, pollingInterval: parseInt(e.target.value) || 5000 })}
                                 />
@@ -624,30 +624,30 @@ const EdgeDetails: React.FC = () => {
                                     <div className={styles.formGrid} style={{ marginBottom: 0, gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                         <div className={styles.formGroup} style={{ marginBottom: 0 }}>
                                             <label>IP Address</label>
-                                            <input 
-                                                type="text" 
-                                                placeholder="e.g. 192.168.1.100" 
-                                                required={deviceForm.protocol === 'tcp'} 
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. 192.168.1.100"
+                                                required={deviceForm.protocol === 'tcp'}
                                                 pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
                                                 value={deviceForm.tcp.ip}
-                                                onChange={(e) => setDeviceForm({ 
-                                                    ...deviceForm, 
-                                                    tcp: { ...deviceForm.tcp, ip: e.target.value } 
+                                                onChange={(e) => setDeviceForm({
+                                                    ...deviceForm,
+                                                    tcp: { ...deviceForm.tcp, ip: e.target.value }
                                                 })}
                                             />
                                         </div>
                                         <div className={styles.formGroup} style={{ marginBottom: 0 }}>
                                             <label>Port</label>
-                                            <input 
-                                                type="number" 
-                                                placeholder="502" 
-                                                min="1" 
-                                                max="65535" 
-                                                required={deviceForm.protocol === 'tcp'} 
+                                            <input
+                                                type="number"
+                                                placeholder="502"
+                                                min="1"
+                                                max="65535"
+                                                required={deviceForm.protocol === 'tcp'}
                                                 value={deviceForm.tcp.port}
-                                                onChange={(e) => setDeviceForm({ 
-                                                    ...deviceForm, 
-                                                    tcp: { ...deviceForm.tcp, port: parseInt(e.target.value) || 502 } 
+                                                onChange={(e) => setDeviceForm({
+                                                    ...deviceForm,
+                                                    tcp: { ...deviceForm.tcp, port: parseInt(e.target.value) || 502 }
                                                 })}
                                             />
                                         </div>
@@ -661,91 +661,91 @@ const EdgeDetails: React.FC = () => {
                                     <div className={styles.sectionHeader} style={{ margin: '0 0 12px 0', borderBottom: 'none' }}>
                                         <span>Modbus RTU Serial Settings</span>
                                     </div>
-                                
-                                <div className={styles.formGroup} style={{ marginBottom: '12px' }}>
-                                    <label>Serial Path</label>
-                                    <div style={{ display: 'flex', gap: '12px' }}>
-                                        <div style={{ flex: 1 }}>
-                                            <CustomDropdown 
-                                                options={serialPathOptions}
-                                                value={serialPathOptions.some(opt => opt.id === deviceForm.serial.path && opt.id !== 'custom') ? deviceForm.serial.path : 'custom'}
-                                                placeholder="Select serial path..."
-                                                onChange={(val) => {
-                                                    setDeviceForm({
+
+                                    <div className={styles.formGroup} style={{ marginBottom: '12px' }}>
+                                        <label>Serial Path</label>
+                                        <div style={{ display: 'flex', gap: '12px' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <CustomDropdown
+                                                    options={serialPathOptions}
+                                                    value={serialPathOptions.some(opt => opt.id === deviceForm.serial.path && opt.id !== 'custom') ? deviceForm.serial.path : 'custom'}
+                                                    placeholder="Select serial path..."
+                                                    onChange={(val) => {
+                                                        setDeviceForm({
+                                                            ...deviceForm,
+                                                            serial: {
+                                                                ...deviceForm.serial,
+                                                                path: val === 'custom' ? '' : val
+                                                            }
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                            {(!serialPathOptions.some(opt => opt.id === deviceForm.serial.path && opt.id !== 'custom') || deviceForm.serial.path === '') && (
+                                                <input
+                                                    type="text"
+                                                    placeholder="Path"
+                                                    required={deviceForm.protocol === 'rtu'}
+                                                    style={{ flex: 1 }}
+                                                    value={deviceForm.serial.path}
+                                                    onChange={(e) => setDeviceForm({
                                                         ...deviceForm,
-                                                        serial: { 
-                                                            ...deviceForm.serial, 
-                                                            path: val === 'custom' ? '' : val 
-                                                        }
-                                                    });
-                                                }}
-                                            />
+                                                        serial: { ...deviceForm.serial, path: e.target.value }
+                                                    })}
+                                                />
+                                            )}
                                         </div>
-                                        {(!serialPathOptions.some(opt => opt.id === deviceForm.serial.path && opt.id !== 'custom') || deviceForm.serial.path === '') && (
-                                            <input 
-                                                type="text"
-                                                placeholder="Path"
-                                                required={deviceForm.protocol === 'rtu'}
-                                                style={{ flex: 1 }}
-                                                value={deviceForm.serial.path}
-                                                onChange={(e) => setDeviceForm({
+                                    </div>
+
+                                    <div className={styles.formGrid} style={{ marginBottom: '12px', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        <div className={styles.formGroup} style={{ marginBottom: 0 }}>
+                                            <CustomDropdown
+                                                label="Baud Rate"
+                                                options={baudRateOptions}
+                                                value={String(deviceForm.serial.baudRate)}
+                                                onChange={(val) => setDeviceForm({
                                                     ...deviceForm,
-                                                    serial: { ...deviceForm.serial, path: e.target.value }
+                                                    serial: { ...deviceForm.serial, baudRate: parseInt(val) || 9600 }
                                                 })}
                                             />
-                                        )}
+                                        </div>
+                                        <div className={styles.formGroup} style={{ marginBottom: 0 }}>
+                                            <CustomDropdown
+                                                label="Parity"
+                                                options={parityOptions}
+                                                value={deviceForm.serial.parity}
+                                                onChange={(val) => setDeviceForm({
+                                                    ...deviceForm,
+                                                    serial: { ...deviceForm.serial, parity: val as any }
+                                                })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className={styles.formGrid} style={{ marginBottom: 0, gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                        <div className={styles.formGroup} style={{ marginBottom: 0 }}>
+                                            <CustomDropdown
+                                                label="Data Bits"
+                                                options={dataBitsOptions}
+                                                value={String(deviceForm.serial.dataBits)}
+                                                onChange={(val) => setDeviceForm({
+                                                    ...deviceForm,
+                                                    serial: { ...deviceForm.serial, dataBits: parseInt(val) as any }
+                                                })}
+                                            />
+                                        </div>
+                                        <div className={styles.formGroup} style={{ marginBottom: 0 }}>
+                                            <CustomDropdown
+                                                label="Stop Bits"
+                                                options={stopBitsOptions}
+                                                value={String(deviceForm.serial.stopBits)}
+                                                onChange={(val) => setDeviceForm({
+                                                    ...deviceForm,
+                                                    serial: { ...deviceForm.serial, stopBits: parseFloat(val) as any }
+                                                })}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div className={styles.formGrid} style={{ marginBottom: '12px', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                    <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                                        <CustomDropdown 
-                                            label="Baud Rate"
-                                            options={baudRateOptions}
-                                            value={String(deviceForm.serial.baudRate)}
-                                            onChange={(val) => setDeviceForm({
-                                                ...deviceForm,
-                                                serial: { ...deviceForm.serial, baudRate: parseInt(val) || 9600 }
-                                            })}
-                                        />
-                                    </div>
-                                    <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                                        <CustomDropdown 
-                                            label="Parity"
-                                            options={parityOptions}
-                                            value={deviceForm.serial.parity}
-                                            onChange={(val) => setDeviceForm({
-                                                ...deviceForm,
-                                                serial: { ...deviceForm.serial, parity: val as any }
-                                            })}
-                                        />
-                                    </div>
-                                </div>
-                                <div className={styles.formGrid} style={{ marginBottom: 0, gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                    <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                                        <CustomDropdown 
-                                            label="Data Bits"
-                                            options={dataBitsOptions}
-                                            value={String(deviceForm.serial.dataBits)}
-                                            onChange={(val) => setDeviceForm({
-                                                ...deviceForm,
-                                                serial: { ...deviceForm.serial, dataBits: parseInt(val) as any }
-                                            })}
-                                        />
-                                    </div>
-                                    <div className={styles.formGroup} style={{ marginBottom: 0 }}>
-                                        <CustomDropdown 
-                                            label="Stop Bits"
-                                            options={stopBitsOptions}
-                                            value={String(deviceForm.serial.stopBits)}
-                                            onChange={(val) => setDeviceForm({
-                                                ...deviceForm,
-                                                serial: { ...deviceForm.serial, stopBits: parseFloat(val) as any }
-                                            })}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
                             )}
                         </div>
 
@@ -769,11 +769,11 @@ const EdgeDetails: React.FC = () => {
                                     <div key={index} className={styles.registerRow}>
                                         <div className={styles.formGroup} style={{ marginBottom: 0 }}>
                                             <label style={{ fontSize: '0.75rem', opacity: 0.7 }}>Starting Address</label>
-                                            <input 
-                                                type="number" 
-                                                placeholder="40001" 
-                                                min="1" 
-                                                required 
+                                            <input
+                                                type="number"
+                                                placeholder="40001"
+                                                min="1"
+                                                required
                                                 value={register.address}
                                                 onChange={(e) => {
                                                     const updated = [...deviceForm.registers];
@@ -784,7 +784,7 @@ const EdgeDetails: React.FC = () => {
                                         </div>
                                         <div className={styles.formGroup} style={{ marginBottom: 0 }}>
                                             <label style={{ fontSize: '0.75rem', opacity: 0.7 }}>Data Type</label>
-                                            <CustomDropdown 
+                                            <CustomDropdown
                                                 options={dataTypeOptions}
                                                 value={register.dataType}
                                                 onChange={(val) => {
@@ -796,10 +796,10 @@ const EdgeDetails: React.FC = () => {
                                         </div>
                                         <div className={styles.formGroup} style={{ marginBottom: 0 }}>
                                             <label style={{ fontSize: '0.75rem', opacity: 0.7 }}>Tag / Field Name (InfluxDB)</label>
-                                            <input 
-                                                type="text" 
-                                                placeholder="e.g. voltage, active_power" 
-                                                required 
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. voltage, active_power"
+                                                required
                                                 value={register.name}
                                                 onChange={(e) => {
                                                     const updated = [...deviceForm.registers];
@@ -808,8 +808,8 @@ const EdgeDetails: React.FC = () => {
                                                 }}
                                             />
                                         </div>
-                                        <button 
-                                            type="button" 
+                                        <button
+                                            type="button"
                                             className={styles.deleteBtn}
                                             disabled={deviceForm.registers.length <= 1}
                                             style={deviceForm.registers.length <= 1 ? { opacity: 0.3, cursor: 'not-allowed' } : {}}
@@ -830,12 +830,12 @@ const EdgeDetails: React.FC = () => {
                                 ))}
                             </div>
 
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 className={styles.addRegisterBtn}
                                 onClick={() => {
-                                    const lastAddress = deviceForm.registers.length > 0 
-                                        ? deviceForm.registers[deviceForm.registers.length - 1].address 
+                                    const lastAddress = deviceForm.registers.length > 0
+                                        ? deviceForm.registers[deviceForm.registers.length - 1].address
                                         : 40001;
                                     setDeviceForm({
                                         ...deviceForm,
@@ -862,7 +862,7 @@ const EdgeDetails: React.FC = () => {
                 </form>
             </Modal>
 
-            <ConfirmModal 
+            <ConfirmModal
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
                 onConfirm={confirmDeleteDevice}

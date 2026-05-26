@@ -169,64 +169,166 @@ const RoleManagement = () => {
         }}>+ Create Role</button>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: '1rem 0' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '0.75rem',
+          minWidth: '700px'
+        }}>
+          {/* List Header */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '220px 1fr 120px', 
+            gap: '1.5rem',
+            padding: '0.5rem 1.25rem',
+            border: '1px solid transparent',
+            color: 'var(--text-secondary)',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            <div>Role Info</div>
+            <div>Active Permissions</div>
+            <div style={{ textAlign: 'right' }}>Actions</div>
+          </div>
+
           {roles.map((role) => (
             <motion.div 
               key={role.id}
               style={{ 
                 background: 'var(--secondary)', 
-                borderRadius: '16px', 
-                padding: '1.25rem',
+                borderRadius: '12px', 
+                padding: '1rem 1.25rem',
                 border: '1px solid var(--border-color)',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column'
+                display: 'grid',
+                gridTemplateColumns: '220px 1fr 120px',
+                alignItems: 'center',
+                gap: '1.5rem',
+                transition: 'border-color 0.2s',
               }}
-              initial={{ opacity: 0, y: 10 }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(124, 93, 250, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--border-color)';
+              }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                <div>
-                  <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#7c5dfa' }}>{role.name}</h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>{role.description}</p>
-                </div>
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button className="action-btn" onClick={() => handleOpenEditModal(role)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                  </button>
-                  <button className="action-btn" style={{ color: '#ef4444' }} onClick={() => handleDeleteClick(role)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                  </button>
-                </div>
+              {/* Column 1: Role Name & Description */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#7c5dfa', margin: 0 }}>
+                  {role.name}
+                </h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: '1.3' }}>
+                  {role.description}
+                </p>
               </div>
 
-              <div style={{ marginTop: '1rem', flex: 1 }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                  {role.permissions.filter(p => p.enabled).slice(0, 3).map((perm) => (
-                    <span 
-                      key={perm.id} 
-                      style={{ 
-                        fontSize: '0.7rem', 
-                        padding: '0.2rem 0.6rem', 
-                        background: 'rgba(124, 93, 250, 0.1)', 
-                        color: '#7c5dfa', 
-                        borderRadius: '100px',
-                        border: '1px solid rgba(124, 93, 250, 0.15)',
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap'
+              {/* Column 2: Permissions Badges */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+                {role.permissions.filter(p => p.enabled).slice(0, 5).map((perm) => (
+                  <span 
+                    key={perm.id} 
+                    style={{ 
+                      fontSize: '0.7rem', 
+                      padding: '0.25rem 0.6rem', 
+                      background: 'rgba(124, 93, 250, 0.1)', 
+                      color: '#7c5dfa', 
+                      borderRadius: '100px',
+                      border: '1px solid rgba(124, 93, 250, 0.15)',
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {perm.name}
+                  </span>
+                ))}
+                {role.permissions.filter(p => p.enabled).length > 5 && (
+                  <HoverableMore remaining={role.permissions.filter(p => p.enabled).slice(5)} />
+                )}
+                {role.permissions.filter(p => p.enabled).length === 0 && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic', opacity: 0.6 }}>
+                    No active permissions
+                  </div>
+                )}
+              </div>
+
+              {/* Column 3: Actions */}
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-end' }}>
+                {role.isSystemRole ? (
+                  <span style={{
+                    fontSize: '0.7rem',
+                    padding: '0.2rem 0.5rem',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '6px',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border-color)',
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap'
+                  }}>
+                    System Role
+                  </span>
+                ) : (
+                  <>
+                    <button 
+                      className="action-btn" 
+                      onClick={() => handleOpenEditModal(role)}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-color)',
+                        padding: '6px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                        color: 'var(--text-primary)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(124, 93, 250, 0.1)';
+                        e.currentTarget.style.borderColor = 'rgba(124, 93, 250, 0.3)';
+                        e.currentTarget.style.color = '#7c5dfa';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                        e.currentTarget.style.borderColor = 'var(--border-color)';
+                        e.currentTarget.style.color = 'var(--text-primary)';
                       }}
                     >
-                      {perm.name}
-                    </span>
-                  ))}
-                  {role.permissions.filter(p => p.enabled).length > 3 && (
-                    <HoverableMore remaining={role.permissions.filter(p => p.enabled).slice(3)} />
-                  )}
-                  {role.permissions.filter(p => p.enabled).length === 0 && (
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic', opacity: 0.7 }}>No active permissions</div>
-                  )}
-                </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
+                    <button 
+                      className="action-btn" 
+                      onClick={() => handleDeleteClick(role)}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.05)',
+                        border: '1px solid rgba(239, 68, 68, 0.15)',
+                        padding: '6px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                        color: '#ef4444'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)';
+                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.15)';
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </>
+                )}
               </div>
             </motion.div>
           ))}

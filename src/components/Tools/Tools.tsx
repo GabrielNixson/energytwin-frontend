@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo } from "react"
 
 import { useUIStore } from "@/store/useUIStore"
+import { useAuthStore } from "@/store/useAuthStore"
 import styles from "./Tools.module.scss"
 
 const AssetsIcon = () => (
@@ -18,7 +19,17 @@ const Tools = () => {
         isEyedropperActive, setIsEyedropperActive,
         isEditMode
     } = useUIStore();
+    const { userRole } = useAuthStore();
     const containerRef = useRef<HTMLDivElement>(null);
+
+    const hasPermission = (permissionName: string): boolean => {
+        if (!userRole) return true;
+        if (userRole.isSystemRole) return true;
+        const perm = userRole.permissions?.find(p => p.name === permissionName);
+        return perm ? perm.enabled : false;
+    };
+
+    const isManageAssetsEnabled = hasPermission("Manage Assets");
 
     const tools = useMemo(() => [
         {
@@ -57,7 +68,7 @@ const Tools = () => {
             <div className={styles["tools-wrapper"]}>
 
                 {/* Other Tools (Assets) */}
-                {isEditMode && tools.map((tool) => {
+                {isEditMode && isManageAssetsEnabled && tools.map((tool) => {
                     const isActive = tool.label === "Assets" ? isAssetSidebarOpen : false;
                     return (
                         <div key={tool.label} className={styles["tool-item-group"]}>

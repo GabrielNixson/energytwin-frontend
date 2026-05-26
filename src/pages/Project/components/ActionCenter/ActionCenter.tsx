@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { useUIStore } from "@/store/useUIStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import styles from "./ActionCenter.module.scss";
 
 const ActionCenter = () => {
@@ -9,6 +11,23 @@ const ActionCenter = () => {
         setIsChartSidebarOpen,
         is3DMode
     } = useUIStore();
+    const { userRole } = useAuthStore();
+
+    const hasPermission = (permissionName: string): boolean => {
+        if (!userRole) return true;
+        if (userRole.isSystemRole) return true;
+        const perm = userRole.permissions?.find(p => p.name === permissionName);
+        return perm ? perm.enabled : false;
+    };
+
+    const isEditProjectsEnabled = hasPermission("Edit Projects");
+
+    useEffect(() => {
+        if (!isEditProjectsEnabled && isEditMode) {
+            setIsEditMode(false);
+            setIsChartSidebarOpen(false);
+        }
+    }, [isEditProjectsEnabled, isEditMode, setIsEditMode, setIsChartSidebarOpen]);
 
     const handleSwitchToView = () => {
         setIsEditMode(false);
@@ -19,7 +38,7 @@ const ActionCenter = () => {
         <>
             {/* Mode Switch */}
             <div className={`${styles["mode-switch"]} ${!is3DMode ? styles.disabled : ""}`}>
-                <button 
+                <button
                     className={`${styles["mode-btn"]} ${!isEditMode ? styles.active : ""}`}
                     onClick={handleSwitchToView}
                 >
@@ -29,8 +48,8 @@ const ActionCenter = () => {
                     </svg>
                     <span>View</span>
                 </button>
-                {is3DMode && (
-                    <button 
+                {is3DMode && isEditProjectsEnabled && (
+                    <button
                         className={`${styles["mode-btn"]} ${isEditMode ? styles.active : ""}`}
                         onClick={() => setIsEditMode(true)}
                     >
@@ -41,11 +60,11 @@ const ActionCenter = () => {
                         <span>Edit</span>
                     </button>
                 )}
-                <div 
-                    className={styles["mode-indicator"]} 
-                    style={{ 
+                <div
+                    className={styles["mode-indicator"]}
+                    style={{
                         transform: `translateX(${isEditMode ? '100%' : '0%'})`,
-                        width: is3DMode ? undefined : 'calc(100% - 6px)'
+                        width: is3DMode && isEditProjectsEnabled ? undefined : 'calc(100% - 6px)'
                     }}
                 />
             </div>
@@ -54,7 +73,7 @@ const ActionCenter = () => {
 
             {/* Visibility Toggles */}
             <div className={styles["visibility-group"]}>
-                <button 
+                <button
                     className={`${styles["toggle-btn"]} ${showLabels ? styles.active : ""}`}
                     onClick={() => setShowLabels(!showLabels)}
                     title={showLabels ? "Hide Labels" : "Show Labels"}
@@ -67,11 +86,11 @@ const ActionCenter = () => {
                     <div className={styles["status-dot"]} />
                 </button>
 
-                <button 
+                <button
                     className={`${styles["toggle-btn"]} ${showCharts ? styles.active : ""}`}
                     onClick={() => {
                         const newShowCharts = !showCharts;
-                        setShowCharts(newShowCharts);e
+                        setShowCharts(newShowCharts);
                     }}
                     title={isEditMode ? "Toggle Charts" : (showCharts ? "Hide Charts" : "Show Charts")}
                 >

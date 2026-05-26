@@ -54,6 +54,27 @@ export default defineConfig(({ mode }) => ({
     cors: true,
     open: true,
     proxy: {
+      // ── Backend API ────────────────────────────────────────────────
+      // All /api/* calls are forwarded to the backend.
+      // From the browser's perspective everything comes from localhost:5003,
+      // so httpOnly cookies are stored and re-sent without any CORS issues.
+      '/api': {
+        target: 'http://192.168.21.114:3000',
+        changeOrigin: true,
+        secure: false,
+        // Strip the domain attribute from cookies so they are stored on the current requesting host (works for localhost and local network IPs like 192.168.1.100)
+        cookieDomainRewrite: {
+          '*': '',
+        },
+      },
+      // ── WebSocket (Socket.io) ──────────────────────────────────────
+      '/socket.io': {
+        target: 'http://192.168.21.114:3500',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      // ── Existing proxies ───────────────────────────────────────────
       '/otlp': {
         target: 'http://185.100.212.76:4318',
         changeOrigin: true,

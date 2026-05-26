@@ -16,17 +16,23 @@ import { useNavigate, useLocation } from "react-router-dom";
 import type { OptionsType } from "./sidebar.types";
 import { useUIStore } from "../../store/useUIStore";
 import { useAuthStore } from "../../store/useAuthStore";
+import { authService } from "../../services/auth";
 import { BillingIcon } from "@/assets/svg/SidebarSvg";
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedOption, setSelectedOption, isSidebarCollapsed, setIsSidebarCollapsed } = useUIStore()
-  const { user, logout } = useAuthStore();
+  const { user, logout, userRole } = useAuthStore();
   const [isHovered] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
     logout();
     navigate("/login");
   };
@@ -44,6 +50,35 @@ const Sidebar = () => {
     { label: "Admin", route: "admin", icon: AdminIcon },
     { label: "Device Management", route: "device-management", icon: DeviceManagementIcon },
   ];
+
+  const hasPermission = (permissionName: string): boolean => {
+    if (!userRole) return true; // Default to visible during loading or if role not resolved yet
+    if (userRole.isSystemRole) return true;
+    const perm = userRole.permissions?.find(p => p.name === permissionName);
+    return perm ? perm.enabled : false;
+  };
+
+  const isOptionVisible = (label: string): boolean => {
+    if (!userRole) return true;
+    if (userRole.isSystemRole) return true;
+
+    switch (label) {
+      case "overview":
+        return hasPermission("View Dashboards");
+      case "projects":
+        return hasPermission("View Dashboards") || hasPermission("Edit Projects");
+      case "Billing":
+        return hasPermission("Access Billing");
+      case "Admin":
+        return hasPermission("Manage Members") || hasPermission("View Audit Logs") || hasPermission("Manage API Keys");
+      case "Device Management":
+        return hasPermission("Manage Assets");
+      default:
+        return true;
+    }
+  };
+
+  const visibleOptions = options.filter(item => isOptionVisible(item.label));
 
   useEffect(() => {
     const currentPath = location.pathname;
@@ -93,7 +128,7 @@ const Sidebar = () => {
         </div>
 
         <div className={styles["options-container"]}>
-          {options.map((item, index) => {
+          {visibleOptions.map((item, index) => {
             const Icon = item.icon;
 
             return (
@@ -125,7 +160,7 @@ const Sidebar = () => {
 
           <div className={styles["user-details"]}>
             <div className={styles["user-name"]}>{user?.userName ?? "Guest"}</div>
-            <div className={styles["user-email"]}>{user?.emailId ?? ""}</div>
+            <div className={styles["user-email"]}>{user?.email ?? ""}</div>
           </div>
 
           <button

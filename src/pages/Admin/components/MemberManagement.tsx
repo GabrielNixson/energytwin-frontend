@@ -24,6 +24,7 @@ const MemberManagement = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     role: 'Viewer' as MemberRole,
     status: 'Active' as MemberStatus,
   });
@@ -54,7 +55,7 @@ const MemberManagement = () => {
 
   const handleOpenAddModal = () => {
     setEditingMember(null);
-    setFormData({ name: '', email: '', role: 'Viewer' as MemberRole, status: 'Active' });
+    setFormData({ name: '', email: '', password: '', role: 'Viewer' as MemberRole, status: 'Active' });
     setIsModalOpen(true);
   };
 
@@ -63,6 +64,7 @@ const MemberManagement = () => {
     setFormData({
       name: member.name,
       email: member.email,
+      password: '',
       role: member.role,
       status: member.status,
     });
@@ -209,6 +211,19 @@ const MemberManagement = () => {
               required
             />
           </div>
+          {!editingMember && (
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <input 
+                type="password" 
+                id="password" 
+                value={formData.password} 
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                placeholder="Temporary password"
+                required
+              />
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
             <CustomDropdown 
               label="Role"
