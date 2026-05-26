@@ -473,7 +473,7 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
                 {renderChart()}
             </div>
 
-            {isEditMode && (
+            {isEditMode && onResizeStart && (
                 <div
                     className={styles.resizeHandle}
                     onPointerDown={handleResizePointerDown}
