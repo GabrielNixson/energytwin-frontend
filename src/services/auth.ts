@@ -7,6 +7,8 @@ export const authService = {
   },
   login: async (data: any) => {
     const response = await api.post('/api/auth/login', data);
+    console.log("login res from service", response);
+
     return response.data;
   },
   logout: async () => {

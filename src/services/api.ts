@@ -110,17 +110,12 @@ api.interceptors.response.use(
       !originalRequest._retry
     ) {
 
-      // Prevent infinite refresh loop
+      // Prevent infinite refresh loop and skip refresh for auth entrypoints (login, signup)
       if (
-        originalRequest.url?.includes(
-          '/auth/refresh'
-        )
+        originalRequest.url?.includes('/auth/refresh') ||
+        originalRequest.url?.includes('/auth/login') ||
+        originalRequest.url?.includes('/auth/signup')
       ) {
-
-        useAuthStore
-          .getState()
-          .logout();
-
         return Promise.reject(error);
       }
 

@@ -57,19 +57,12 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
 
     useEffect(() => {
         if (!config?.fieldname) {
-            console.log(`[Chart:${id}] Skipping polling - no fieldname configured.`);
             return;
         }
 
-        console.log(`[Chart:${id}] Initializing Polling`, { 
-            topic: config.fieldname, 
-            range: config.timerange, 
-            agg: config.function,
-            socket: socket.connected ? 'Connected' : 'Disconnected'
-        });
 
         const responseEvent = `energyTwin:data:res:${id}`;
-        
+
         const fetchData = () => {
             const payload = {
                 fieldname: config.fieldname,
@@ -77,17 +70,15 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
                 function: config.function || 'last',
                 graphId: id
             };
-            console.log(`[Chart:${id}] Emitting ${responseEvent}:`, payload);
             socket.emit('energyTwin:data:req', payload);
         };
 
         const handleResponse = (payload: any) => {
-            console.log(`[Chart:${id}] Received response:`, payload);
             setFetchedData(payload);
         };
 
         socket.on(responseEvent, handleResponse);
-        
+
         // Initial fetch
         fetchData();
 
@@ -97,7 +88,6 @@ const Chart: React.FC<ChartProps> = ({ id, type, title, config, onResizeStart, o
         }, 2000);
 
         return () => {
-            console.log(`[Chart:${id}] Cleaning up polling`);
             clearInterval(pollInterval);
             socket.off(responseEvent, handleResponse);
         };
